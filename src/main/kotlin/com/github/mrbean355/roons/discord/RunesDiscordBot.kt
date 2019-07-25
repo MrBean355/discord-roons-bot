@@ -8,15 +8,20 @@ import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBu
 import discord4j.core.DiscordClientBuilder
 import discord4j.core.`object`.entity.Guild
 import discord4j.core.`object`.entity.VoiceChannel
+import discord4j.core.`object`.util.Snowflake
 import discord4j.core.event.domain.message.MessageCreateEvent
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 interface DiscordBot {
+    fun hasGuild(token: String): Boolean
+    fun getGuildToken(guild: Guild): String?
     fun joinVoiceChannel(guild: Guild, voiceChannel: VoiceChannel): Mono<Void>
     fun leaveVoiceChannel(guild: Guild): Boolean
     fun playSound(guild: Guild): Boolean
+    fun playSoundRemote(token: String)
     fun setVolume(guild: Guild, newVolume: Int)
 }
 
@@ -24,8 +29,10 @@ class RunesDiscordBot(token: String) : DiscordBot {
     private val client = DiscordClientBuilder(token).build()
     private val audioPlayerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val guildPlayerManagers: MutableMap<Long, GuildPlayerManager> = ConcurrentHashMap()
+    private val guildTokens: MutableMap<Long, String> = ConcurrentHashMap()
     private val commands = mapOf(
             "halp" to HelpCommand(this),
+            "wtff" to SetupCommand(this),
             "roons" to JoinCommand(this),
             "test" to TestCommand(this),
             "volume" to VolumeCommand(this),
@@ -44,7 +51,14 @@ class RunesDiscordBot(token: String) : DiscordBot {
     }
 
     private fun processMessage(event: MessageCreateEvent) {
-        Mono.justOrEmpty(event.message.content)
+        event.guild
+                .doOnNext {
+                    // Create a token for the guild if it doesn't have one:
+                    if (!guildTokens.containsKey(it.id.asLong())) {
+                        guildTokens[it.id.asLong()] = UUID.randomUUID().toString()
+                    }
+                }
+                .then(Mono.justOrEmpty(event.message.content))
                 .flatMap { content ->
                     Flux.fromIterable(commands.entries)
                             .filter { entry -> content.startsWith('!' + entry.key) }
@@ -52,6 +66,14 @@ class RunesDiscordBot(token: String) : DiscordBot {
                             .next()
                 }
                 .subscribe()
+    }
+
+    override fun hasGuild(token: String): Boolean {
+        return guildTokens.containsValue(token)
+    }
+
+    override fun getGuildToken(guild: Guild): String? {
+        return guildTokens[guild.id.asLong()]
     }
 
     override fun joinVoiceChannel(guild: Guild, voiceChannel: VoiceChannel): Mono<Void> {
@@ -80,6 +102,14 @@ class RunesDiscordBot(token: String) : DiscordBot {
         }
         audioPlayerManager.loadItemOrdered(guild.id.asLong(), "roons.mp3", DelegateResultHandler(guildPlayerManager.audioPlayer))
         return true
+    }
+
+    override fun playSoundRemote(token: String) {
+        guildTokens.filterValues { it == token }.keys.forEach { guildId ->
+            client.getGuildById(Snowflake.of(guildId))
+                    .doOnNext { playSound(it) }
+                    .subscribe()
+        }
     }
 
     override fun setVolume(guild: Guild, newVolume: Int) {
