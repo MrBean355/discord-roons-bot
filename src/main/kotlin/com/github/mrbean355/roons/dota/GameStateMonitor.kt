@@ -10,6 +10,7 @@ private val HOW_OFTEN = TimeUnit.MINUTES.toSeconds(5)
 private val WARNING_PERIOD = TimeUnit.SECONDS.toSeconds(15)
 
 class GameStateMonitor(private val discordBot: DiscordBot) {
+    private val matchIds = mutableMapOf<String, String>()
     private val scheduled = mutableMapOf<String, Long>()
 
     fun onNewState(gameState: GameState) {
@@ -24,9 +25,12 @@ class GameStateMonitor(private val discordBot: DiscordBot) {
         if (currentTime <= 0) {
             return false
         }
+        val oldMatch = matchIds[token]
+        val currentMatch = gameState.map.matchid
         var nextPlayTime = scheduled[token]
-        if (nextPlayTime == null) {
+        if (oldMatch != currentMatch || nextPlayTime == null) {
             nextPlayTime = findIteration(currentTime)
+            matchIds[token] = currentMatch
             scheduled[token] = nextPlayTime
         }
         if (currentTime >= nextPlayTime) {
