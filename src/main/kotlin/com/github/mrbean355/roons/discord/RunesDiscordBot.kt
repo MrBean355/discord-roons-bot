@@ -12,11 +12,11 @@ import discord4j.core.`object`.util.Snowflake
 import discord4j.core.event.domain.message.MessageCreateEvent
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 interface DiscordBot {
-    fun hasGuild(token: String): Boolean
+    fun start()
+    fun isAuthorised(token: String): Boolean
     fun getGuildToken(guild: Guild): String?
     fun joinVoiceChannel(guild: Guild, voiceChannel: VoiceChannel): Mono<Void>
     fun leaveVoiceChannel(guild: Guild): Boolean
@@ -25,14 +25,14 @@ interface DiscordBot {
     fun setVolume(guild: Guild, newVolume: Int)
 }
 
-class RunesDiscordBot(token: String) : DiscordBot {
+private const val GUILD_ID = 364864643614769162
+
+class RunesDiscordBot(token: String, private val authToken: String) : DiscordBot {
     private val client = DiscordClientBuilder(token).build()
     private val audioPlayerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val guildPlayerManagers: MutableMap<Long, GuildPlayerManager> = ConcurrentHashMap()
-    private val guildTokens: MutableMap<Long, String> = ConcurrentHashMap()
     private val commands = mapOf(
             "halp" to HelpCommand(this),
-            "wtff" to SetupCommand(this),
             "roons" to JoinCommand(this),
             "test" to TestCommand(this),
             "volume" to VolumeCommand(this),
@@ -45,35 +45,17 @@ class RunesDiscordBot(token: String) : DiscordBot {
         AudioSourceManagers.registerLocalSource(audioPlayerManager)
     }
 
-    fun start() {
+    override fun start() {
         client.eventDispatcher.on(MessageCreateEvent::class.java).subscribe(this::processMessage)
-        client.login().block()
+        client.login().subscribe()
     }
 
-    private fun processMessage(event: MessageCreateEvent) {
-        event.guild
-                .doOnNext {
-                    // Create a token for the guild if it doesn't have one:
-                    if (!guildTokens.containsKey(it.id.asLong())) {
-                        guildTokens[it.id.asLong()] = UUID.randomUUID().toString()
-                    }
-                }
-                .then(Mono.justOrEmpty(event.message.content))
-                .flatMap { content ->
-                    Flux.fromIterable(commands.entries)
-                            .filter { entry -> content.startsWith('!' + entry.key) }
-                            .flatMap { entry -> entry.value.execute(event) }
-                            .next()
-                }
-                .subscribe()
-    }
-
-    override fun hasGuild(token: String): Boolean {
-        return guildTokens.containsValue(token)
+    override fun isAuthorised(token: String): Boolean {
+        return token == authToken
     }
 
     override fun getGuildToken(guild: Guild): String? {
-        return guildTokens[guild.id.asLong()]
+        return if (guild.id.asLong() == GUILD_ID) authToken else null
     }
 
     override fun joinVoiceChannel(guild: Guild, voiceChannel: VoiceChannel): Mono<Void> {
@@ -105,8 +87,8 @@ class RunesDiscordBot(token: String) : DiscordBot {
     }
 
     override fun playSoundRemote(token: String) {
-        guildTokens.filterValues { it == token }.keys.forEach { guildId ->
-            client.getGuildById(Snowflake.of(guildId))
+        if (token == authToken) {
+            client.getGuildById(Snowflake.of(GUILD_ID))
                     .doOnNext { playSound(it) }
                     .subscribe()
         }
@@ -114,6 +96,18 @@ class RunesDiscordBot(token: String) : DiscordBot {
 
     override fun setVolume(guild: Guild, newVolume: Int) {
         getGuildPlayerManager(guild).audioPlayer.volume = newVolume
+    }
+
+    private fun processMessage(event: MessageCreateEvent) {
+        event.guild
+                .then(Mono.justOrEmpty(event.message.content))
+                .flatMap { content ->
+                    Flux.fromIterable(commands.entries)
+                            .filter { entry -> content.startsWith('!' + entry.key) }
+                            .flatMap { entry -> entry.value.execute(event) }
+                            .next()
+                }
+                .subscribe()
     }
 
     private fun getGuildPlayerManager(guild: Guild): GuildPlayerManager {

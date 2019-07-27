@@ -1,5 +1,6 @@
 package com.github.mrbean355.roons
 
+import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.discord.RunesDiscordBot
 import com.github.mrbean355.roons.dota.GameState
 import com.github.mrbean355.roons.dota.GameStateMonitor
@@ -16,12 +17,12 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
 fun main(args: Array<String>) {
-    if (args.size != 1) {
-        println("Please pass only the Discord bot's token as an argument.")
+    if (args.size != 2) {
+        println("Please pass only the Discord bot's token and your auth token as arguments.")
         return
     }
-    val bot = RunesDiscordBot(args.first())
-    Thread { bot.start() }.start()
+    val bot: DiscordBot = RunesDiscordBot(args[0], args[1])
+    bot.start()
     val gameStateMonitor = GameStateMonitor(bot)
     val server = embeddedServer(Netty, port = 12345) {
         install(ContentNegotiation) {
@@ -31,7 +32,7 @@ fun main(args: Array<String>) {
             post {
                 try {
                     val gameState = call.receive<GameState>()
-                    if (gameState.isValid() && bot.hasGuild(gameState.auth!!.token)) {
+                    if (gameState.isValid() && bot.isAuthorised(gameState.auth!!.token)) {
                         gameStateMonitor.onNewState(gameState)
                     }
                 } catch (t: Throwable) {

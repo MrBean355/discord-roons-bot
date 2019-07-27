@@ -22,41 +22,6 @@ class HelpCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
     }
 }
 
-class SetupCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
-    override fun execute(event: MessageCreateEvent): Mono<Void> {
-        return event.message.channel
-                .zipWith(event.guild)
-                .flatMap {
-                    it.t1.createMessage(":tools: Setup Instructions :tools:\n" +
-                            "0. Close Dota 2\n" +
-                            "1. Navigate to Dota 2's root installation folder\n" +
-                            "2. Within there, navigate to `game/dota/cfg/gamestate_integration`\n" +
-                            "3. Within there, create a new file called `gamestate_integration_roons.cfg`\n" +
-                            "4. Paste this text in the file:\n" +
-                            "```\n" +
-                            "\"Dota 2 Integration Configuration\"\n" +
-                            "{\n" +
-                            "    \"uri\"           \"http://localhost:12345\"\n" +
-                            "    \"timeout\"       \"5.0\"\n" +
-                            "    \"buffer\"        \"0.1\"\n" +
-                            "    \"throttle\"      \"0.1\"\n" +
-                            "    \"heartbeat\"     \"30.0\"\n" +
-                            "    \"auth\"\n" +
-                            "    {\n" +
-                            "       \"token\" \"${discordBot.getGuildToken(it.t2)}\"\n" +
-                            "    }\n" +
-                            "    \"data\"\n" +
-                            "    {\n" +
-                            "        \"provider\"      \"1\"\n" +
-                            "        \"map\"           \"1\"\n" +
-                            "    }\n" +
-                            "}\n" +
-                            "```")
-                }
-                .then()
-    }
-}
-
 class JoinCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
     override fun execute(event: MessageCreateEvent): Mono<Void> {
         return Mono.justOrEmpty(event.member)
@@ -64,8 +29,7 @@ class JoinCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
                 .flatMap { it.channel }
                 .zipWith(event.message.channel)
                 .flatMap { tuple ->
-                    tuple.t2.createMessage("Joining voice channel `${tuple.t1.name}` :microphone2:\n" +
-                            "Use `!wtff` for setup instructions")
+                    tuple.t2.createMessage("Joining voice channel `${tuple.t1.name}` :microphone2:")
                             .map { tuple.t1 }
                 }
                 .zipWith(event.guild)
