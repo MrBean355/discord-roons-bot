@@ -8,6 +8,8 @@ import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBu
 import discord4j.core.DiscordClientBuilder
 import discord4j.core.`object`.entity.Guild
 import discord4j.core.`object`.entity.VoiceChannel
+import discord4j.core.`object`.presence.Activity
+import discord4j.core.`object`.presence.Presence
 import discord4j.core.`object`.util.Snowflake
 import discord4j.core.event.domain.message.MessageCreateEvent
 import reactor.core.publisher.Flux
@@ -28,7 +30,9 @@ interface DiscordBot {
 private const val GUILD_ID = 364864643614769162
 
 class RunesDiscordBot(token: String, private val authToken: String) : DiscordBot {
-    private val client = DiscordClientBuilder(token).build()
+    private val client = DiscordClientBuilder(token)
+            .setInitialPresence(Presence.online(Activity.playing("Get the roons!")))
+            .build()
     private val audioPlayerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val guildPlayerManagers: MutableMap<Long, GuildPlayerManager> = ConcurrentHashMap()
     private val commands = mapOf(
