@@ -11,6 +11,6 @@ class GuildPlayerManager(audioPlayerManager: AudioPlayerManager) {
     var voiceConnection: VoiceConnection? = null
 
     init {
-        audioPlayer.volume = 25
+        audioPlayer.volume = 35
     }
 }
