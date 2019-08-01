@@ -1,4 +1,6 @@
+dist: trusty
 language: java
+install: true
 jdk: oraclejdk8
 
 cache:
