@@ -4,6 +4,7 @@ import com.github.mrbean355.roons.COMMAND_PREFIX
 import com.github.mrbean355.roons.HELP_URL
 import com.github.mrbean355.roons.VOLUME_MAX
 import com.github.mrbean355.roons.VOLUME_MIN
+import com.github.mrbean355.roons.discord.audio.GuildPlayerManager
 import discord4j.core.`object`.entity.Guild
 import discord4j.core.`object`.entity.MessageChannel
 import discord4j.core.event.domain.message.MessageCreateEvent

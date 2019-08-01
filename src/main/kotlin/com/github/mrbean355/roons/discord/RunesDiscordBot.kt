@@ -2,6 +2,8 @@ package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.COMMAND_PREFIX
 import com.github.mrbean355.roons.SOUND_FILE_NAME
+import com.github.mrbean355.roons.discord.audio.DelegatingResultHandler
+import com.github.mrbean355.roons.discord.audio.GuildPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
@@ -71,7 +73,9 @@ class RunesDiscordBot(apiToken: String) : CommandCallbacks, SoundEffectPlayer {
     }
 
     private fun processMessage(event: MessageCreateEvent) {
-        Mono.justOrEmpty(event.message.content)
+        Mono.justOrEmpty(event.member)
+                .filter { !it.isBot }
+                .flatMap { Mono.justOrEmpty(event.message.content) }
                 .flatMap { content ->
                     Flux.fromIterable(commands)
                             .filter { command -> content.startsWith(COMMAND_PREFIX + command.input) }

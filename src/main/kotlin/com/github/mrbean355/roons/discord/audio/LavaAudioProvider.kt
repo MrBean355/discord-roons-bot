@@ -1,4 +1,4 @@
-package com.github.mrbean355.roons.discord
+package com.github.mrbean355.roons.discord.audio
 
 import com.sedmelluq.discord.lavaplayer.format.StandardAudioDataFormats
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer

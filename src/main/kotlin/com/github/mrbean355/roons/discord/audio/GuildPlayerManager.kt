@@ -1,4 +1,4 @@
-package com.github.mrbean355.roons.discord
+package com.github.mrbean355.roons.discord.audio
 
 import com.github.mrbean355.roons.VOLUME_DEFAULT
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
