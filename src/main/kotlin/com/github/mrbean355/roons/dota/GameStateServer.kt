@@ -1,6 +1,6 @@
 package com.github.mrbean355.roons.dota
 
-import com.github.mrbean355.roons.discord.DiscordBot
+import com.github.mrbean355.roons.discord.SoundEffectPlayer
 import com.github.mrbean355.roons.discord.UserStore
 import io.ktor.application.call
 import io.ktor.application.install
@@ -16,8 +16,8 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
 /** Receive game state updates from Dota clients. */
-class GameStateServer(discordBot: DiscordBot) {
-    private val gameStateMonitor = GameStateMonitor(discordBot)
+class GameStateServer(soundEffectPlayer: SoundEffectPlayer) {
+    private val gameStateMonitor = GameStateMonitor(soundEffectPlayer)
     private val server: ApplicationEngine
 
     init {
@@ -29,7 +29,7 @@ class GameStateServer(discordBot: DiscordBot) {
                 post {
                     try {
                         val gameState = call.receive<GameState>()
-                        if (UserStore.userExists(gameState.auth?.token.orEmpty()) && gameState.isValid()) {
+                        if (UserStore.isTokenValid(gameState.auth?.token.orEmpty()) && gameState.isValid()) {
                             gameStateMonitor.onNewState(gameState)
                         }
                     } catch (t: Throwable) {
@@ -43,5 +43,9 @@ class GameStateServer(discordBot: DiscordBot) {
 
     fun start() {
         server.start(wait = true)
+    }
+
+    fun enableTestMode(token: String) {
+        gameStateMonitor.enableTestMode(token)
     }
 }

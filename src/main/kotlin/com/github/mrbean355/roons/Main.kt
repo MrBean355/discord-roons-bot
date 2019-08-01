@@ -9,6 +9,8 @@ fun main(args: Array<String>) {
         return
     }
     val discordBot = RunesDiscordBot(args.first())
-    discordBot.start()
-    GameStateServer(discordBot).start()
+    val gameStateServer = GameStateServer(discordBot)
+    discordBot.testModeDelegate = gameStateServer::enableTestMode
+    discordBot.startAsync()
+    gameStateServer.start()
 }

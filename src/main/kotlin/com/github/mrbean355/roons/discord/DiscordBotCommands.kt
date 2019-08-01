@@ -1,13 +1,27 @@
 package com.github.mrbean355.roons.discord
 
+import com.github.mrbean355.roons.COMMAND_PREFIX
+import com.github.mrbean355.roons.HELP_URL
+import com.github.mrbean355.roons.VOLUME_MAX
+import com.github.mrbean355.roons.VOLUME_MIN
 import discord4j.core.`object`.entity.Guild
 import discord4j.core.`object`.entity.MessageChannel
 import discord4j.core.event.domain.message.MessageCreateEvent
 import reactor.core.publisher.Mono
 
+/** @return all available commands. */
+fun allCommands(callbacks: CommandCallbacks): Set<BotCommand> {
+    return setOf(HelpCommand(callbacks), JoinCommand(callbacks), LeaveCommand(callbacks), MagicCommand(callbacks), TestCommand(callbacks), VolumeCommand(callbacks))
+}
+
+interface CommandCallbacks {
+    fun getPlayerManager(guild: Guild): GuildPlayerManager
+    fun enableTestMode(token: String)
+}
+
 /** A command that can be entered by a Discord user. */
-sealed class BotCommand(protected val discordBot: DiscordBot) {
-    /** Text the user types to execute the command. */
+sealed class BotCommand(protected val callbacks: CommandCallbacks) {
+    /** Text the user must enter to execute the command (excluding the [COMMAND_PREFIX]). */
     abstract val input: String
 
     /** Execute the command. */
@@ -15,18 +29,18 @@ sealed class BotCommand(protected val discordBot: DiscordBot) {
 }
 
 /** Send a link to the GitHub repo. */
-class HelpCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
+class HelpCommand(callbacks: CommandCallbacks) : BotCommand(callbacks) {
     override val input = "help"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
         return event.message.channel
-                .flatMap { it.createMessage("Setup instructions and available commands can be found here: https://github.com/MrBean355/discord-roons-bot :tools:") }
+                .flatMap { it.createMessage("Setup instructions and available commands can be found here: $HELP_URL :tools:") }
                 .then()
     }
 }
 
 /** Join the user's current voice channel. */
-class JoinCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
+class JoinCommand(callbacks: CommandCallbacks) : BotCommand(callbacks) {
     override val input = "roons"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
@@ -40,33 +54,24 @@ class JoinCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
                 }
                 .zipWith(event.guild)
                 .flatMap { tuple ->
-                    val playerManager = discordBot.playerManager(tuple.t2)
+                    val playerManager = callbacks.getPlayerManager(tuple.t2)
                     tuple.t1.join { spec ->
                         spec.setProvider(playerManager.audioProvider)
                     }.zipWith(Mono.just(playerManager))
                 }
-                .doOnNext { it.t2.voiceConnection = it.t1 }
+                .doOnNext { it.t2.onVoiceConnected(it.t1) }
                 .then()
     }
 }
 
 /** Leave the current voice channel. */
-class LeaveCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
+class LeaveCommand(callbacks: CommandCallbacks) : BotCommand(callbacks) {
     override val input = "seeya"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
         return event.guild
-                .map { discordBot.playerManager(it) }
-                .flatMap {
-                    val connection = it.voiceConnection
-                    if (connection != null) {
-                        connection.disconnect()
-                        it.voiceConnection = null
-                        Mono.just(Any())
-                    } else {
-                        Mono.empty<Any>()
-                    }
-                }
+                .map { callbacks.getPlayerManager(it) }
+                .flatMap { it.tryDisconnect() }
                 .then(event.message.channel)
                 .flatMap {
                     it.createMessage("Goodbye :wave:")
@@ -76,7 +81,7 @@ class LeaveCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
 }
 
 /** Send a private message with the user's token. */
-class MagicCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
+class MagicCommand(callbacks: CommandCallbacks) : BotCommand(callbacks) {
     override val input = "magic"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
@@ -87,7 +92,7 @@ class MagicCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
                     tuple.t1.createMessage("""
                     Your magic number is: `${UserStore.getOrCreate(event.member.get(), tuple.t2)}` :sparkles:
                     Don't give this to other people!
-                    Use `!help` for setup instructions
+                    Use `${COMMAND_PREFIX}help` for setup instructions
                 """.trimIndent())
                 }
                 .then()
@@ -95,21 +100,27 @@ class MagicCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
 }
 
 /** Play a test sound on the next game state update. */
-class TestCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
+class TestCommand(callbacks: CommandCallbacks) : BotCommand(callbacks) {
     override val input = "test"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
         return Mono.justOrEmpty(event.member)
                 .zipWith(event.guild)
-                .doOnNext { discordBot.enableTest(UserStore.getOrCreate(it.t1, it.t2)) }
+                .doOnNext { callbacks.enableTestMode(UserStore.getOrCreate(it.t1, it.t2)) }
                 .then(event.message.channel)
-                .flatMap { it.createMessage("Test mode engaged! Enter hero demo mode to test your setup :spy:") }
+                .flatMap {
+                    it.createMessage("""
+                    Test mode engaged! :rocket:
+                    Enter hero demo mode to test the bot.
+                    You should hear the ROONS sound as soon as the game clock ticks. 
+                    """.trimIndent())
+                }
                 .then()
     }
 }
 
 /** Get or set the guild's audio player's volume. */
-class VolumeCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
+class VolumeCommand(callbacks: CommandCallbacks) : BotCommand(callbacks) {
     override val input = "volume"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
@@ -119,7 +130,7 @@ class VolumeCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
                     when {
                         s.size == 1 -> showCurrentVolume(event.guild, event.message.channel)
                         s.size == 2 -> setCurrentVolume(s[1], event.guild, event.message.channel)
-                        else -> Mono.empty<Void>()
+                        else -> Mono.empty()
                     }
                 }
                 .then()
@@ -127,20 +138,22 @@ class VolumeCommand(discordBot: DiscordBot) : BotCommand(discordBot) {
 
     private fun showCurrentVolume(guild: Mono<Guild>, channel: Mono<MessageChannel>): Mono<Void> {
         return guild.zipWith(channel)
-                .flatMap { it.t2.createMessage("Current volume is `${discordBot.getVolume(it.t1)}%` :headphones:") }
+                .map { callbacks.getPlayerManager(it.t1) to it.t2 }
+                .flatMap { it.second.createMessage("Current volume is `${it.first.getVolume()}%` :headphones:") }
                 .then()
     }
 
     private fun setCurrentVolume(volumeStr: String, guild: Mono<Guild>, channel: Mono<MessageChannel>): Mono<Void> {
         return Mono.just(volumeStr)
                 .filter { it.matches(Regex("-?\\d+")) }
-                .map { it.toInt().coerceAtLeast(0).coerceAtMost(100) }
+                .map { it.toInt().coerceAtLeast(VOLUME_MIN).coerceAtMost(VOLUME_MAX) }
                 .flatMap { volume ->
                     channel.flatMap { it.createMessage("Setting volume to `$volume%` :sound:") }
                             .map { volume }
                 }
                 .zipWith(guild)
-                .doOnNext { discordBot.setVolume(it.t2, it.t1) }
+                .map { callbacks.getPlayerManager(it.t2) to it.t1 }
+                .doOnNext { it.first.setVolume(it.second) }
                 .then()
     }
 }

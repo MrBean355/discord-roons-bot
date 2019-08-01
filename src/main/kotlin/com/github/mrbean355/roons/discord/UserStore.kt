@@ -6,6 +6,7 @@ import discord4j.core.`object`.util.Snowflake
 import java.io.File
 import java.util.UUID
 
+/** Stores users' ID & guild ID as the key, and their token as the value. */
 object UserStore {
     private val cache: MutableMap<String, String> = mutableMapOf()
 
@@ -19,8 +20,9 @@ object UserStore {
         }
     }
 
-    fun userExists(token: String): Boolean {
-        if (token.isEmpty()) {
+    /** @return `true` if the token is associated with a user, `false` otherwise. */
+    fun isTokenValid(token: String): Boolean {
+        if (token.isBlank()) {
             return false
         }
         return synchronized(this) {
@@ -28,20 +30,22 @@ object UserStore {
         }
     }
 
-    fun findUserId(token: String): Pair<Snowflake, Snowflake>? {
-        if (token.isEmpty()) {
+    /** @return the guild ID corresponding to the token if found, `null` otherwise. */
+    fun findGuildIdFor(token: String): Snowflake? {
+        if (token.isBlank()) {
             return null
         }
         return synchronized(this) {
             if (cache.containsValue(token)) {
                 val key = cache.filterValues { it == token }.keys.single().split(',')
-                Snowflake.of(key[0]) to Snowflake.of(key[1])
+                Snowflake.of(key[1])
             } else {
                 null
             }
         }
     }
 
+    /** @return the user's token, creating one if they don't have a token. */
     fun getOrCreate(user: User, guild: Guild): String {
         return synchronized(this) {
             val key = "${user.id.asString()},${guild.id.asString()}"

@@ -6,7 +6,8 @@ import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 
-class DelegateResultHandler(private val player: AudioPlayer)
+/** Plays loaded tracks with an [AudioPlayer]. */
+class DelegatingResultHandler(private val player: AudioPlayer)
     : AudioLoadResultHandler {
 
     override fun trackLoaded(track: AudioTrack) {
