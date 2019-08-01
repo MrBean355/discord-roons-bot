@@ -16,7 +16,7 @@ The sound effect can be previewed on the [official PlaySounds page](http://chatb
     ```
     "Dota 2 Roons Discord Bot"
     {
-        "uri"           "http://TODO:26382"
+        "uri"           "http://roonsbot.co.za:26382"
         "timeout"       "5.0"
         "buffer"        "0.1"
         "throttle"      "0.1"
