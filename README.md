@@ -60,18 +60,21 @@ If you encounter any issues, please file a bug at the "Issues" tab above!
 ## Troubleshooting
 If you aren't hearing the sound effect in Discord, there are a few things to try:
 
-#### Discord Permissions
+#### Bot Offline In Discord
+This might mean that it is offline for maintenance. Check back a bit later and hopefully it will be online again.
+
+Please log an issue (on the "Issues" tab above) if the bot is down for an extended period of time.
+
+#### Bot Not Replying
 If the bot isn't replying to your commands, make sure that it has the correct Discord permissions to be able to **view and send** messages in your text channel.
 
-Similarly, if the bot is replying but not joining the voice channel, make sure that it has the correct Discord permissions to be able to **join and speak** in your voice channel.
+#### Bot Not Joining Voice Channel
 
-#### Restart Dota
-If you had Dota 2 open while creating the file, the game will ignore your file until it next starts up.
+If the bot is replying but not joining the voice channel, make sure that it has the correct Discord permissions to be able to **join and speak** in your voice channel.
 
-#### Check your magic number
-Make sure you correctly inserted your magic number into the text file. There should be double quotations around it.
-
-For example: line 10 in the text file should look similar to: `"token" "0088231z-ea6f-4af4-aa02-9d5e79cac2d6"` (substituted with your magic number).
+#### Sound Effect Not Playing
+- If you had Dota 2 open while creating the file, the game will ignore your file until it next starts up.
+- Make sure you correctly inserted your magic number into the text file. There should be double quotations around it. For example: line 10 in the text file should look similar to: `"token" "0088231z-ea6f-4af4-aa02-9d5e79cac2d6"` (substituted with your magic number).
 
 #### Something else?
 Carefully run through the setup instructions again.
