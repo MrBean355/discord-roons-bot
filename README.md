@@ -1,4 +1,5 @@
 # Discord Roons Bot
+[![Build Status](https://travis-ci.org/MrBean355/discord-roons-bot.svg?branch=master)](https://travis-ci.org/MrBean355/discord-roons-bot)
 
 ## About
 This is a Discord bot for Dota 2. It will join your voice channel and play Admiral Bulldog's "ROONS" sound effect 15 seconds before the bounty runes spawn.
