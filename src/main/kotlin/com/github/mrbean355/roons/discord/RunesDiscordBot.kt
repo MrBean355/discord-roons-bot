@@ -3,34 +3,20 @@ package com.github.mrbean355.roons.discord
 import com.github.mrbean355.roons.COMMAND_PREFIX
 import com.github.mrbean355.roons.SOUND_FILE_NAME
 import com.github.mrbean355.roons.discord.audio.DelegatingResultHandler
-import com.github.mrbean355.roons.discord.audio.GuildPlayerManager
+import com.github.mrbean355.roons.discord.audio.GuildPlayerManagerProvider
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
-import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrameBufferFactory
 import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer
-import discord4j.core.DiscordClientBuilder
-import discord4j.core.`object`.entity.Guild
-import discord4j.core.`object`.presence.Activity
-import discord4j.core.`object`.presence.Presence
+import discord4j.core.DiscordClient
 import discord4j.core.event.domain.message.MessageCreateEvent
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.util.Optional
-import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
 
-interface SoundEffectPlayer {
-    fun playSound(token: String)
-}
-
-class RunesDiscordBot(apiToken: String) : CommandCallbacks, SoundEffectPlayer {
-    private val client = DiscordClientBuilder(apiToken)
-            .setInitialPresence(Presence.online(Activity.playing("Get the roons!")))
-            .build()
-    private val audioPlayerManager: AudioPlayerManager = DefaultAudioPlayerManager()
-    private val guildPlayerManagers: MutableMap<Long, GuildPlayerManager> = ConcurrentHashMap()
-    private val commands = allCommands(this)
-    var testModeDelegate: (String) -> Unit = {}
+class RunesDiscordBot @Inject constructor(private val client: DiscordClient, private val audioPlayerManager: AudioPlayerManager,
+                                          private val playerManagerProvider: GuildPlayerManagerProvider, private val commands: Set<@JvmSuppressWildcards BotCommand>) {
 
     init {
         audioPlayerManager.configuration.frameBufferFactory = AudioFrameBufferFactory { bufferDuration, format, stopping ->
@@ -44,15 +30,7 @@ class RunesDiscordBot(apiToken: String) : CommandCallbacks, SoundEffectPlayer {
         client.login().subscribe()
     }
 
-    override fun getPlayerManager(guild: Guild): GuildPlayerManager {
-        return getGuildPlayerManager(guild)
-    }
-
-    override fun enableTestMode(token: String) {
-        testModeDelegate(token)
-    }
-
-    override fun playSound(token: String) {
+    fun playSound(token: String) {
         if (!UserStore.isTokenValid(token)) {
             return
         }
@@ -60,7 +38,7 @@ class RunesDiscordBot(apiToken: String) : CommandCallbacks, SoundEffectPlayer {
         Mono.justOrEmpty(Optional.ofNullable(guildId))
                 .flatMap { client.getGuildById(it) }
                 .flatMap {
-                    val guildPlayerManager = getGuildPlayerManager(it)
+                    val guildPlayerManager = playerManagerProvider.get(it)
                     if (guildPlayerManager.hasVoiceConnection())
                         Mono.just(it to guildPlayerManager)
                     else
@@ -83,14 +61,5 @@ class RunesDiscordBot(apiToken: String) : CommandCallbacks, SoundEffectPlayer {
                             .next()
                 }
                 .subscribe()
-    }
-
-    private fun getGuildPlayerManager(guild: Guild): GuildPlayerManager {
-        var manager = guildPlayerManagers[guild.id.asLong()]
-        if (manager == null) {
-            manager = GuildPlayerManager(audioPlayerManager)
-            guildPlayerManagers[guild.id.asLong()] = manager
-        }
-        return manager
     }
 }

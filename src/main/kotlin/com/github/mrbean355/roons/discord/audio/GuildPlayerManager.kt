@@ -3,10 +3,25 @@ package com.github.mrbean355.roons.discord.audio
 import com.github.mrbean355.roons.VOLUME_DEFAULT
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
+import discord4j.core.`object`.entity.Guild
 import discord4j.voice.AudioProvider
 import discord4j.voice.VoiceConnection
 import reactor.core.publisher.Mono
 import java.util.Optional
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class GuildPlayerManagerProvider @Inject constructor(private val audioPlayerManager: AudioPlayerManager) {
+    private val guildPlayerManagers: MutableMap<Long, GuildPlayerManager> = ConcurrentHashMap()
+
+    fun get(guild: Guild): GuildPlayerManager {
+        return guildPlayerManagers.getOrPut(guild.id.asLong()) {
+            GuildPlayerManager(audioPlayerManager)
+        }
+    }
+}
 
 /** Audio-related classes specific to a guild. */
 class GuildPlayerManager(audioPlayerManager: AudioPlayerManager) {
