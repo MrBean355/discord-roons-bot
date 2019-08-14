@@ -7,6 +7,7 @@ import com.github.mrbean355.roons.VOLUME_MIN
 import com.github.mrbean355.roons.discord.audio.GuildPlayerManagerProvider
 import discord4j.core.`object`.entity.Guild
 import discord4j.core.`object`.entity.MessageChannel
+import discord4j.core.`object`.reaction.ReactionEmoji
 import discord4j.core.event.domain.message.MessageCreateEvent
 import reactor.core.publisher.Mono
 import javax.inject.Inject
@@ -87,6 +88,7 @@ class MagicCommand @Inject constructor() : BotCommand() {
                     Use `${COMMAND_PREFIX}help` for setup instructions
                 """.trimIndent())
                 }
+                .then(event.message.addReaction(ReactionEmoji.unicode("✅")))
                 .then()
     }
 }
