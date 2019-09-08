@@ -10,6 +10,7 @@ import discord4j.core.`object`.entity.MessageChannel
 import discord4j.core.`object`.reaction.ReactionEmoji
 import discord4j.core.event.domain.message.MessageCreateEvent
 import reactor.core.publisher.Mono
+import reactor.util.function.Tuples
 import javax.inject.Inject
 
 /** A command that can be entered by a Discord user. */
@@ -46,11 +47,12 @@ class JoinCommand @Inject constructor(private val provider: GuildPlayerManagerPr
                             .map { tuple.t1 }
                 }
                 .zipWith(event.guild)
+                .map { Tuples.of(it.t1, provider.get(it.t2)) }
                 .flatMap { tuple ->
-                    val playerManager = provider.get(tuple.t2)
-                    tuple.t1.join { spec ->
-                        spec.setProvider(playerManager.audioProvider)
-                    }.zipWith(Mono.just(playerManager))
+                    tuple.t2.tryDisconnect()
+                            .then(tuple.t1.join { spec ->
+                                spec.setProvider(tuple.t2.audioProvider)
+                            }).zipWith(Mono.just(tuple.t2))
                 }
                 .doOnNext { it.t2.onVoiceConnected(it.t1) }
                 .then()
