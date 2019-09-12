@@ -2,6 +2,7 @@ package com.github.mrbean355.roons
 
 import com.github.mrbean355.roons.di.ClientModule
 import com.github.mrbean355.roons.di.DaggerAppComponent
+import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.discord.UserStore
 import io.ktor.application.call
 import io.ktor.http.HttpStatusCode
@@ -27,9 +28,14 @@ fun main(args: Array<String>) {
         routing {
             get {
                 val token = call.parameters["token"].orEmpty()
+                val soundFileName = call.parameters["soundFileName"].orEmpty()
                 if (UserStore.isTokenValid(token)) {
-                    discordBot.playSound(token)
-                    call.respond(HttpStatusCode.OK)
+                    if (SoundStore.soundExists(soundFileName)) {
+                        discordBot.playSound(token, soundFileName)
+                        call.respond(HttpStatusCode.OK)
+                    } else {
+                        call.respond(HttpStatusCode.BadRequest)
+                    }
                 } else {
                     call.respond(HttpStatusCode.Unauthorized)
                 }
