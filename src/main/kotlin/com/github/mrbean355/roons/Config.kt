@@ -1,6 +1,5 @@
 package com.github.mrbean355.roons
 
-const val SOUND_FILE_NAME = "roons.mp3"
 const val COMMAND_PREFIX = '!'
 const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds/wiki/Discord-Bot"
 const val VOLUME_MIN = 0

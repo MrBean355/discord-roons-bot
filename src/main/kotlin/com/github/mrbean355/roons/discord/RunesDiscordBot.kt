@@ -1,7 +1,6 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.COMMAND_PREFIX
-import com.github.mrbean355.roons.SOUND_FILE_NAME
 import com.github.mrbean355.roons.discord.audio.DelegatingResultHandler
 import com.github.mrbean355.roons.discord.audio.GuildPlayerManagerProvider
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
@@ -30,7 +29,7 @@ class RunesDiscordBot @Inject constructor(private val client: DiscordClient, pri
         client.login().subscribe()
     }
 
-    fun playSound(token: String) {
+    fun playSound(token: String, soundFileName: String) {
         if (!UserStore.isTokenValid(token)) {
             return
         }
@@ -45,7 +44,7 @@ class RunesDiscordBot @Inject constructor(private val client: DiscordClient, pri
                         Mono.empty()
                 }
                 .doOnNext {
-                    audioPlayerManager.loadItemOrdered(it.first.id.asLong(), SOUND_FILE_NAME, DelegatingResultHandler(it.second.audioPlayer))
+                    audioPlayerManager.loadItemOrdered(it.first.id.asLong(), SoundStore.getFilePath(soundFileName), DelegatingResultHandler(it.second.audioPlayer))
                 }
                 .subscribe()
     }

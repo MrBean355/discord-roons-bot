@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.github.mrbean355'
-version '1.0.0-beta.2'
+version '1.0.0-beta.3'
 
 repositories {
     mavenCentral()
@@ -17,9 +17,9 @@ dependencies {
     implementation 'io.ktor:ktor-server-netty:1.2.4'
     implementation 'io.ktor:ktor-gson:1.2.4'
     implementation 'ch.qos.logback:logback-classic:1.2.3'
-    implementation 'com.discord4j:discord4j-core:3.0.8'
-    implementation 'com.discord4j:discord4j-voice:3.0.8'
-    implementation 'com.sedmelluq:lavaplayer:1.3.20'
+    implementation 'com.discord4j:discord4j-core:3.0.9'
+    implementation 'com.discord4j:discord4j-voice:3.0.9'
+    implementation 'com.sedmelluq:lavaplayer:1.3.22'
     implementation "com.google.dagger:dagger:2.24"
     kapt "com.google.dagger:dagger-compiler:2.24"
 }
@@ -44,9 +44,12 @@ jar {
     }
 }
 
+task downloadSoundFiles(type: DownloadSoundFilesTask) {}
+
 task copySound(type: Copy) {
-    from 'src/main/resources/roons.mp3'
-    into "${buildDir.path}/libs"
+    from 'src/main/resources/monitored'
+    from 'src/main/resources/unmonitored'
+    into "${buildDir.path}/libs/sounds"
 }
 
 jar.finalizedBy(copySound)

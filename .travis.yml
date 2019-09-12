@@ -1,7 +1,7 @@
-dist: trusty
 language: java
 install: true
 jdk: oraclejdk8
+dist: trusty
 
 cache:
   directories:
@@ -12,4 +12,7 @@ before_script:
   - chmod +x gradlew
 
 script:
-  - ./gradlew --no-daemon clean build
+  - sh .ci/build.sh
+
+after_script:
+  - sh .ci/git-push.sh
