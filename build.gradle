@@ -44,9 +44,12 @@ jar {
     }
 }
 
+task downloadSoundFiles(type: DownloadSoundFilesTask) {}
+
 task copySound(type: Copy) {
-    from 'src/main/resources/roons.mp3'
-    into "${buildDir.path}/libs"
+    from 'src/main/resources/monitored'
+    from 'src/main/resources/unmonitored'
+    into "${buildDir.path}/libs/sounds"
 }
 
 jar.finalizedBy(copySound)
