@@ -48,19 +48,6 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
 }
 
-mainClassName = 'com.github.mrbean355.roons.MainKt'
-
-jar {
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-    manifest {
-        attributes(
-                'Main-Class': mainClassName
-        )
-    }
-}
-
 task downloadSoundFiles(type: DownloadSoundFilesTask) {}
 
 task copySound(type: Copy) {
@@ -69,4 +56,4 @@ task copySound(type: Copy) {
     into "${buildDir.path}/libs/sounds"
 }
 
-jar.finalizedBy(copySound)
+bootJar.finalizedBy(copySound)
