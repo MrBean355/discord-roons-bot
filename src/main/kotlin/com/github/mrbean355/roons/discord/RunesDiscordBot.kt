@@ -3,11 +3,13 @@ package com.github.mrbean355.roons.discord
 import com.github.mrbean355.roons.COMMAND_PREFIX
 import com.github.mrbean355.roons.discord.audio.DelegatingResultHandler
 import com.github.mrbean355.roons.discord.audio.GuildPlayerManagerProvider
+import com.github.mrbean355.roons.spring.UserRepository
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrameBufferFactory
 import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer
 import discord4j.core.DiscordClient
+import discord4j.core.`object`.util.Snowflake
 import discord4j.core.event.domain.message.MessageCreateEvent
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
@@ -16,7 +18,8 @@ import java.util.Optional
 
 @Component
 class RunesDiscordBot(private val client: DiscordClient, private val audioPlayerManager: AudioPlayerManager,
-                      private val playerManagerProvider: GuildPlayerManagerProvider, private val commands: Set<BotCommand>) {
+                      private val playerManagerProvider: GuildPlayerManagerProvider, private val commands: Set<BotCommand>,
+                      private val userRepository: UserRepository) {
 
     init {
         audioPlayerManager.configuration.frameBufferFactory = AudioFrameBufferFactory { bufferDuration, format, stopping ->
@@ -31,10 +34,8 @@ class RunesDiscordBot(private val client: DiscordClient, private val audioPlayer
     }
 
     fun playSound(token: String, soundFileName: String) {
-        if (!UserStore.isTokenValid(token)) {
-            return
-        }
-        val guildId = UserStore.findGuildIdFor(token)
+        val user = userRepository.findOneByToken(token) ?: return
+        val guildId = Snowflake.of(user.guildId)
         Mono.justOrEmpty(Optional.ofNullable(guildId))
                 .flatMap { client.getGuildById(it) }
                 .flatMap {

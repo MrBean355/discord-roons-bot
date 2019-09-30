@@ -6,6 +6,13 @@ import javax.persistence.GenerationType.IDENTITY
 import javax.persistence.Id
 
 @Entity
+data class User(
+        @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
+        val userId: String,
+        val guildId: String,
+        val token: String)
+
+@Entity
 data class UserEvent(
         @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
         val userId: String,
