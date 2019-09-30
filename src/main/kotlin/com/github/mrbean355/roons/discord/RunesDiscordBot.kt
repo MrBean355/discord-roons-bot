@@ -9,13 +9,14 @@ import com.sedmelluq.discord.lavaplayer.track.playback.AudioFrameBufferFactory
 import com.sedmelluq.discord.lavaplayer.track.playback.NonAllocatingAudioFrameBuffer
 import discord4j.core.DiscordClient
 import discord4j.core.event.domain.message.MessageCreateEvent
+import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.util.Optional
-import javax.inject.Inject
 
-class RunesDiscordBot @Inject constructor(private val client: DiscordClient, private val audioPlayerManager: AudioPlayerManager,
-                                          private val playerManagerProvider: GuildPlayerManagerProvider, private val commands: Set<@JvmSuppressWildcards BotCommand>) {
+@Component
+class RunesDiscordBot(private val client: DiscordClient, private val audioPlayerManager: AudioPlayerManager,
+                      private val playerManagerProvider: GuildPlayerManagerProvider, private val commands: Set<BotCommand>) {
 
     init {
         audioPlayerManager.configuration.frameBufferFactory = AudioFrameBufferFactory { bufferDuration, format, stopping ->

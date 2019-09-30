@@ -6,14 +6,13 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import discord4j.core.`object`.entity.Guild
 import discord4j.voice.AudioProvider
 import discord4j.voice.VoiceConnection
+import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class GuildPlayerManagerProvider @Inject constructor(private val audioPlayerManager: AudioPlayerManager) {
+@Component
+class GuildPlayerManagerProvider(private val audioPlayerManager: AudioPlayerManager) {
     private val guildPlayerManagers: MutableMap<Long, GuildPlayerManager> = ConcurrentHashMap()
 
     fun get(guild: Guild): GuildPlayerManager {
