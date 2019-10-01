@@ -107,7 +107,7 @@ class MagicCommand(private val userRepository: UserRepository) : BotCommand() {
         val userId = member.id.asString()
         val guildId = guild.id.asString()
         return userRepository.findOneByUserIdAndGuildId(userId, guildId)
-                ?: userRepository.save(User(0, guildId, userId, UUID.randomUUID().toString()))
+                ?: userRepository.save(User(0, userId, guildId, UUID.randomUUID().toString()))
     }
 }
 
