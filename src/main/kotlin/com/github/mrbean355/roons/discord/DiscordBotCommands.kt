@@ -5,13 +5,17 @@ import com.github.mrbean355.roons.HELP_URL
 import com.github.mrbean355.roons.VOLUME_MAX
 import com.github.mrbean355.roons.VOLUME_MIN
 import com.github.mrbean355.roons.discord.audio.GuildPlayerManagerProvider
+import com.github.mrbean355.roons.spring.User
+import com.github.mrbean355.roons.spring.UserRepository
 import discord4j.core.`object`.entity.Guild
+import discord4j.core.`object`.entity.Member
 import discord4j.core.`object`.entity.MessageChannel
 import discord4j.core.`object`.reaction.ReactionEmoji
 import discord4j.core.event.domain.message.MessageCreateEvent
+import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 import reactor.util.function.Tuples
-import javax.inject.Inject
+import java.util.UUID
 
 /** A command that can be entered by a Discord user. */
 sealed class BotCommand {
@@ -23,7 +27,8 @@ sealed class BotCommand {
 }
 
 /** Send a link to the GitHub repo. */
-class HelpCommand @Inject constructor() : BotCommand() {
+@Component
+class HelpCommand : BotCommand() {
     override val input = "help"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
@@ -34,7 +39,8 @@ class HelpCommand @Inject constructor() : BotCommand() {
 }
 
 /** Join the user's current voice channel. */
-class JoinCommand @Inject constructor(private val provider: GuildPlayerManagerProvider) : BotCommand() {
+@Component
+class JoinCommand constructor(private val provider: GuildPlayerManagerProvider) : BotCommand() {
     override val input = "roons"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
@@ -60,7 +66,8 @@ class JoinCommand @Inject constructor(private val provider: GuildPlayerManagerPr
 }
 
 /** Leave the current voice channel. */
-class LeaveCommand @Inject constructor(private val provider: GuildPlayerManagerProvider) : BotCommand() {
+@Component
+class LeaveCommand constructor(private val provider: GuildPlayerManagerProvider) : BotCommand() {
     override val input = "seeya"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
@@ -76,7 +83,8 @@ class LeaveCommand @Inject constructor(private val provider: GuildPlayerManagerP
 }
 
 /** Send a private message with the user's token. */
-class MagicCommand @Inject constructor() : BotCommand() {
+@Component
+class MagicCommand(private val userRepository: UserRepository) : BotCommand() {
     override val input = "magic"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
@@ -84,8 +92,9 @@ class MagicCommand @Inject constructor() : BotCommand() {
                 .flatMap { it.privateChannel }
                 .zipWith(event.guild)
                 .flatMap { tuple ->
+                    val user = findOrCreateUser(event.member.get(), tuple.t2)
                     tuple.t1.createMessage("""
-                    Your magic number is: `${UserStore.getOrCreate(event.member.get(), tuple.t2)}` :sparkles:
+                    Your magic number is: `${user.token}` :sparkles:
                     Don't give this to other people!
                     Use `${COMMAND_PREFIX}help` for setup instructions
                 """.trimIndent())
@@ -93,10 +102,18 @@ class MagicCommand @Inject constructor() : BotCommand() {
                 .then(event.message.addReaction(ReactionEmoji.unicode("✅")))
                 .then()
     }
+
+    private fun findOrCreateUser(member: Member, guild: Guild): User {
+        val userId = member.id.asString()
+        val guildId = guild.id.asString()
+        return userRepository.findOneByUserIdAndGuildId(userId, guildId)
+                ?: userRepository.save(User(0, guildId, userId, UUID.randomUUID().toString()))
+    }
 }
 
 /** Get or set the guild's audio player's volume. */
-class VolumeCommand @Inject constructor(private val provider: GuildPlayerManagerProvider) : BotCommand() {
+@Component
+class VolumeCommand constructor(private val provider: GuildPlayerManagerProvider) : BotCommand() {
     override val input = "volume"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {

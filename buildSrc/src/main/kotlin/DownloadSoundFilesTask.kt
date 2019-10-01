@@ -10,15 +10,19 @@ open class DownloadSoundFilesTask : DefaultTask() {
 
     @TaskAction
     fun download() {
+        val remoteFiles = listRemoteFiles()
+        println("Found ${remoteFiles.size} remote files.")
+
+        // Set up local directories:
         val destination = project.file(DESTINATION_DIR)
         if (destination.exists()) {
             destination.deleteRecursively()
         }
         destination.mkdirs()
-        val remoteFiles = listRemoteFiles()
-        val total = remoteFiles.size
+
+        // Download all remote files:
         remoteFiles.forEachIndexed { index, remoteFile ->
-            println("Download ${index + 1} of $total")
+            println("Download file #${index + 1}: ${remoteFile.fileName}")
             downloadFile(remoteFile, DESTINATION_DIR)
         }
     }
