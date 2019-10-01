@@ -17,4 +17,5 @@ data class UserEvent(
         @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
         val userId: String,
         val eventType: String,
-        val eventData: String)
+        val eventData: String,
+        val count: Int)
