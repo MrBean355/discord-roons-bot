@@ -17,12 +17,18 @@ class RoonsApplication @Autowired constructor(bot: RunesDiscordBot) {
 
         @JvmStatic
         fun main(args: Array<String>) {
-            if (args.size != 1) {
+            val botToken = getToken(args)
+            if (botToken.isNullOrBlank()) {
                 println("Please pass in only the Discord bot's API token.")
                 return
             }
-            BeanProvider.token = args.first()
+            BeanProvider.token = botToken
             SpringApplication.run(RoonsApplication::class.java, *args)
+        }
+
+        private fun getToken(args: Array<String>): String? {
+            val arg = args.firstOrNull { it.startsWith("--bot.token=") } ?: return null
+            return arg.split("--bot.token=").getOrNull(1)
         }
     }
 }
