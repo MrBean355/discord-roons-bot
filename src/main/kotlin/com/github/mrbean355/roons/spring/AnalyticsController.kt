@@ -14,10 +14,9 @@ class AnalyticsController @Autowired constructor(private val appUserRepository: 
 
     @RequestMapping("logEvent", method = [POST])
     fun logEvent(@RequestBody request: AnalyticsRequest): ResponseEntity<Void> {
-        val appUser = appUserRepository.findByGeneratedId(request.userId)
-        if (appUser != null) {
-            appUserRepository.save(appUser.copy(lastSeen = Date()))
-        }
+        val appUser = appUserRepository.findByGeneratedId(request.userId) ?: AppUser(0, request.userId, null)
+        appUserRepository.save(appUser.copy(lastSeen = Date()))
+
         return if (analytics.logEvent(request.userId, request.eventType, request.eventData)) {
             ResponseEntity.ok()
         } else {

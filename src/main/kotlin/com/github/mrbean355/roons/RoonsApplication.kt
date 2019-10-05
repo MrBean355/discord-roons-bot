@@ -2,18 +2,15 @@ package com.github.mrbean355.roons
 
 import com.github.mrbean355.roons.beans.BeanProvider
 import com.github.mrbean355.roons.discord.RunesDiscordBot
-import com.github.mrbean355.roons.spring.UserEventRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 
 @SpringBootApplication
-class RoonsApplication @Autowired constructor(bot: RunesDiscordBot, val userEventRepository: UserEventRepository) {
+class RoonsApplication @Autowired constructor(bot: RunesDiscordBot) {
 
     init {
         bot.startAsync()
-
-        userEventRepository.findAll().forEach(::println)
     }
 
     companion object {
