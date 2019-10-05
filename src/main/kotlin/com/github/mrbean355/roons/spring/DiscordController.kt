@@ -16,10 +16,9 @@ class DiscordController @Autowired constructor(private val runesDiscordBot: Rune
 
     @RequestMapping(method = [POST])
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
-        val appUser = appUserRepository.findByGeneratedId(request.userId)
-        if (appUser != null) {
-            appUserRepository.save(appUser.copy(lastSeen = Date()))
-        }
+        val appUser = appUserRepository.findByGeneratedId(request.userId) ?: AppUser(0, request.userId, null)
+        appUserRepository.save(appUser.copy(lastSeen = Date()))
+
         if (request.token.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         }
