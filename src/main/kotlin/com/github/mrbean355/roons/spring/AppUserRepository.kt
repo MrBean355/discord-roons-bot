@@ -4,5 +4,6 @@ import org.springframework.data.repository.CrudRepository
 
 interface AppUserRepository : CrudRepository<AppUser, Int> {
     fun countByGeneratedId(generatedId: String): Int
+    fun findByGeneratedId(generatedId: String): AppUser?
 }
 
