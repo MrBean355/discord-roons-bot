@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod.POST
 import org.springframework.web.bind.annotation.RestController
+import java.util.Date
 import java.util.UUID
 
 @RestController
@@ -22,7 +23,7 @@ class UserController @Autowired constructor(private val appUserRepository: AppUs
         if (tries >= 10) {
             return ResponseEntity.status(HttpStatus.LOOP_DETECTED).build()
         }
-        appUserRepository.save(AppUser(0, generated))
+        appUserRepository.save(AppUser(0, generated, Date()))
         return ResponseEntity.ok(CreateIdResponse(generated))
     }
 }

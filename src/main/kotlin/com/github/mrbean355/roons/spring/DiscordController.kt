@@ -9,12 +9,17 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod.POST
 import org.springframework.web.bind.annotation.RestController
+import java.util.Date
 
 @RestController("/")
-class DiscordController @Autowired constructor(private val runesDiscordBot: RunesDiscordBot, private val userRepository: UserRepository, private val analytics: Analytics) {
+class DiscordController @Autowired constructor(private val runesDiscordBot: RunesDiscordBot, private val appUserRepository: AppUserRepository, private val userRepository: UserRepository, private val analytics: Analytics) {
 
     @RequestMapping(method = [POST])
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
+        val appUser = appUserRepository.findByGeneratedId(request.userId)
+        if (appUser != null) {
+            appUserRepository.save(appUser.copy(lastSeen = Date()))
+        }
         if (request.token.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         }
