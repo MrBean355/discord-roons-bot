@@ -1,5 +1,9 @@
-package com.github.mrbean355.roons.spring
+package com.github.mrbean355.roons.controller
 
+import com.github.mrbean355.roons.AnalyticsRequest
+import com.github.mrbean355.roons.AppUser
+import com.github.mrbean355.roons.component.Analytics
+import com.github.mrbean355.roons.repository.AppUserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RequestBody

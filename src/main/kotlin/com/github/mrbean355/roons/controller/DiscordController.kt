@@ -1,7 +1,12 @@
-package com.github.mrbean355.roons.spring
+package com.github.mrbean355.roons.controller
 
+import com.github.mrbean355.roons.AppUser
+import com.github.mrbean355.roons.PlaySoundRequest
+import com.github.mrbean355.roons.component.Analytics
 import com.github.mrbean355.roons.discord.RunesDiscordBot
 import com.github.mrbean355.roons.discord.SoundStore
+import com.github.mrbean355.roons.repository.AppUserRepository
+import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -12,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.Date
 
 @RestController("/")
-class DiscordController @Autowired constructor(private val runesDiscordBot: RunesDiscordBot, private val appUserRepository: AppUserRepository, private val userRepository: UserRepository, private val analytics: Analytics) {
+class DiscordController @Autowired constructor(private val runesDiscordBot: RunesDiscordBot, private val appUserRepository: AppUserRepository, private val discordBotUserRepository: DiscordBotUserRepository, private val analytics: Analytics) {
 
     @RequestMapping(method = [POST])
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
@@ -22,7 +27,7 @@ class DiscordController @Autowired constructor(private val runesDiscordBot: Rune
         if (request.token.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         }
-        val user = userRepository.findOneByToken(request.token)
+        val user = discordBotUserRepository.findOneByToken(request.token)
                 ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         return if (SoundStore.soundExists(request.soundFileName)) {
             runesDiscordBot.playSound(user.token, request.soundFileName)

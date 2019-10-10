@@ -1,12 +1,12 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.COMMAND_PREFIX
+import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.HELP_URL
 import com.github.mrbean355.roons.VOLUME_MAX
 import com.github.mrbean355.roons.VOLUME_MIN
 import com.github.mrbean355.roons.discord.audio.GuildPlayerManagerProvider
-import com.github.mrbean355.roons.spring.User
-import com.github.mrbean355.roons.spring.UserRepository
+import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import discord4j.core.`object`.entity.Guild
 import discord4j.core.`object`.entity.Member
 import discord4j.core.`object`.entity.MessageChannel
@@ -84,7 +84,7 @@ class LeaveCommand constructor(private val provider: GuildPlayerManagerProvider)
 
 /** Send a private message with the user's token. */
 @Component
-class MagicCommand(private val userRepository: UserRepository) : BotCommand() {
+class MagicCommand(private val discordBotUserRepository: DiscordBotUserRepository) : BotCommand() {
     override val input = "magic"
 
     override fun execute(event: MessageCreateEvent): Mono<Void> {
@@ -103,11 +103,11 @@ class MagicCommand(private val userRepository: UserRepository) : BotCommand() {
                 .then()
     }
 
-    private fun findOrCreateUser(member: Member, guild: Guild): User {
+    private fun findOrCreateUser(member: Member, guild: Guild): DiscordBotUser {
         val userId = member.id.asString()
         val guildId = guild.id.asString()
-        return userRepository.findOneByUserIdAndGuildId(userId, guildId)
-                ?: userRepository.save(User(0, userId, guildId, UUID.randomUUID().toString()))
+        return discordBotUserRepository.findOneByDiscordUserIdAndGuildId(userId, guildId)
+                ?: discordBotUserRepository.save(DiscordBotUser(0, userId, guildId, UUID.randomUUID().toString()))
     }
 }
 

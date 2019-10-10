@@ -1,6 +1,6 @@
 package com.github.mrbean355.roons
 
-import com.github.mrbean355.roons.beans.BeanProvider
+import com.github.mrbean355.roons.component.BeanProvider
 import com.github.mrbean355.roons.discord.RunesDiscordBot
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication

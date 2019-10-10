@@ -1,4 +1,4 @@
-package com.github.mrbean355.roons.beans
+package com.github.mrbean355.roons.component
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager

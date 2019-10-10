@@ -1,4 +1,4 @@
-package com.github.mrbean355.roons.spring
+package com.github.mrbean355.roons
 
 data class CreateIdResponse(val userId: String)
 

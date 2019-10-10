@@ -1,4 +1,4 @@
-package com.github.mrbean355.roons.spring
+package com.github.mrbean355.roons
 
 import java.util.Date
 import javax.persistence.Column
@@ -16,16 +16,17 @@ data class AppUser(
         @Temporal(TemporalType.TIMESTAMP) val lastSeen: Date?)
 
 @Entity
-data class User(
+data class DiscordBotUser(
         @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
-        val userId: String,
+        val discordUserId: String,
         val guildId: String,
         val token: String)
 
 @Entity
-data class UserEvent(
+data class AnalyticsEvent(
         @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
-        val userId: String,
+        val appUserId: String,
         val eventType: String,
         @Column(columnDefinition = "TEXT") val eventData: String,
-        val count: Int)
+        val count: Int,
+        @Temporal(TemporalType.TIMESTAMP) val lastOccurred: Date?)
