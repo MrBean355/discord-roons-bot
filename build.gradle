@@ -47,13 +47,3 @@ compileKotlin {
 compileTestKotlin {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
 }
-
-task downloadSoundFiles(type: DownloadSoundFilesTask) {}
-
-task copySound(type: Copy) {
-    from 'src/main/resources/monitored'
-    from 'src/main/resources/unmonitored'
-    into "${buildDir.path}/libs/sounds"
-}
-
-bootJar.finalizedBy(copySound)

@@ -12,7 +12,4 @@ before_script:
   - chmod +x gradlew
 
 script:
-  - sh .ci/build.sh
-
-after_success:
-  - sh .ci/git-push.sh
+  - ./gradlew --no-daemon clean bootJar

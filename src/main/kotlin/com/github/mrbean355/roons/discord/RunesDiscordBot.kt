@@ -19,7 +19,7 @@ import java.util.Optional
 @Component
 class RunesDiscordBot(private val client: DiscordClient, private val audioPlayerManager: AudioPlayerManager,
                       private val playerManagerProvider: GuildPlayerManagerProvider, private val commands: Set<BotCommand>,
-                      private val discordBotUserRepository: DiscordBotUserRepository) {
+                      private val discordBotUserRepository: DiscordBotUserRepository, private val soundStore: SoundStore) {
 
     init {
         audioPlayerManager.configuration.frameBufferFactory = AudioFrameBufferFactory { bufferDuration, format, stopping ->
@@ -46,7 +46,7 @@ class RunesDiscordBot(private val client: DiscordClient, private val audioPlayer
                         Mono.empty()
                 }
                 .doOnNext {
-                    audioPlayerManager.loadItemOrdered(it.first.id.asLong(), SoundStore.getFilePath(soundFileName), DelegatingResultHandler(it.second.audioPlayer))
+                    audioPlayerManager.loadItemOrdered(it.first.id.asLong(), soundStore.getFilePath(soundFileName), DelegatingResultHandler(it.second.audioPlayer))
                 }
                 .subscribe()
     }

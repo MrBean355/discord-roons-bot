@@ -6,6 +6,9 @@ import discord4j.core.DiscordClient
 import discord4j.core.DiscordClientBuilder
 import discord4j.core.`object`.presence.Activity
 import discord4j.core.`object`.presence.Presence
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.InjectionPoint
 import org.springframework.context.annotation.Bean
 import org.springframework.stereotype.Component
 
@@ -23,5 +26,12 @@ object BeanProvider {
     @Bean
     fun audioPlayerManager(): AudioPlayerManager {
         return DefaultAudioPlayerManager()
+    }
+
+    @Bean
+    fun logger(injectionPoint: InjectionPoint): Logger {
+        val clazz = injectionPoint.methodParameter?.containingClass
+                ?: injectionPoint.field?.declaringClass
+        return LoggerFactory.getLogger(clazz)
     }
 }

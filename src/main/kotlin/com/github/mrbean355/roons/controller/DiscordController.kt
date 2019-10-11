@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.Date
 
 @RestController("/")
-class DiscordController @Autowired constructor(private val runesDiscordBot: RunesDiscordBot, private val appUserRepository: AppUserRepository, private val discordBotUserRepository: DiscordBotUserRepository, private val analytics: Analytics) {
+class DiscordController @Autowired constructor(private val runesDiscordBot: RunesDiscordBot, private val appUserRepository: AppUserRepository, private val discordBotUserRepository: DiscordBotUserRepository,
+                                               private val soundStore: SoundStore, private val analytics: Analytics) {
 
     @RequestMapping(method = [POST])
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
@@ -29,7 +30,7 @@ class DiscordController @Autowired constructor(private val runesDiscordBot: Rune
         }
         val user = discordBotUserRepository.findOneByToken(request.token)
                 ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-        return if (SoundStore.soundExists(request.soundFileName)) {
+        return if (soundStore.soundExists(request.soundFileName)) {
             runesDiscordBot.playSound(user.token, request.soundFileName)
             analytics.logEvent(request.userId, "sound_played_discord", request.soundFileName)
             ResponseEntity.ok().build()
