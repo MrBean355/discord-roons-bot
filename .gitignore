@@ -3,4 +3,3 @@
 build/
 out/
 local.properties
-**/tokens
