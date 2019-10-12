@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /** Current stable version of the client app. */
-private val LATEST_VERSION = Semver("1.5.1")
+private val LATEST_VERSION = Semver("1.6.1")
 
 @RestController
 @RequestMapping("/metadata")
