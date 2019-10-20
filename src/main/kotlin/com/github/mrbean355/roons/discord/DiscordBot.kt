@@ -66,12 +66,13 @@ class DiscordBot @Autowired constructor(private val discordBotUserRepository: Di
         guilds.forEach {
             builder.append(it.name).append(", ")
                     .append(it.members.size).append(" members, ")
-                    .append(it.region.name).append(", ")
+                    .append(it.region.getName()).append(", ")
             if (it.isConnected()) {
                 builder.append("in voice channel: ${it.audioManager.connectedChannel?.name}")
             } else {
                 builder.append("idle")
             }
+            builder.append('\n')
         }
         return builder.toString()
     }
