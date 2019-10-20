@@ -90,6 +90,11 @@ class DiscordBot @Autowired constructor(private val discordBotUserRepository: Di
         if (event.author.isBot || !event.isFromType(ChannelType.TEXT)) {
             return
         }
+        if (event.message.contentRaw.startsWith("!volume")) {
+            event.textChannel.typeMessage("The `!volume` command has been removed, sorry!\n" +
+                    "The volume can be adjusted by right-clicking the bot when it's in a voice channel.")
+            return
+        }
         when (event.message.contentRaw) {
             "!help" -> help(event)
             "!roons" -> join(event)
