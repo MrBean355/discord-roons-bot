@@ -30,3 +30,8 @@ data class AnalyticsEvent(
         @Column(columnDefinition = "TEXT") val eventData: String,
         val count: Int,
         @Temporal(TemporalType.TIMESTAMP) val lastOccurred: Date?)
+
+@Entity
+data class Metadata(
+        @Id val key: String,
+        val value: String)
