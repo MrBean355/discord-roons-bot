@@ -1,7 +1,5 @@
 package com.github.mrbean355.roons.component
 
-import org.slf4j.Logger
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.StringHttpMessageConverter
@@ -12,7 +10,7 @@ import java.io.FileOutputStream
 private const val PLAY_SOUNDS_URL = "http://chatbot.admiralbulldog.live/playsounds"
 
 @Component
-class PlaySounds @Autowired constructor(private val logger: Logger) {
+class PlaySounds {
 
     /** Scrape the PlaySounds web page and collect a list of sound file names and URLs. */
     fun listRemoteFiles(): List<RemoteSoundFile> {

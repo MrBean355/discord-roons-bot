@@ -1,32 +1,26 @@
 package com.github.mrbean355.roons.component
 
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
-import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
-import discord4j.core.DiscordClient
-import discord4j.core.DiscordClientBuilder
-import discord4j.core.`object`.presence.Activity
-import discord4j.core.`object`.presence.Presence
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.InjectionPoint
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.stereotype.Component
 
+/** Bean qualifier for injecting the `token` string. */
+const val TOKEN = "token"
+
 @Component
 object BeanProvider {
-    var token = ""
+    private var token = ""
 
-    @Bean
-    fun discordClient(): DiscordClient {
-        return DiscordClientBuilder(token)
-                .setInitialPresence(Presence.online(Activity.playing("Get the roons!")))
-                .build()
+    fun setToken(token: String) {
+        this.token = token
     }
 
     @Bean
-    fun audioPlayerManager(): AudioPlayerManager {
-        return DefaultAudioPlayerManager()
-    }
+    @Qualifier(TOKEN)
+    fun token() = token
 
     @Bean
     fun logger(injectionPoint: InjectionPoint): Logger {

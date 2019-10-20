@@ -3,22 +3,25 @@ package com.github.mrbean355.roons.controller
 import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.PlaySoundRequest
 import com.github.mrbean355.roons.component.Analytics
-import com.github.mrbean355.roons.discord.RunesDiscordBot
+import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
+import com.github.mrbean355.roons.repository.MetadataRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod.GET
 import org.springframework.web.bind.annotation.RequestMethod.POST
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.Date
 
 @RestController("/")
-class DiscordController @Autowired constructor(private val runesDiscordBot: RunesDiscordBot, private val appUserRepository: AppUserRepository, private val discordBotUserRepository: DiscordBotUserRepository,
-                                               private val soundStore: SoundStore, private val analytics: Analytics) {
+class DiscordController @Autowired constructor(private val discordBot: DiscordBot, private val appUserRepository: AppUserRepository, private val discordBotUserRepository: DiscordBotUserRepository,
+                                               private val metadataRepository: MetadataRepository, private val soundStore: SoundStore, private val analytics: Analytics) {
 
     @RequestMapping(method = [POST])
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
@@ -31,11 +34,25 @@ class DiscordController @Autowired constructor(private val runesDiscordBot: Rune
         val user = discordBotUserRepository.findOneByToken(request.token)
                 ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         return if (soundStore.soundExists(request.soundFileName)) {
-            runesDiscordBot.playSound(user.token, request.soundFileName)
+            discordBot.playSound(user.token, request.soundFileName)
             analytics.logEvent(request.userId, "sound_played_discord", request.soundFileName)
             ResponseEntity.ok().build()
         } else {
             ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         }
+    }
+
+    @RequestMapping("dumpStatus", method = [GET])
+    fun dumpStatus(@RequestParam("token") token: String): ResponseEntity<String> {
+        if (token.isBlank()) {
+            return ResponseEntity(HttpStatus.BAD_REQUEST)
+        }
+        val adminToken = metadataRepository.findByKey("admin_token")
+                ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+
+        if (adminToken.value != token) {
+            return ResponseEntity(HttpStatus.UNAUTHORIZED)
+        }
+        return ResponseEntity.ok(discordBot.dumpStatus())
     }
 }

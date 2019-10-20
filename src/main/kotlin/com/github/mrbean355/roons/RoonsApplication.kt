@@ -1,19 +1,17 @@
 package com.github.mrbean355.roons
 
 import com.github.mrbean355.roons.component.BeanProvider
-import com.github.mrbean355.roons.discord.RunesDiscordBot
+import com.github.mrbean355.roons.discord.DiscordBot
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.scheduling.annotation.EnableScheduling
 
+private const val ARG_TOKEN = "--bot.token"
+
 @SpringBootApplication
 @EnableScheduling
-class RoonsApplication @Autowired constructor(bot: RunesDiscordBot) {
-
-    init {
-        bot.startAsync()
-    }
+class RoonsApplication @Autowired constructor(@Suppress("unused") private val bot: DiscordBot) {
 
     companion object {
 
@@ -21,16 +19,17 @@ class RoonsApplication @Autowired constructor(bot: RunesDiscordBot) {
         fun main(args: Array<String>) {
             val botToken = getToken(args)
             if (botToken.isNullOrBlank()) {
-                println("Please pass in only the Discord bot's API token.")
+                println("Please pass in the Discord bot's API token with the '$ARG_TOKEN' parameter.\n" +
+                        "For example: java -jar app.jar $ARG_TOKEN=mytoken123")
                 return
             }
-            BeanProvider.token = botToken
+            BeanProvider.setToken(botToken)
             SpringApplication.run(RoonsApplication::class.java, *args)
         }
 
         private fun getToken(args: Array<String>): String? {
-            val arg = args.firstOrNull { it.startsWith("--bot.token=") } ?: return null
-            return arg.split("--bot.token=").getOrNull(1)
+            val arg = args.firstOrNull { it.startsWith("$ARG_TOKEN=") } ?: return null
+            return arg.split("$ARG_TOKEN=").getOrNull(1)
         }
     }
 }
