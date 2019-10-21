@@ -7,7 +7,7 @@ import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.scheduling.annotation.EnableScheduling
 
-private const val ARG_TOKEN = "--bot.token"
+private const val ENV_TOKEN = "DISCORD_API_TOKEN"
 
 @SpringBootApplication
 @EnableScheduling
@@ -17,19 +17,13 @@ class RoonsApplication @Autowired constructor(@Suppress("unused") private val bo
 
         @JvmStatic
         fun main(args: Array<String>) {
-            val botToken = getToken(args)
-            if (botToken.isNullOrBlank()) {
-                println("Please pass in the Discord bot's API token with the '$ARG_TOKEN' parameter.\n" +
-                        "For example: java -jar app.jar $ARG_TOKEN=mytoken123")
+            val apiToken = System.getenv(ENV_TOKEN)
+            if (apiToken.isNullOrBlank()) {
+                println("Please set the '$ENV_TOKEN' environment variable to the Discord bot's API token.")
                 return
             }
-            BeanProvider.setToken(botToken)
+            BeanProvider.setToken(apiToken)
             SpringApplication.run(RoonsApplication::class.java, *args)
-        }
-
-        private fun getToken(args: Array<String>): String? {
-            val arg = args.firstOrNull { it.startsWith("$ARG_TOKEN=") } ?: return null
-            return arg.split("$ARG_TOKEN=").getOrNull(1)
         }
     }
 }
