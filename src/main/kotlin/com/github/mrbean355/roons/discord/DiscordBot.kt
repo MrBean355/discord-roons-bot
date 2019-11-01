@@ -62,18 +62,20 @@ class DiscordBot @Autowired constructor(private val discordBotUserRepository: Di
     fun dumpStatus(): String {
         val builder = StringBuilder()
         val guilds = bot.guilds
-        builder.append("Currently in ${guilds.size} guilds:\n")
+        builder.append("Currently in ${guilds.size} guilds:<ul>")
         guilds.forEach {
-            builder.append(it.name).append(", ")
-                    .append(it.members.size).append(" members, ")
-                    .append(it.region.getName()).append(", ")
+            builder.append("<li>")
+                    .append(it.name).append(" | ")
+                    .append(it.members.size).append(" members | ")
+                    .append(it.region.getName()).append(" | ")
             if (it.isConnected()) {
                 builder.append("in voice channel: ${it.audioManager.connectedChannel?.name}")
             } else {
                 builder.append("idle")
             }
-            builder.append('\n')
+            builder.append("</li>")
         }
+        builder.append("</ul>")
         return builder.toString()
     }
 
