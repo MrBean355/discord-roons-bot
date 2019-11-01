@@ -48,14 +48,14 @@ class DiscordBot @Autowired constructor(private val discordBotUserRepository: Di
     }
 
     /** Try to play the given [soundFileName] in a guild. Determines the guild from the [token]. */
-    fun playSound(token: String, soundFileName: String) {
+    fun playSound(token: String, soundFileName: String): Boolean {
         val discordBotUser = discordBotUserRepository.findOneByToken(token)
         if (discordBotUser == null) {
             logger.error("Unknown token: $token")
-            return
+            return false
         }
-        val guild = bot.getGuildById(discordBotUser.guildId) ?: return
-        playSound(guild, soundStore.getFilePath(soundFileName))
+        val guild = bot.getGuildById(discordBotUser.guildId) ?: return false
+        return playSound(guild, soundStore.getFilePath(soundFileName))
     }
 
     /** Dump the current status for each joined guild. */
@@ -176,10 +176,10 @@ class DiscordBot @Autowired constructor(private val discordBotUserRepository: Di
         }
     }
 
-    private fun playSound(guild: Guild, filePath: String) {
+    private fun playSound(guild: Guild, filePath: String): Boolean {
         if (!guild.isConnected()) {
             logger.warn("Tried to play sound while not in voice channel.")
-            return
+            return false
         }
         val manager = getGuildAudioPlayer(guild)
         playerManager.loadItemOrdered(manager, filePath, object : AudioLoadResultHandler {
@@ -200,6 +200,7 @@ class DiscordBot @Autowired constructor(private val discordBotUserRepository: Di
                 logger.error("Failed to load track '$filePath': $exception")
             }
         })
+        return true
     }
 
     /** Sends a `message to `this` channel, after pretending to type. */

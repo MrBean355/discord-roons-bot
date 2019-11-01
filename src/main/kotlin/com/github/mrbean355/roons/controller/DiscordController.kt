@@ -34,9 +34,12 @@ class DiscordController @Autowired constructor(private val discordBot: DiscordBo
         val user = discordBotUserRepository.findOneByToken(request.token)
                 ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         return if (soundStore.soundExists(request.soundFileName)) {
-            discordBot.playSound(user.token, request.soundFileName)
-            analytics.logEvent(request.userId, "sound_played_discord", request.soundFileName)
-            ResponseEntity.ok().build()
+            if (discordBot.playSound(user.token, request.soundFileName)) {
+                analytics.logEvent(request.userId, "sound_played_discord", request.soundFileName)
+                ResponseEntity.ok().build()
+            } else {
+                ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build()
+            }
         } else {
             ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         }
