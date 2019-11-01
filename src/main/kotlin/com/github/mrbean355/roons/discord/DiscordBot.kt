@@ -177,6 +177,10 @@ class DiscordBot @Autowired constructor(private val discordBotUserRepository: Di
     }
 
     private fun playSound(guild: Guild, filePath: String) {
+        if (!guild.isConnected()) {
+            logger.warn("Tried to play sound while not in voice channel.")
+            return
+        }
         val manager = getGuildAudioPlayer(guild)
         playerManager.loadItemOrdered(manager, filePath, object : AudioLoadResultHandler {
 
