@@ -2,7 +2,6 @@ package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.PlaySoundRequest
-import com.github.mrbean355.roons.component.Analytics
 import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
@@ -20,8 +19,13 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.Date
 
 @RestController("/")
-class DiscordController @Autowired constructor(private val discordBot: DiscordBot, private val appUserRepository: AppUserRepository, private val discordBotUserRepository: DiscordBotUserRepository,
-                                               private val metadataRepository: MetadataRepository, private val soundStore: SoundStore, private val analytics: Analytics) {
+class DiscordController @Autowired constructor(
+        private val discordBot: DiscordBot,
+        private val appUserRepository: AppUserRepository,
+        private val discordBotUserRepository: DiscordBotUserRepository,
+        private val metadataRepository: MetadataRepository,
+        private val soundStore: SoundStore
+) {
 
     @RequestMapping(method = [POST])
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
@@ -35,7 +39,6 @@ class DiscordController @Autowired constructor(private val discordBot: DiscordBo
                 ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         return if (soundStore.soundExists(request.soundFileName)) {
             if (discordBot.playSound(user.token, request.soundFileName)) {
-                analytics.logEvent(request.userId, "sound_played_discord", request.soundFileName)
                 ResponseEntity.ok().build()
             } else {
                 ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build()
