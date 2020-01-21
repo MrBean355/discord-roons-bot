@@ -32,9 +32,12 @@ import javax.annotation.PreDestroy
 private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds/wiki/Discord-Bot"
 
 @Component
-class DiscordBot @Autowired constructor(private val discordBotUserRepository: DiscordBotUserRepository, private val soundStore: SoundStore,
-                                        private val logger: Logger, @Qualifier(TOKEN) private val token: String)
-    : ListenerAdapter() {
+class DiscordBot @Autowired constructor(
+        private val discordBotUserRepository: DiscordBotUserRepository,
+        private val soundStore: SoundStore,
+        private val logger: Logger,
+        @Qualifier(TOKEN) private val token: String
+) : ListenerAdapter() {
 
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
@@ -93,17 +96,39 @@ class DiscordBot @Autowired constructor(private val discordBotUserRepository: Di
         if (event.author.isBot || !event.isFromType(ChannelType.TEXT)) {
             return
         }
-        if (event.message.contentRaw.startsWith("!volume")) {
-            event.textChannel.typeMessage("The `!volume` command has been removed, sorry!\n" +
-                    "The volume can be adjusted by right-clicking the bot when it's in a voice channel.")
+        val message = event.message.contentRaw.trim()
+        if (message.startsWith("!volume")) {
+            volume(message, event)
             return
         }
-        when (event.message.contentRaw) {
+        when (message) {
             "!help" -> help(event)
             "!roons" -> join(event)
             "!seeya" -> leave(event)
             "!magic" -> magic(event)
         }
+    }
+
+    private fun volume(message: String, event: MessageReceivedEvent) {
+        val parts = message.split(' ').filter { it.isNotBlank() }
+        // Get the volume:
+        if (parts.size == 1) {
+            val volume = getGuildAudioPlayer(event.guild).getVolume()
+            event.channel.typeMessage("My volume is at ${volume}% :loud_sound:")
+            return
+        }
+        // Set the volume:
+        if (parts.size == 2) {
+            parts[1].toIntOrNull()?.coerceVolume()?.let { volume ->
+                getGuildAudioPlayer(event.guild).setVolume(volume)
+                event.channel.typeMessage("My volume has been set to ${volume}% :ok_hand:")
+                return
+            }
+        }
+        // Invalid command:
+        event.channel.typeMessage("I'm not sure what you meant :disappointed:\n" +
+                "Type `!volume` to check the volume level.\n" +
+                "Type `!volume 50` to set the volume to 50%.")
     }
 
     private fun help(event: MessageReceivedEvent) {
@@ -112,6 +137,8 @@ class DiscordBot @Autowired constructor(private val discordBotUserRepository: Di
                 "- `!roons` :arrow_right: join your current voice channel\n" +
                 "- `!seeya` :arrow_right: leave the current voice channel\n" +
                 "- `!magic` :arrow_right: send a private message with your magic number\n" +
+                "- `!volume` :arrow_right: show the current volume\n" +
+                "- `!volume x` :arrow_right: set the current volume to x% (example: `!volume 50`)\n" +
                 "\n" +
                 "For more info or to log a bug, please visit: $HELP_URL")
     }
