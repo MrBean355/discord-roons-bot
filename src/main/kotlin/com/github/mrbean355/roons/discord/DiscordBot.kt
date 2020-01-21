@@ -13,13 +13,15 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.OnlineStatus
-import net.dv8tion.jda.api.Permission.VOICE_CONNECT
-import net.dv8tion.jda.api.Permission.VOICE_SPEAK
+import net.dv8tion.jda.api.Permission.*
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageChannel
+import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.Logger
@@ -119,6 +121,17 @@ class DiscordBot @Autowired constructor(
             "!seeya" -> leave(event)
             "!magic" -> magic(event)
         }
+    }
+
+    override fun onGuildJoin(event: GuildJoinEvent) {
+        val channel = event.guild.findWelcomeChannel() ?: return
+        channel.typeMessage("""
+            **Hello, ${event.guild.name}!** :wave:
+            
+            Type `!roons` for me to join your current voice channel.
+            Type `!seeya` when you want me to leave the voice channel.
+            Type `!help` for more commands.
+        """.trimIndent())
     }
 
     private fun volume(message: String, event: MessageReceivedEvent) {
@@ -254,5 +267,24 @@ class DiscordBot @Autowired constructor(
     /** @return `true` if the bot is connected to a voice channel in `this` guild. */
     private fun Guild.isConnected(): Boolean {
         return audioManager.isConnected || audioManager.isAttemptingToConnect
+    }
+
+    /** @return the first (if any) [TextChannel] which the bot can read & write to. */
+    private fun Guild.findWelcomeChannel(): TextChannel? {
+        val self = selfMember
+        val defaultChannel = defaultChannel
+        if (defaultChannel != null) {
+            if (self.canReadAndWrite(defaultChannel)) {
+                return defaultChannel
+            }
+        }
+        return textChannels.firstOrNull {
+            self.canReadAndWrite(it)
+        }
+    }
+
+    /** @return `true` if this [Member] can read & write to the [channel]. */
+    private fun Member.canReadAndWrite(channel: TextChannel): Boolean {
+        return hasPermission(channel, MESSAGE_READ, MESSAGE_WRITE)
     }
 }
