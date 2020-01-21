@@ -64,19 +64,31 @@ class DiscordBot @Autowired constructor(
     /** Dump the current status for each joined guild. */
     fun dumpStatus(): String {
         val builder = StringBuilder()
-        val guilds = bot.guilds
-        builder.append("Currently in ${guilds.size} guilds:<ul>")
-        guilds.forEach {
+        val (activeGuilds, inactiveGuilds) = bot.guilds
+                .sortedBy { it.name }
+                .partition { it.isConnected() }
+
+        builder.append("<h1>In ${activeGuilds.size + inactiveGuilds.size} Total Guilds</h1>")
+        builder.append("<h2>Active Guilds</h2>")
+        builder.append("<ul>")
+        activeGuilds.forEach {
             builder.append("<li>")
                     .append(it.name).append(" | ")
-                    .append(it.members.size).append(" members | ")
+                    .append(it.memberCount).append(" members | ")
                     .append(it.region.getName()).append(" | ")
-            if (it.isConnected()) {
-                builder.append("in voice channel: ${it.audioManager.connectedChannel?.name}")
-            } else {
-                builder.append("idle")
-            }
-            builder.append("</li>")
+                    .append("in voice channel: ${it.audioManager.connectedChannel?.name}")
+                    .append("</li>")
+        }
+        builder.append("</ul>")
+
+        builder.append("<h2>Inactive Guilds</h2>")
+        builder.append("<ul>")
+        inactiveGuilds.forEach {
+            builder.append("<li>")
+                    .append(it.name).append(" | ")
+                    .append(it.memberCount).append(" members | ")
+                    .append(it.region.getName())
+                    .append("</li>")
         }
         builder.append("</ul>")
         return builder.toString()
