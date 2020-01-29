@@ -209,8 +209,8 @@ class DiscordBot @Autowired constructor(
         event.author.openPrivateChannel().queue {
             it.typeMessage("Here's your magic number: `${discordBotUser.token}`\n" +
                     "Please don't give this to anyone else!\n" +
-                    "Paste this into the app on this screen:\n" +
-                    "https://i.imgur.com/Ugh9yzG.png")
+                    "In the app, click \"Discord bot\" and tick the box to enable me.\n" +
+                    "Then paste your magic number in the text box.")
         }
     }
 
