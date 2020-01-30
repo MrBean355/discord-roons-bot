@@ -16,6 +16,12 @@ data class AppUser(
         @Temporal(TemporalType.TIMESTAMP) val lastSeen: Date?)
 
 @Entity
+data class DiscordBotSettings(
+        @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
+        val guildId: String,
+        var volume: Int)
+
+@Entity
 data class DiscordBotUser(
         @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
         val discordUserId: String,

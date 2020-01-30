@@ -2,6 +2,7 @@ package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.component.TOKEN
+import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
@@ -36,6 +37,7 @@ private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds
 @Component
 class DiscordBot @Autowired constructor(
         private val discordBotUserRepository: DiscordBotUserRepository,
+        private val discordBotSettingsRepository: DiscordBotSettingsRepository,
         private val soundStore: SoundStore,
         private val logger: Logger,
         @Qualifier(TOKEN) private val token: String
@@ -224,7 +226,7 @@ class DiscordBot @Autowired constructor(
     /** @return a guild-specific [GuildMusicManager]. */
     private fun getGuildAudioPlayer(guild: Guild): GuildMusicManager {
         return synchronized(this) {
-            val manager = musicManagers.getOrPut(guild.idLong) { GuildMusicManager(playerManager) }
+            val manager = musicManagers.getOrPut(guild.idLong) { GuildMusicManager(guild.id, playerManager, discordBotSettingsRepository) }
             guild.audioManager.sendingHandler = manager.getSendHandler()
             manager
         }

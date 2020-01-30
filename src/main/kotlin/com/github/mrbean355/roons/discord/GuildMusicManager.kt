@@ -1,17 +1,19 @@
 package com.github.mrbean355.roons.discord
 
+import com.github.mrbean355.roons.DiscordBotSettings
+import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 
 private const val DEFAULT_VOLUME = 25
 private const val MIN_VOLUME = 0
 private const val MAX_VOLUME = 100
 
-class GuildMusicManager(manager: AudioPlayerManager) {
+class GuildMusicManager(private val guildId: String, manager: AudioPlayerManager, private val discordBotSettingsRepository: DiscordBotSettingsRepository) {
     private val player = manager.createPlayer()
     val scheduler = TrackScheduler(player)
 
     init {
-        player.volume = DEFAULT_VOLUME
+        player.volume = loadSettings().volume
         player.addListener(scheduler)
     }
 
@@ -25,6 +27,18 @@ class GuildMusicManager(manager: AudioPlayerManager) {
 
     fun setVolume(volume: Int) {
         player.volume = volume
+        loadSettings().let {
+            it.volume = volume
+            discordBotSettingsRepository.save(it)
+        }
+    }
+
+    private fun loadSettings(): DiscordBotSettings {
+        val settings = discordBotSettingsRepository.findOneByGuildId(guildId)
+        if (settings != null) {
+            return settings
+        }
+        return discordBotSettingsRepository.save(DiscordBotSettings(0, guildId, DEFAULT_VOLUME))
     }
 }
 
