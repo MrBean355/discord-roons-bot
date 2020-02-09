@@ -108,6 +108,10 @@ class DiscordBot @Autowired constructor(
         }
     }
 
+    fun getGuildById(id: String): Guild? {
+        return bot.getGuildById(id)
+    }
+
     override fun onMessageReceived(event: MessageReceivedEvent) {
         if (event.author.isBot || !event.isFromType(ChannelType.TEXT)) {
             return

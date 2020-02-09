@@ -27,6 +27,17 @@ class DiscordController @Autowired constructor(
         private val soundStore: SoundStore
 ) {
 
+    @RequestMapping("lookupToken", method = [GET])
+    fun lookupToken(@RequestParam("token") token: String): ResponseEntity<String> {
+        val user = discordBotUserRepository.findOneByToken(token)
+                ?: return ResponseEntity.notFound().build()
+
+        val guild = discordBot.getGuildById(user.guildId)
+                ?: return ResponseEntity.notFound().build()
+
+        return ResponseEntity.ok(guild.name)
+    }
+
     @RequestMapping(method = [POST])
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
         val appUser = appUserRepository.findByGeneratedId(request.userId) ?: AppUser(0, request.userId, null)
