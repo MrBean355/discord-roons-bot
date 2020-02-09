@@ -7,6 +7,7 @@ import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
+import com.github.mrbean355.roons.repository.adminToken
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -64,10 +65,10 @@ class DiscordController @Autowired constructor(
         if (token.isBlank()) {
             return ResponseEntity(HttpStatus.BAD_REQUEST)
         }
-        val adminToken = metadataRepository.findByKey("admin_token")
+        val adminToken = metadataRepository.adminToken
                 ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
 
-        if (adminToken.value != token) {
+        if (adminToken != token) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         return ResponseEntity.ok(discordBot.dumpStatus())

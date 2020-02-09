@@ -40,5 +40,5 @@ data class AnalyticsEvent(
 
 @Entity
 data class Metadata(
-        @Id val key: String,
+        @Id @Column(name = "`key`") val key: String,
         val value: String)

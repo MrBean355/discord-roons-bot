@@ -4,7 +4,9 @@ import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.component.TOKEN
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
+import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.loadSettings
+import com.github.mrbean355.roons.repository.takeStartupMessage
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
@@ -23,6 +25,7 @@ import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.User
+import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
@@ -43,6 +46,7 @@ private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds
 class DiscordBot @Autowired constructor(
         private val discordBotUserRepository: DiscordBotUserRepository,
         private val discordBotSettingsRepository: DiscordBotSettingsRepository,
+        private val metadataRepository: MetadataRepository,
         private val soundStore: SoundStore,
         private val logger: Logger,
         @Qualifier(TOKEN) private val token: String
@@ -57,6 +61,18 @@ class DiscordBot @Autowired constructor(
 
     init {
         AudioSourceManagers.registerLocalSource(playerManager)
+    }
+
+    override fun onReady(event: ReadyEvent) {
+        val message = metadataRepository.takeStartupMessage()
+                ?.replace("\\n", "\n")
+                ?: return
+        if (message.isNotBlank()) {
+            logger.info("Sending startup message to ${bot.guilds.size} guilds:\n$message")
+            bot.guilds.forEach {
+                it.findWelcomeChannel()?.typeMessage(message)
+            }
+        }
     }
 
     /** Try to play the given [soundFileName] in a guild. Determines the guild from the [token]. */
