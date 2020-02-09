@@ -4,6 +4,7 @@ import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.component.TOKEN
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
+import com.github.mrbean355.roons.repository.loadSettings
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
@@ -23,6 +24,10 @@ import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
+import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.Logger
@@ -126,6 +131,8 @@ class DiscordBot @Autowired constructor(
             "!roons" -> join(event)
             "!seeya" -> leave(event)
             "!magic" -> magic(event)
+            "!follow" -> follow(event)
+            "!unfollow" -> unfollow(event)
         }
     }
 
@@ -136,8 +143,23 @@ class DiscordBot @Autowired constructor(
             
             Type `!roons` for me to join your current voice channel.
             Type `!seeya` when you want me to leave the voice channel.
+            Type `!follow` for me to follow you when you join & leave voice channels.
             Type `!help` for more commands.
         """.trimIndent())
+    }
+
+    override fun onGenericGuildVoice(event: GenericGuildVoiceEvent) {
+        if (event.member.user.isBot) {
+            return
+        }
+        val settings = discordBotSettingsRepository.findOneByGuildId(event.guild.id) ?: return
+        if (settings.followedUser == event.member.id) {
+            when (event) {
+                is GuildVoiceJoinEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
+                is GuildVoiceMoveEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
+                is GuildVoiceLeaveEvent -> event.guild.audioManager.closeAudioConnection()
+            }
+        }
     }
 
     private fun volume(message: String, event: MessageReceivedEvent) {
@@ -163,11 +185,14 @@ class DiscordBot @Autowired constructor(
     }
 
     private fun help(event: MessageReceivedEvent) {
-        event.channel.typeMessage("My available commands:\n" +
-                "- `!help` :arrow_right: this message\n" +
+        event.channel.typeMessage("**My available commands**\n" +
+                "\n" +
+                "- `!help` :arrow_right: send this message\n" +
                 "- `!roons` :arrow_right: join your current voice channel\n" +
                 "- `!seeya` :arrow_right: leave the current voice channel\n" +
                 "- `!magic` :arrow_right: send a private message with your magic number\n" +
+                "- `!follow` :arrow_right: follow you when you join & leave voice channels\n" +
+                "- `!unfollow` :arrow_right: stop following you\n" +
                 "- `!volume` :arrow_right: show the current volume\n" +
                 "- `!volume x` :arrow_right: set the current volume to x% (example: `!volume 50`)\n" +
                 "\n" +
@@ -218,6 +243,37 @@ class DiscordBot @Autowired constructor(
                     "In the app, click \"Discord bot\" and tick the box to enable me.\n" +
                     "Then paste your magic number in the text box.")
         }
+    }
+
+    private fun follow(event: MessageReceivedEvent) {
+        val settings = discordBotSettingsRepository.loadSettings(event.guild.id)
+        val followedUser = settings.followedUser
+        if (followedUser == event.author.id) {
+            event.textChannel.typeMessage("I'm already following ${event.author.asMention} :shrug:")
+            return
+        }
+        discordBotSettingsRepository.save(settings.copy(followedUser = event.author.id))
+        event.member?.voiceState?.channel?.let {
+            event.guild.audioManager.openAudioConnection(it)
+        }
+        val insteadOf = if (followedUser != null) {
+            val previousUser = bot.getUserById(followedUser)
+            "instead of ${previousUser?.asMention ?: "unknown"} "
+        } else ""
+        event.textChannel.typeMessage("I'm now following ${event.author.asMention} ${insteadOf}:ok_hand:\n" +
+                "Type `!unfollow` and I'll stop")
+    }
+
+    private fun unfollow(event: MessageReceivedEvent) {
+        val settings = discordBotSettingsRepository.loadSettings(event.guild.id)
+        val followedUser = settings.followedUser
+        if (followedUser == null) {
+            event.textChannel.typeMessage("I'm not following anyone :shrug:")
+            return
+        }
+        discordBotSettingsRepository.save(settings.copy(followedUser = null))
+        val user = bot.getUserById(followedUser) ?: return
+        event.textChannel.typeMessage("I've stopped following ${user.asMention} :ok_hand:")
     }
 
     private fun findOrCreateUser(user: User, guild: Guild): DiscordBotUser {

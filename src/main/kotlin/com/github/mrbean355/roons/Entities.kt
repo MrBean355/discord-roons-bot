@@ -19,7 +19,8 @@ data class AppUser(
 data class DiscordBotSettings(
         @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
         val guildId: String,
-        var volume: Int)
+        var volume: Int,
+        var followedUser: String?)
 
 @Entity
 data class DiscordBotUser(
