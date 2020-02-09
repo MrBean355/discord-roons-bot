@@ -7,6 +7,7 @@ import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
+import com.github.mrbean355.roons.repository.adminToken
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -26,6 +27,17 @@ class DiscordController @Autowired constructor(
         private val metadataRepository: MetadataRepository,
         private val soundStore: SoundStore
 ) {
+
+    @RequestMapping("lookupToken", method = [GET])
+    fun lookupToken(@RequestParam("token") token: String): ResponseEntity<String> {
+        val user = discordBotUserRepository.findOneByToken(token)
+                ?: return ResponseEntity.notFound().build()
+
+        val guild = discordBot.getGuildById(user.guildId)
+                ?: return ResponseEntity.notFound().build()
+
+        return ResponseEntity.ok(guild.name)
+    }
 
     @RequestMapping(method = [POST])
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
@@ -53,10 +65,10 @@ class DiscordController @Autowired constructor(
         if (token.isBlank()) {
             return ResponseEntity(HttpStatus.BAD_REQUEST)
         }
-        val adminToken = metadataRepository.findByKey("admin_token")
+        val adminToken = metadataRepository.adminToken
                 ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
 
-        if (adminToken.value != token) {
+        if (adminToken != token) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         return ResponseEntity.ok(discordBot.dumpStatus())
