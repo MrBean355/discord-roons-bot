@@ -96,7 +96,8 @@ class DiscordBot @Autowired constructor(
             return false
         }
         val guild = bot.getGuildById(discordBotUser.guildId) ?: return false
-        return playSound(guild, soundStore.getFilePath(soundFileName))
+        val file = soundStore.getFile(soundFileName) ?: return false
+        return playSound(guild, file.absolutePath)
     }
 
     /** Dump the current status for each joined guild. */

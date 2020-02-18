@@ -20,17 +20,23 @@ private val SPECIAL_SOUNDS = listOf("herewegoagain.mp3", "useyourmidas.wav", "we
 @Component
 class SoundStore @Autowired constructor(private val playSounds: PlaySounds, private val logger: Logger) {
 
-    /** @return the relative path on the system to the specified sound. */
-    fun getFilePath(soundFileName: String): String {
-        return "$SOUNDS_PATH/${soundFileName.trim()}"
+    /** @return names of all downloaded sounds. */
+    fun listAll(): List<String> {
+        return File(SOUNDS_PATH).list()?.toList().orEmpty()
+    }
+
+    /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
+    fun getFile(soundFileName: String): File? {
+        val file = File("$SOUNDS_PATH/${soundFileName.trim()}")
+        if (file.exists()) {
+            return file
+        }
+        return null
     }
 
     /** @return `true` if the sound file exists, `false` otherwise. */
     fun soundExists(soundFileName: String): Boolean {
-        if (soundFileName.isBlank()) {
-            return false
-        }
-        return File(getFilePath(soundFileName)).exists()
+        return getFile(soundFileName) != null
     }
 
     /**
@@ -39,7 +45,7 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
      * Deletes local sounds which don't exist remotely.
      * Scheduled for once per day.
      */
-    @Scheduled(fixedRate = 86_400_000)
+    @Scheduled(fixedRate = 3_600_000)
     fun synchroniseSounds() {
         logger.info("Synchronising sounds")
         val downloaded = AtomicInteger()
