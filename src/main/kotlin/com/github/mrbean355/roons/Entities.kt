@@ -20,7 +20,8 @@ data class DiscordBotSettings(
         @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
         val guildId: String,
         var volume: Int,
-        var followedUser: String?)
+        var followedUser: String?,
+        var lastChannel: String?)
 
 @Entity
 data class DiscordBotUser(
