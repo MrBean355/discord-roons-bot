@@ -64,13 +64,26 @@ class DiscordBot @Autowired constructor(
     }
 
     override fun onReady(event: ReadyEvent) {
+        // Show startup message if there is one:
         val message = metadataRepository.takeStartupMessage()
                 ?.replace("\\n", "\n")
-                ?: return
-        if (message.isNotBlank()) {
+
+        if (message != null && message.isNotBlank()) {
             logger.info("Sending startup message to ${bot.guilds.size} guilds:\n$message")
             bot.guilds.forEach {
                 it.findWelcomeChannel()?.typeMessage(message)
+            }
+        }
+
+        // Reconnect to previous voice channels:
+        discordBotSettingsRepository.findAll().forEach { settings ->
+            settings.lastChannel?.let { lastChannel ->
+                val guild = bot.getGuildById(settings.guildId)
+                val channel = guild?.getVoiceChannelById(lastChannel)
+                if (channel != null) {
+                    guild.audioManager.openAudioConnection(channel)
+                }
+                discordBotSettingsRepository.save(settings.copy(lastChannel = null))
             }
         }
     }
@@ -83,7 +96,8 @@ class DiscordBot @Autowired constructor(
             return false
         }
         val guild = bot.getGuildById(discordBotUser.guildId) ?: return false
-        return playSound(guild, soundStore.getFilePath(soundFileName))
+        val file = soundStore.getFile(soundFileName) ?: return false
+        return playSound(guild, file.absolutePath)
     }
 
     /** Dump the current status for each joined guild. */
@@ -125,6 +139,9 @@ class DiscordBot @Autowired constructor(
         bot.presence.setStatus(OnlineStatus.OFFLINE)
         bot.guilds.filter { it.isConnected() }.forEach {
             logger.info("Disconnecting from guild: ${it.name}.")
+            val settings = discordBotSettingsRepository.loadSettings(it.id)
+            val currentVoiceChannel = it.selfMember.voiceState?.channel?.id
+            discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
             it.audioManager.closeAudioConnection()
         }
     }

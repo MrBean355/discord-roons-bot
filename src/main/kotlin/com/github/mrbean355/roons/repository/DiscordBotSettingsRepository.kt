@@ -13,5 +13,5 @@ fun DiscordBotSettingsRepository.loadSettings(guildId: String): DiscordBotSettin
     if (settings != null) {
         return settings
     }
-    return save(DiscordBotSettings(0, guildId, DEFAULT_VOLUME, null))
+    return save(DiscordBotSettings(0, guildId, DEFAULT_VOLUME, null, null))
 }
