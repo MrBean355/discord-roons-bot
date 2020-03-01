@@ -10,6 +10,7 @@ import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /** Folder to store downloaded sounds in. */
@@ -22,9 +23,11 @@ private val SPECIAL_SOUNDS = listOf("herewegoagain.mp3", "useyourmidas.wav", "we
 @Component
 class SoundStore @Autowired constructor(private val playSounds: PlaySounds, private val logger: Logger) {
     private val fileChecksums = mutableMapOf<String, String>()
+    private val busySynchronising = AtomicBoolean(false)
 
     /** @return names of all downloaded sounds. */
     fun listAll(): Map<String, String> {
+        assertNotSynchronising()
         return File(SOUNDS_PATH).listFiles()?.toList().orEmpty().associateWith {
             fileChecksums.getOrPut(it.name) { it.checksum() }
         }.mapKeys { it.key.name }
@@ -32,16 +35,14 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
     fun getFile(soundFileName: String): File? {
-        val file = File("$SOUNDS_PATH/${soundFileName.trim()}")
-        if (file.exists()) {
-            return file
-        }
-        return null
+        assertNotSynchronising()
+        return getFileInternal(soundFileName)
     }
 
     /** @return `true` if the sound file exists, `false` otherwise. */
     fun soundExists(soundFileName: String): Boolean {
-        return getFile(soundFileName) != null
+        assertNotSynchronising()
+        return soundExistsInternal(soundFileName)
     }
 
     /**
@@ -52,28 +53,51 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
      */
     @Scheduled(fixedRate = 3_600_000)
     fun synchroniseSounds() {
-        logger.info("Synchronising sounds")
-        val downloaded = AtomicInteger()
-        val deleted = AtomicInteger()
-        val localFiles = getLocalFiles().toMutableList()
-        val remoteFiles = playSounds.listRemoteFiles()
+        busySynchronising.set(true)
+        try {
+            logger.info("Synchronising sounds")
+            val downloaded = AtomicInteger()
+            val deleted = AtomicInteger()
+            val localFiles = getLocalFiles().toMutableList()
+            val remoteFiles = playSounds.listRemoteFiles()
 
-        /* Download all remote files that don't exist locally. */
-        remoteFiles.forEach {
-            localFiles.remove(it.fileName)
-            if (!soundExists(it.fileName)) {
-                playSounds.downloadFile(it, SOUNDS_PATH)
-                downloaded.incrementAndGet()
-                logger.info("Downloaded: ${it.fileName}")
+            /* Download all remote files that don't exist locally. */
+            remoteFiles.forEach {
+                localFiles.remove(it.fileName)
+                if (!soundExistsInternal(it.fileName)) {
+                    playSounds.downloadFile(it, SOUNDS_PATH)
+                    downloaded.incrementAndGet()
+                    logger.info("Downloaded: ${it.fileName}")
+                }
             }
+            /* Delete local files that don't exist remotely. */
+            localFiles.forEach {
+                File("$SOUNDS_PATH/$it").delete()
+                deleted.incrementAndGet()
+                logger.info("Deleted old sound: $it")
+            }
+            copySpecialSounds()
+        } finally {
+            busySynchronising.set(false)
         }
-        /* Delete local files that don't exist remotely. */
-        localFiles.forEach {
-            File("$SOUNDS_PATH/$it").delete()
-            deleted.incrementAndGet()
-            logger.info("Deleted old sound: $it")
+    }
+
+    private fun assertNotSynchronising() {
+        check(!busySynchronising.get()) {
+            "Cannot get sound files while synchronising"
         }
-        copySpecialSounds()
+    }
+
+    private fun getFileInternal(soundFileName: String): File? {
+        val file = File("$SOUNDS_PATH/${soundFileName.trim()}")
+        if (file.exists()) {
+            return file
+        }
+        return null
+    }
+
+    private fun soundExistsInternal(soundFileName: String): Boolean {
+        return getFileInternal(soundFileName) != null
     }
 
     /** @return a list of local sounds (excluding special ones). */
