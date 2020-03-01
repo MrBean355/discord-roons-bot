@@ -15,7 +15,12 @@ import org.springframework.web.bind.annotation.RestController
 class SoundBiteController(private val soundStore: SoundStore) {
 
     @RequestMapping("list")
-    fun list(): ResponseEntity<List<String>> {
+    fun list(): ResponseEntity<Collection<String>> {
+        return ResponseEntity.ok(soundStore.listAll().keys)
+    }
+
+    @RequestMapping("listV2")
+    fun listV2(): ResponseEntity<Map<String, String>> {
         return ResponseEntity.ok(soundStore.listAll())
     }
 
