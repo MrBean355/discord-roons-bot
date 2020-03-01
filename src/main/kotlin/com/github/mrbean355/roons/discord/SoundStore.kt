@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
 /** Folder to store downloaded sounds in. */
@@ -52,14 +53,17 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
         val deleted = AtomicInteger()
         val localFiles = getLocalFiles().toMutableList()
         val remoteFiles = playSounds.listRemoteFiles()
+        val executorService = Executors.newFixedThreadPool(4)
 
         /* Download all remote files that don't exist locally. */
         remoteFiles.forEach {
-            localFiles.remove(it.fileName)
-            if (!soundExists(it.fileName)) {
-                playSounds.downloadFile(it, SOUNDS_PATH)
-                downloaded.incrementAndGet()
-                logger.info("Downloaded: ${it.fileName}")
+            executorService.execute {
+                localFiles.remove(it.fileName)
+                if (!soundExists(it.fileName)) {
+                    playSounds.downloadFile(it, SOUNDS_PATH)
+                    downloaded.incrementAndGet()
+                    logger.info("Downloaded: ${it.fileName}")
+                }
             }
         }
         /* Delete local files that don't exist remotely. */
