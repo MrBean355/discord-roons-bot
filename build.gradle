@@ -24,7 +24,7 @@ apply plugin: "kotlin-jpa"
 apply plugin: "org.springframework.boot"
 
 group 'com.github.mrbean355'
-version '1.5.2'
+version '1.6.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
