@@ -6,8 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.File
+import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicInteger
 
 /** Folder to store downloaded sounds in. */
@@ -19,10 +21,13 @@ private val SPECIAL_SOUNDS = listOf("herewegoagain.mp3", "useyourmidas.wav", "we
 
 @Component
 class SoundStore @Autowired constructor(private val playSounds: PlaySounds, private val logger: Logger) {
+    private val fileChecksums = mutableMapOf<String, String>()
 
     /** @return names of all downloaded sounds. */
-    fun listAll(): List<String> {
-        return File(SOUNDS_PATH).list()?.toList().orEmpty()
+    fun listAll(): Map<String, String> {
+        return File(SOUNDS_PATH).listFiles()?.toList().orEmpty().associateWith {
+            fileChecksums.getOrPut(it.name) { it.checksum() }
+        }.mapKeys { it.key.name }
     }
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
@@ -93,5 +98,16 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
                 }
             }
         }
+    }
+
+    private fun File.checksum(): String {
+        val messageDigest = MessageDigest.getInstance("SHA-512")
+        val result = messageDigest.digest(readBytes())
+        val convertedResult = BigInteger(1, result)
+        var hashText = convertedResult.toString(16)
+        while (hashText.length < 32) {
+            hashText = "0$hashText"
+        }
+        return hashText
     }
 }
