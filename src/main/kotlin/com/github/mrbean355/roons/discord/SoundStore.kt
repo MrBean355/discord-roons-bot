@@ -18,7 +18,7 @@ private const val SOUNDS_PATH = "sounds"
 /** Folder within resources where special sounds live. */
 private const val SPECIAL_SOUNDS_PATH = "special_sounds"
 /** Special sounds that don't exist on the PlaySounds page. */
-private val SPECIAL_SOUNDS = listOf("herewegoagain.mp3", "useyourmidas.wav", "wefuckinglost.wav")
+private val SPECIAL_SOUNDS = listOf("herewegoagain.mp3", "useyourmidas.mp3", "wefuckinglost.mp3")
 
 @Component
 class SoundStore @Autowired constructor(private val playSounds: PlaySounds, private val logger: Logger) {
