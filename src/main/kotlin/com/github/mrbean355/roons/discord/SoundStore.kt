@@ -1,6 +1,11 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.component.PlaySounds
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
@@ -10,24 +15,25 @@ import java.math.BigInteger
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.MessageDigest
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.ConcurrentLinkedQueue
 
 /** Folder to store downloaded sounds in. */
 private const val SOUNDS_PATH = "sounds"
+
 /** Folder within resources where special sounds live. */
 private const val SPECIAL_SOUNDS_PATH = "special_sounds"
+
 /** Special sounds that don't exist on the PlaySounds page. */
 private val SPECIAL_SOUNDS = listOf("herewegoagain.mp3", "useyourmidas.mp3", "wefuckinglost.mp3")
 
 @Component
 class SoundStore @Autowired constructor(private val playSounds: PlaySounds, private val logger: Logger) {
     private val fileChecksums = mutableMapOf<String, String>()
-    private val busySynchronising = AtomicBoolean(false)
+    private val mutex = Mutex()
 
     /** @return names of all downloaded sounds. */
     fun listAll(): Map<String, String> {
-        assertNotSynchronising()
+        waitForSynchronising()
         return File(SOUNDS_PATH).listFiles()?.toList().orEmpty().associateWith {
             fileChecksums.getOrPut(it.name) { it.checksum() }
         }.mapKeys { it.key.name }
@@ -35,13 +41,13 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
     fun getFile(soundFileName: String): File? {
-        assertNotSynchronising()
+        waitForSynchronising()
         return getFileInternal(soundFileName)
     }
 
     /** @return `true` if the sound file exists, `false` otherwise. */
     fun soundExists(soundFileName: String): Boolean {
-        assertNotSynchronising()
+        waitForSynchronising()
         return soundExistsInternal(soundFileName)
     }
 
@@ -49,42 +55,46 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
      * Sync our local sounds with the PlaySounds page.
      * Downloads sounds which don't exist locally.
      * Deletes local sounds which don't exist remotely.
-     * Scheduled for once per day.
+     * Scheduled for once per hour.
      */
     @Scheduled(fixedRate = 3_600_000)
-    fun synchroniseSounds() {
-        busySynchronising.set(true)
-        try {
-            logger.info("Synchronising sounds")
-            val downloaded = AtomicInteger()
-            val deleted = AtomicInteger()
-            val localFiles = getLocalFiles().toMutableList()
+    fun synchroniseSounds() = GlobalScope.launch {
+        mutex.withLock {
+            val localFiles = ConcurrentLinkedQueue(getLocalFiles())
             val remoteFiles = playSounds.listRemoteFiles()
-
-            /* Download all remote files that don't exist locally. */
-            remoteFiles.forEach {
-                localFiles.remove(it.fileName)
-                if (!soundExistsInternal(it.fileName)) {
-                    playSounds.downloadFile(it, SOUNDS_PATH)
-                    downloaded.incrementAndGet()
-                    logger.info("Downloaded: ${it.fileName}")
+            coroutineScope {
+                remoteFiles.forEach { remoteFile ->
+                    launch {
+                        val existsLocally = localFiles.remove(remoteFile.localFileName)
+                        if (!existsLocally) {
+                            playSounds.downloadFile(remoteFile, SOUNDS_PATH)
+                            logger.info("Downloaded: ${remoteFile.localFileName}")
+                        }
+                    }
                 }
             }
-            /* Delete local files that don't exist remotely. */
             localFiles.forEach {
                 File("$SOUNDS_PATH/$it").delete()
-                deleted.incrementAndGet()
                 logger.info("Deleted old sound: $it")
             }
             copySpecialSounds()
-        } finally {
-            busySynchronising.set(false)
+            logger.info("Done synchronising")
         }
     }
 
-    private fun assertNotSynchronising() {
-        check(!busySynchronising.get()) {
-            "Cannot get sound files while synchronising"
+    /**
+     * Wait for the [synchroniseSounds] method to finish downloading all sounds (max 10 seconds).
+     * We don't want to allow the app to check what sounds exist if we're still downloading them.
+     * Otherwise an incomplete list of sounds will be returned.
+     */
+    private fun waitForSynchronising() {
+        var attempts = 0
+        while (mutex.isLocked) {
+            Thread.sleep(100)
+            ++attempts
+            if (attempts >= 100) {
+                throw IllegalStateException("Waited too long sounds to synchronise")
+            }
         }
     }
 

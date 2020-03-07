@@ -1,8 +1,5 @@
 package com.github.mrbean355.roons.component
 
-import it.sauronsoftware.jave.AudioAttributes
-import it.sauronsoftware.jave.Encoder
-import it.sauronsoftware.jave.EncodingAttributes
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.StringHttpMessageConverter
@@ -14,7 +11,7 @@ import java.io.FileOutputStream
 private const val PLAY_SOUNDS_URL = "http://chatbot.admiralbulldog.live/playsounds"
 
 @Component
-class PlaySounds {
+class PlaySounds(private val soundBiteConverter: SoundBiteConverter) {
 
     /** Scrape the PlaySounds web page and collect a list of sound file names and URLs. */
     fun listRemoteFiles(): List<RemoteSoundFile> {
@@ -58,28 +55,11 @@ class PlaySounds {
         }
         output.close()
         stream.close()
-        convertToMp3(filePath)
+        soundBiteConverter.convert(File(filePath))
     }
 
-    private fun convertToMp3(filePath: String) {
-        val source = File(filePath)
-        val target = File(source.name + "_convert")
-        val attrs = EncodingAttributes().apply {
-            setFormat("mp3")
-            setAudioAttributes(AudioAttributes().apply {
-                setCodec("libmp3lame")
-                setBitRate(128000)
-                setChannels(2)
-                setSamplingRate(44100)
-            })
-        }
-        Encoder().apply {
-            encode(source, target, attrs)
-        }
-        source.delete()
-        target.renameTo(source)
+    data class RemoteSoundFile(val fileName: String, val url: String) {
+        val localFileName = fileName.substringBeforeLast('.') + ".mp3"
     }
-
-    data class RemoteSoundFile(val fileName: String, val url: String)
 }
 
