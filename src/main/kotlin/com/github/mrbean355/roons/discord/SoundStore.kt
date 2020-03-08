@@ -1,6 +1,7 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.component.PlaySounds
+import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -16,6 +17,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.CopyOnWriteArrayList
 
 /** Folder to store downloaded sounds in. */
 private const val SOUNDS_PATH = "sounds"
@@ -27,9 +29,10 @@ private const val SPECIAL_SOUNDS_PATH = "special_sounds"
 private val SPECIAL_SOUNDS = listOf("herewegoagain.mp3", "useyourmidas.mp3", "wefuckinglost.mp3")
 
 @Component
-class SoundStore @Autowired constructor(private val playSounds: PlaySounds, private val logger: Logger) {
+class SoundStore @Autowired constructor(private val playSounds: PlaySounds, private val telegramNotifier: TelegramNotifier, private val logger: Logger) {
     private val fileChecksums = mutableMapOf<String, String>()
     private val mutex = Mutex()
+    private var firstSync = true
 
     /** @return names of all downloaded sounds. */
     fun listAll(): Map<String, String> {
@@ -62,12 +65,15 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
         mutex.withLock {
             val localFiles = ConcurrentLinkedQueue(getLocalFiles())
             val remoteFiles = playSounds.listRemoteFiles()
+            val newFiles = CopyOnWriteArrayList<String>()
+
             coroutineScope {
                 remoteFiles.forEach { remoteFile ->
                     launch {
                         val existsLocally = localFiles.remove(remoteFile.localFileName)
                         if (!existsLocally) {
                             playSounds.downloadFile(remoteFile, SOUNDS_PATH)
+                            newFiles += remoteFile.fileName
                             logger.info("Downloaded: ${remoteFile.localFileName}")
                         }
                     }
@@ -79,6 +85,27 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
             }
             copySpecialSounds()
             logger.info("Done synchronising")
+            if (!firstSync) {
+                val message = buildString {
+                    if (newFiles.isNotEmpty()) {
+                        append("New sounds: $newFiles")
+                    }
+                    if (localFiles.isNotEmpty()) {
+                        if (isNotEmpty()) {
+                            append("\n")
+                        }
+                        append("Old sounds: $localFiles")
+                    }
+                    if (isNotEmpty()) {
+                        insert(0, "Synchronised sounds:\n")
+                    }
+                }
+                if (message.isNotEmpty()) {
+                    telegramNotifier.sendMessage(message)
+                }
+            } else {
+                firstSync = false
+            }
         }
     }
 

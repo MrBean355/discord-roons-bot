@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.scheduling.annotation.EnableScheduling
+import org.telegram.telegrambots.ApiContextInitializer
 
 private const val ENV_TOKEN = "DISCORD_API_TOKEN"
 
@@ -23,6 +24,7 @@ class RoonsApplication @Autowired constructor(@Suppress("unused") private val bo
                 return
             }
             BeanProvider.setToken(apiToken)
+            ApiContextInitializer.init()
             SpringApplication.run(RoonsApplication::class.java, *args)
         }
     }
