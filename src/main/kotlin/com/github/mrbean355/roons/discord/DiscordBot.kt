@@ -7,6 +7,7 @@ import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.loadSettings
 import com.github.mrbean355.roons.repository.takeStartupMessage
+import com.github.mrbean355.roons.telegram.TelegramNotifier
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager
@@ -27,6 +28,7 @@ import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
+import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
@@ -48,6 +50,7 @@ class DiscordBot @Autowired constructor(
         private val discordBotSettingsRepository: DiscordBotSettingsRepository,
         private val metadataRepository: MetadataRepository,
         private val soundStore: SoundStore,
+        private val telegramNotifier: TelegramNotifier,
         private val logger: Logger,
         @Qualifier(TOKEN) private val token: String
 ) : ListenerAdapter() {
@@ -75,6 +78,7 @@ class DiscordBot @Autowired constructor(
             }
         }
 
+        var reconnects = 0
         // Reconnect to previous voice channels:
         discordBotSettingsRepository.findAll().forEach { settings ->
             settings.lastChannel?.let { lastChannel ->
@@ -82,10 +86,13 @@ class DiscordBot @Autowired constructor(
                 val channel = guild?.getVoiceChannelById(lastChannel)
                 if (channel != null) {
                     guild.audioManager.openAudioConnection(channel)
+                    ++reconnects
                 }
                 discordBotSettingsRepository.save(settings.copy(lastChannel = null))
             }
         }
+
+        telegramNotifier.sendMessage("Started up!\nReconnected to $reconnects voice channels.")
     }
 
     /** Try to play the given [soundFileName] in a guild. Determines the guild from the [token]. */
@@ -104,7 +111,7 @@ class DiscordBot @Autowired constructor(
     fun dumpStatus(): String {
         val builder = StringBuilder()
         val (activeGuilds, inactiveGuilds) = bot.guilds
-                .sortedBy { it.name }
+                .sortedBy { it.name.toLowerCase() }
                 .partition { it.isConnected() }
 
         builder.append("<h1>In ${activeGuilds.size + inactiveGuilds.size} Total Guilds</h1>")
@@ -137,13 +144,15 @@ class DiscordBot @Autowired constructor(
     @PreDestroy
     fun onPreDestroy() {
         bot.presence.setStatus(OnlineStatus.OFFLINE)
-        bot.guilds.filter { it.isConnected() }.forEach {
-            logger.info("Disconnecting from guild: ${it.name}.")
-            val settings = discordBotSettingsRepository.loadSettings(it.id)
-            val currentVoiceChannel = it.selfMember.voiceState?.channel?.id
+        val connectedGuilds = bot.guilds.filter { it.isConnected() }
+        connectedGuilds.forEach { guild ->
+            logger.info("Disconnecting from guild: ${guild.name}.")
+            val settings = discordBotSettingsRepository.loadSettings(guild.id)
+            val currentVoiceChannel = guild.selfMember.voiceState?.channel?.id
             discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
-            it.audioManager.closeAudioConnection()
+            guild.audioManager.closeAudioConnection()
         }
+        telegramNotifier.sendMessage("Shutting down...\nDisconnected from ${connectedGuilds.size} voice channels.")
     }
 
     fun getGuildById(id: String): Guild? {
@@ -170,15 +179,27 @@ class DiscordBot @Autowired constructor(
     }
 
     override fun onGuildJoin(event: GuildJoinEvent) {
-        val channel = event.guild.findWelcomeChannel() ?: return
+        val guild = event.guild
+        telegramNotifier.sendMessage("""
+            Joined a new guild:
+            ${guild.name}
+            ${guild.region}
+            ${guild.memberCount} members
+        """.trimIndent())
+
+        val channel = guild.findWelcomeChannel() ?: return
         channel.typeMessage("""
-            **Hello, ${event.guild.name}!** :wave:
+            **Hello, ${guild.name}!** :wave:
             
             Type `!roons` for me to join your current voice channel.
             Type `!seeya` when you want me to leave the voice channel.
             Type `!follow` for me to follow you when you join & leave voice channels.
             Type `!help` for more commands.
         """.trimIndent())
+    }
+
+    override fun onGuildLeave(event: GuildLeaveEvent) {
+        telegramNotifier.sendMessage("Left a guild: ${event.guild.name}")
     }
 
     override fun onGenericGuildVoice(event: GenericGuildVoiceEvent) {
