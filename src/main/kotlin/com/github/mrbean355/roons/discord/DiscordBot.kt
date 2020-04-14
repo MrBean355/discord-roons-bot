@@ -92,7 +92,7 @@ class DiscordBot @Autowired constructor(
             }
         }
 
-        telegramNotifier.sendMessage("Started up!\nReconnected to $reconnects voice channels.")
+        telegramNotifier.sendMessage("⚙️ *Started up*:\nReconnected to *$reconnects* voice channels.")
     }
 
     /** Try to play the given [soundFileName] in a guild. Determines the guild from the [token]. */
@@ -152,7 +152,7 @@ class DiscordBot @Autowired constructor(
             discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
             guild.audioManager.closeAudioConnection()
         }
-        telegramNotifier.sendMessage("Shutting down...\nDisconnected from ${connectedGuilds.size} voice channels.")
+        telegramNotifier.sendMessage("⚙️ *Shutting down*:\nDisconnected from *${connectedGuilds.size}* voice channels.")
     }
 
     fun getGuildById(id: String): Guild? {
@@ -181,7 +181,7 @@ class DiscordBot @Autowired constructor(
     override fun onGuildJoin(event: GuildJoinEvent) {
         val guild = event.guild
         telegramNotifier.sendMessage("""
-            Joined a new guild:
+            🎉 *Joined a guild*:
             ${guild.name}
             ${guild.region}
             ${guild.memberCount} members
@@ -199,7 +199,7 @@ class DiscordBot @Autowired constructor(
     }
 
     override fun onGuildLeave(event: GuildLeaveEvent) {
-        telegramNotifier.sendMessage("Left a guild: ${event.guild.name}")
+        telegramNotifier.sendMessage("😔 *Left a guild*:\n${event.guild.name}")
     }
 
     override fun onGenericGuildVoice(event: GenericGuildVoiceEvent) {

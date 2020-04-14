@@ -9,7 +9,7 @@ class TelegramNotifier(private val bot: TelegramLongPollingBot) {
     private val chatId = System.getenv("TELEGRAM_CHAT").toLong()
 
     fun sendMessage(text: String) {
-        bot.execute(SendMessage(chatId, text))
+        bot.execute(SendMessage(chatId, text).enableMarkdown(true))
     }
 }
 

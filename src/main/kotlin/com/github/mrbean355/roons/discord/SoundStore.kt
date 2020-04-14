@@ -97,7 +97,7 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
                         append("Old sounds: $localFiles")
                     }
                     if (isNotEmpty()) {
-                        insert(0, "Synchronised sounds:\n")
+                        insert(0, "🔊 *Synchronised sounds*:\n")
                     }
                 }
                 if (message.isNotEmpty()) {
