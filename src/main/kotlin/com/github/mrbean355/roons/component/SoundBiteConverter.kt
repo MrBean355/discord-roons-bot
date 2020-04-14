@@ -1,23 +1,36 @@
 package com.github.mrbean355.roons.component
 
+import com.github.mrbean355.roons.telegram.TelegramNotifier
 import org.slf4j.Logger
 import org.springframework.stereotype.Component
 import java.io.File
 import java.util.concurrent.TimeUnit
 
+private const val UNIX_EXECUTABLE = "ffmpeg"
+private const val WINDOWS_EXECUTABLE = "ffmpeg.exe"
+
 /** Convert downloaded sound bites to a consistent MP3 format. */
 @Component
-class SoundBiteConverter(private val logger: Logger) {
+class SoundBiteConverter(private val logger: Logger, private val telegramNotifier: TelegramNotifier) {
+    private val isWindows = System.getProperty("os.name").contains("windows", ignoreCase = true)
     private val ffmpegPath: String
 
     init {
-        val isWindows = System.getProperty("os.name").contains("windows", ignoreCase = true)
-        ffmpegPath = if (isWindows) initWindows() else initUnix()
+        ffmpegPath = if (isWindows) {
+            // Assume that FFMPEG is added to the PATH.
+            // Windows is only used for dev, so we don't need to bundle the executable with the JAR.
+            WINDOWS_EXECUTABLE
+        } else {
+            val tempDir = File(System.getProperty("java.io.tmpdir"), "roons")
+            File(tempDir, UNIX_EXECUTABLE).absolutePath
+        }
+        ensureInstalled()
     }
 
     fun convert(victim: File) {
-        if (ffmpegPath.isBlank()) {
+        if (!ensureInstalled()) {
             logger.warn("Skipping MP3 conversion; FFMPEG not copied")
+            telegramNotifier.sendMessage("⚠️ Can't convert *${victim.name}*; FFMPEG not installed.")
             return
         }
         val victimPath = victim.absolutePath
@@ -28,6 +41,7 @@ class SoundBiteConverter(private val logger: Logger) {
         val exitCode = runCommand(ffmpegPath, "-i", victimPath, tempOutputFile.absolutePath)
         if (exitCode != 0) {
             logger.error("Failed to convert $victim, exited with: $exitCode")
+            telegramNotifier.sendMessage("⚠️ Can't convert *${victim.name}*; FFMPEG failed; code=$exitCode.")
             if (tempOutputFile.exists()) {
                 tempOutputFile.delete()
             }
@@ -37,18 +51,21 @@ class SoundBiteConverter(private val logger: Logger) {
         tempOutputFile.renameTo(File(parentDir, convertedName))
     }
 
-    /**
-     * On Windows we hope that FFMPEG is added to the current PATH.
-     * Windows is only used for dev, so we don't need to bundle the executable (reduces JAR size).
-     */
-    private fun initWindows() = "ffmpeg.exe"
+    private fun ensureInstalled(): Boolean {
+        if (isWindows || File(ffmpegPath).exists()) {
+            return true
+        }
+        return synchronized(this) {
+            File(ffmpegPath).exists() || installOnUnix()
+        }
+    }
 
     /**
      * On Unix, we copy the bundled executable to a temp directory.
      */
-    private fun initUnix(): String {
+    private fun installOnUnix(): Boolean {
         // Create temp FFMPEG directory
-        val dir = File(System.getProperty("java.io.tmpdir"), "roons")
+        val dir = File(ffmpegPath.substringBeforeLast(File.separatorChar))
         if (dir.exists()) {
             dir.deleteRecursively()
         }
@@ -56,7 +73,7 @@ class SoundBiteConverter(private val logger: Logger) {
         dir.deleteOnExit()
 
         // Copy FFMPEG executable
-        val exe = "ffmpeg"
+        val exe = ffmpegPath.substringAfterLast(File.separatorChar)
         val target = File(dir, exe)
         SoundBiteConverter::class.java.classLoader.getResourceAsStream(exe)?.use { input ->
             target.outputStream().use { output ->
@@ -66,13 +83,20 @@ class SoundBiteConverter(private val logger: Logger) {
 
         if (!target.exists()) {
             logger.error("Failed to copy '$exe' to: ${dir.absolutePath}")
-            return ""
+            telegramNotifier.sendMessage("⚠️ Failed to copy FFMPEG.")
+            return false
         }
 
         val ffmpegPath = target.absolutePath
         logger.info("Copied $exe to $ffmpegPath")
-        runCommand("/bin/chmod", "755", ffmpegPath)
-        return ffmpegPath
+        val exitCode = runCommand("/bin/chmod", "755", ffmpegPath)
+        return if (exitCode == 0) {
+            telegramNotifier.sendMessage("✔️ Successfully copied FFMPEG.")
+            true
+        } else {
+            telegramNotifier.sendMessage("⚠️ Couldn't make FFMPEG executable; code=*$exitCode*")
+            false
+        }
     }
 
     private fun runCommand(vararg arg: String): Int {
