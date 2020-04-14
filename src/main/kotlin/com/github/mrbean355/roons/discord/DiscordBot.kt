@@ -200,6 +200,9 @@ class DiscordBot @Autowired constructor(
 
     override fun onGuildLeave(event: GuildLeaveEvent) {
         telegramNotifier.sendMessage("😔 *Left a guild*:\n${event.guild.name}")
+        val guildId = event.guild.id
+        discordBotUserRepository.deleteByGuildId(guildId)
+        discordBotSettingsRepository.deleteByGuildId(guildId)
     }
 
     override fun onGenericGuildVoice(event: GenericGuildVoiceEvent) {
