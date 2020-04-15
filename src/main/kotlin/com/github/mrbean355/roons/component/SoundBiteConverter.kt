@@ -30,7 +30,7 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
     fun convert(victim: File) {
         if (!ensureInstalled()) {
             logger.warn("Skipping MP3 conversion; FFMPEG not copied")
-            telegramNotifier.sendMessage("⚠️ Can't convert *${victim.name}*; FFMPEG not installed.")
+            telegramNotifier.sendMessage("⚠️ Can't convert <b>${victim.name}</b>; FFMPEG not installed.")
             return
         }
         val victimPath = victim.absolutePath
@@ -41,7 +41,7 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
         val exitCode = runCommand(ffmpegPath, "-i", victimPath, tempOutputFile.absolutePath)
         if (exitCode != 0) {
             logger.error("Failed to convert $victim, exited with: $exitCode")
-            telegramNotifier.sendMessage("⚠️ Can't convert *${victim.name}*; FFMPEG failed; code=$exitCode.")
+            telegramNotifier.sendMessage("⚠️ Can't convert <b>${victim.name}</b>; FFMPEG failed; code=$exitCode.")
             if (tempOutputFile.exists()) {
                 tempOutputFile.delete()
             }
@@ -94,7 +94,7 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
             telegramNotifier.sendMessage("✔️ Successfully copied FFMPEG.")
             true
         } else {
-            telegramNotifier.sendMessage("⚠️ Couldn't make FFMPEG executable; code=*$exitCode*")
+            telegramNotifier.sendMessage("⚠️ Couldn't make FFMPEG executable; code=$exitCode")
             false
         }
     }
