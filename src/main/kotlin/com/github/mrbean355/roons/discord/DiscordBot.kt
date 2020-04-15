@@ -96,12 +96,7 @@ class DiscordBot @Autowired constructor(
     }
 
     /** Try to play the given [soundFileName] in a guild. Determines the guild from the [token]. */
-    fun playSound(token: String, soundFileName: String): Boolean {
-        val discordBotUser = discordBotUserRepository.findOneByToken(token)
-        if (discordBotUser == null) {
-            logger.error("Unknown token: $token")
-            return false
-        }
+    fun playSound(discordBotUser: DiscordBotUser, soundFileName: String): Boolean {
         val guild = bot.getGuildById(discordBotUser.guildId) ?: return false
         val file = soundStore.getFile(soundFileName) ?: return false
         return playSound(guild, file.absolutePath)
