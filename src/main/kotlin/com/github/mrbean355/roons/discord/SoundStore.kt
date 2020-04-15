@@ -37,9 +37,7 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
     /** @return names of all downloaded sounds. */
     fun listAll(): Map<String, String> {
         waitForSynchronising()
-        return File(SOUNDS_PATH).listFiles()?.toList().orEmpty().associateWith {
-            fileChecksums.getOrPut(it.name) { it.checksum() }
-        }.mapKeys { it.key.name }
+        return fileChecksums
     }
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
@@ -84,7 +82,14 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
                 logger.info("Deleted old sound: $it")
             }
             copySpecialSounds()
+
+            fileChecksums.clear()
+            fileChecksums += File(SOUNDS_PATH).listFiles()?.toList().orEmpty()
+                    .associateWith { it.checksum() }
+                    .mapKeys { it.key.name }
+
             logger.info("Done synchronising")
+
             if (!firstSync) {
                 val message = buildString {
                     if (newFiles.isNotEmpty()) {
