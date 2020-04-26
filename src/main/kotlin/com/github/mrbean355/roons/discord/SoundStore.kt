@@ -64,15 +64,21 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
             val localFiles = ConcurrentLinkedQueue(getLocalFiles())
             val remoteFiles = playSounds.listRemoteFiles()
             val newFiles = CopyOnWriteArrayList<String>()
+            val failedFiles = CopyOnWriteArrayList<String>()
 
             coroutineScope {
                 remoteFiles.forEach { remoteFile ->
                     launch {
                         val existsLocally = localFiles.remove(remoteFile.localFileName)
                         if (!existsLocally) {
-                            playSounds.downloadFile(remoteFile, SOUNDS_PATH)
-                            newFiles += remoteFile.fileName
-                            logger.info("Downloaded: ${remoteFile.localFileName}")
+                            try {
+                                playSounds.downloadFile(remoteFile, SOUNDS_PATH)
+                                newFiles += remoteFile.fileName
+                                logger.info("Downloaded: ${remoteFile.localFileName}")
+                            } catch (t: Throwable) {
+                                failedFiles += remoteFile.fileName
+                                logger.error("Failed to download $remoteFile", t)
+                            }
                         }
                     }
                 }
@@ -89,28 +95,34 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
                     .mapKeys { it.key.name }
 
             logger.info("Done synchronising")
+            sendTelegramNotification(newFiles, localFiles, failedFiles)
+            firstSync = false
+        }
+    }
 
-            if (!firstSync) {
-                val message = buildString {
-                    if (newFiles.isNotEmpty()) {
-                        append("New sounds: $newFiles")
-                    }
-                    if (localFiles.isNotEmpty()) {
-                        if (isNotEmpty()) {
-                            append("\n")
-                        }
-                        append("Old sounds: $localFiles")
-                    }
-                    if (isNotEmpty()) {
-                        insert(0, "🔊 <b>Synchronised sounds</b>:\n")
-                    }
-                }
-                if (message.isNotEmpty()) {
-                    telegramNotifier.sendMessage(message)
-                }
-            } else {
-                firstSync = false
+    private fun sendTelegramNotification(newFiles: Collection<String>, oldFiles: Collection<String>, failedFiles: Collection<String>) {
+        val message = buildString {
+            if (!firstSync && newFiles.isNotEmpty()) {
+                append("New sounds: $newFiles")
             }
+            if (!firstSync && oldFiles.isNotEmpty()) {
+                if (isNotEmpty()) {
+                    append("\n")
+                }
+                append("Old sounds: $oldFiles")
+            }
+            if (failedFiles.isNotEmpty()) {
+                if (isNotEmpty()) {
+                    append("\n")
+                }
+                append("Failed sounds: $failedFiles")
+            }
+            if (isNotEmpty()) {
+                insert(0, "🔊 <b>Synchronised sounds</b>:\n")
+            }
+        }
+        if (message.isNotEmpty()) {
+            telegramNotifier.sendMessage(message)
         }
     }
 
