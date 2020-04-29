@@ -23,14 +23,14 @@ class PlaySounds(private val soundBiteConverter: SoundBiteConverter) {
         if (response.statusCode != HttpStatus.OK || responseBody == null) {
             throw RuntimeException("Unable to download HTML, response=$response")
         }
-        val blocks = responseBody.split("<tr>")
-                .drop(2)
+
+        val blocks = responseBody.split("<div class=\"play-in-browser-wrapper\"")
+                .drop(1)
 
         return blocks.map { block ->
-            val friendlyName = block.split("<td>")[1].split("</td>").first()
-            val url = block.split("data-link=\"")[1].split("\"").first()
-            val fileExtension = url.substringAfterLast('.', missingDelimiterValue = "")
-            val fileName = "$friendlyName.$fileExtension"
+            val content = block.trim().substringBefore("</div>")
+            val url = content.split("data-link=\"")[1].substringBefore('\"')
+            val fileName = url.substringAfterLast('/')
             RemoteSoundFile(fileName, url)
         }
     }
