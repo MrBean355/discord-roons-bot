@@ -57,7 +57,7 @@ class DiscordBot @Autowired constructor(
 
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
-    private val bot: JDA = JDABuilder(token)
+    private val bot: JDA = JDABuilder.createDefault(token)
             .setActivity(Activity.playing("Get the roons!"))
             .addEventListeners(this)
             .build()
