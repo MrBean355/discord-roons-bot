@@ -70,7 +70,6 @@ class SoundStore @Autowired constructor(
             val localFiles = ConcurrentLinkedQueue(getLocalFiles())
             val remoteFiles = playSounds.listRemoteFiles()
             val newFiles = CopyOnWriteArrayList<String>()
-            val failedFiles = CopyOnWriteArrayList<String>()
 
             coroutineScope {
                 remoteFiles.forEach { remoteFile ->
@@ -82,7 +81,6 @@ class SoundStore @Autowired constructor(
                                 newFiles += remoteFile.fileName
                                 logger.info("Downloaded: ${remoteFile.localFileName}")
                             } catch (t: Throwable) {
-                                failedFiles += remoteFile.fileName
                                 logger.error("Failed to download $remoteFile", t)
                             }
                         }
@@ -101,7 +99,7 @@ class SoundStore @Autowired constructor(
                     .mapKeys { it.key.name }
 
             logger.info("Done synchronising")
-            sendTelegramNotification(newFiles, localFiles, failedFiles)
+            sendTelegramNotification(newFiles, localFiles)
         }
         if (!firstSync) {
             telegramNotifier.sendMessage("""
@@ -114,7 +112,7 @@ class SoundStore @Autowired constructor(
         firstSync = false
     }
 
-    private fun sendTelegramNotification(newFiles: Collection<String>, oldFiles: Collection<String>, failedFiles: Collection<String>) {
+    private fun sendTelegramNotification(newFiles: Collection<String>, oldFiles: Collection<String>) {
         val message = buildString {
             if (!firstSync && newFiles.isNotEmpty()) {
                 append("New sounds: $newFiles")
@@ -124,12 +122,6 @@ class SoundStore @Autowired constructor(
                     append("\n")
                 }
                 append("Old sounds: $oldFiles")
-            }
-            if (failedFiles.isNotEmpty()) {
-                if (isNotEmpty()) {
-                    append("\n")
-                }
-                append("Failed sounds: $failedFiles")
             }
             if (isNotEmpty()) {
                 insert(0, "🔊 <b>Synchronised sounds</b>:\n")
