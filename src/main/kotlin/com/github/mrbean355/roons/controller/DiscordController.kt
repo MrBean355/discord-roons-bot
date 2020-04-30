@@ -2,6 +2,7 @@ package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.PlaySoundRequest
+import com.github.mrbean355.roons.component.Statistics
 import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
@@ -25,7 +26,8 @@ class DiscordController @Autowired constructor(
         private val appUserRepository: AppUserRepository,
         private val discordBotUserRepository: DiscordBotUserRepository,
         private val metadataRepository: MetadataRepository,
-        private val soundStore: SoundStore
+        private val soundStore: SoundStore,
+        private val statistics: Statistics
 ) {
 
     @RequestMapping("lookupToken", method = [GET])
@@ -52,6 +54,7 @@ class DiscordController @Autowired constructor(
 
         return if (soundStore.soundExists(request.soundFileName)) {
             if (discordBot.playSound(user, request.soundFileName)) {
+                statistics.increment(Statistics.Type.DISCORD_SOUNDS)
                 ResponseEntity.ok().build()
             } else {
                 ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build()

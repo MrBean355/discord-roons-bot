@@ -1,6 +1,7 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.component.PlaySounds
+import com.github.mrbean355.roons.component.Statistics
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.coroutineScope
@@ -29,7 +30,12 @@ private const val SPECIAL_SOUNDS_PATH = "special_sounds"
 private val SPECIAL_SOUNDS = listOf("useyourmidas.mp3", "wefuckinglost.mp3")
 
 @Component
-class SoundStore @Autowired constructor(private val playSounds: PlaySounds, private val telegramNotifier: TelegramNotifier, private val logger: Logger) {
+class SoundStore @Autowired constructor(
+        private val playSounds: PlaySounds,
+        private val telegramNotifier: TelegramNotifier,
+        private val logger: Logger,
+        private val statistics: Statistics
+) {
     private val fileChecksums = mutableMapOf<String, String>()
     private val mutex = Mutex()
     private var firstSync = true
@@ -96,8 +102,16 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
 
             logger.info("Done synchronising")
             sendTelegramNotification(newFiles, localFiles, failedFiles)
-            firstSync = false
         }
+        if (!firstSync) {
+            telegramNotifier.sendMessage("""
+                📈 <b>Stats from the last hour</b>:
+                Discord sounds: ${statistics.take(Statistics.Type.DISCORD_SOUNDS)}
+                Discord commands: ${statistics.take(Statistics.Type.DISCORD_COMMANDS)}
+                New app users: ${statistics.take(Statistics.Type.NEW_USERS)}
+            """.trimIndent())
+        }
+        firstSync = false
     }
 
     private fun sendTelegramNotification(newFiles: Collection<String>, oldFiles: Collection<String>, failedFiles: Collection<String>) {
