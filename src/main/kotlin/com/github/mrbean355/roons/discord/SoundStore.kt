@@ -1,6 +1,7 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.component.PlaySounds
+import com.github.mrbean355.roons.component.Statistics
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.coroutineScope
@@ -26,10 +27,15 @@ private const val SOUNDS_PATH = "sounds"
 private const val SPECIAL_SOUNDS_PATH = "special_sounds"
 
 /** Special sounds that don't exist on the PlaySounds page. */
-private val SPECIAL_SOUNDS = listOf("useyourmidas.mp3", "weed.mp3", "wefuckinglost.mp3")
+private val SPECIAL_SOUNDS = listOf("useyourmidas.mp3", "wefuckinglost.mp3")
 
 @Component
-class SoundStore @Autowired constructor(private val playSounds: PlaySounds, private val telegramNotifier: TelegramNotifier, private val logger: Logger) {
+class SoundStore @Autowired constructor(
+        private val playSounds: PlaySounds,
+        private val telegramNotifier: TelegramNotifier,
+        private val logger: Logger,
+        private val statistics: Statistics
+) {
     private val fileChecksums = mutableMapOf<String, String>()
     private val mutex = Mutex()
     private var firstSync = true
@@ -64,7 +70,6 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
             val localFiles = ConcurrentLinkedQueue(getLocalFiles())
             val remoteFiles = playSounds.listRemoteFiles()
             val newFiles = CopyOnWriteArrayList<String>()
-            val failedFiles = CopyOnWriteArrayList<String>()
 
             coroutineScope {
                 remoteFiles.forEach { remoteFile ->
@@ -76,7 +81,6 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
                                 newFiles += remoteFile.fileName
                                 logger.info("Downloaded: ${remoteFile.localFileName}")
                             } catch (t: Throwable) {
-                                failedFiles += remoteFile.fileName
                                 logger.error("Failed to download $remoteFile", t)
                             }
                         }
@@ -95,12 +99,20 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
                     .mapKeys { it.key.name }
 
             logger.info("Done synchronising")
-            sendTelegramNotification(newFiles, localFiles, failedFiles)
-            firstSync = false
+            sendTelegramNotification(newFiles, localFiles)
         }
+        if (!firstSync) {
+            telegramNotifier.sendMessage("""
+                📈 <b>Stats from the last hour</b>:
+                Discord sounds: ${statistics.take(Statistics.Type.DISCORD_SOUNDS)}
+                Discord commands: ${statistics.take(Statistics.Type.DISCORD_COMMANDS)}
+                New app users: ${statistics.take(Statistics.Type.NEW_USERS)}
+            """.trimIndent())
+        }
+        firstSync = false
     }
 
-    private fun sendTelegramNotification(newFiles: Collection<String>, oldFiles: Collection<String>, failedFiles: Collection<String>) {
+    private fun sendTelegramNotification(newFiles: Collection<String>, oldFiles: Collection<String>) {
         val message = buildString {
             if (!firstSync && newFiles.isNotEmpty()) {
                 append("New sounds: $newFiles")
@@ -110,12 +122,6 @@ class SoundStore @Autowired constructor(private val playSounds: PlaySounds, priv
                     append("\n")
                 }
                 append("Old sounds: $oldFiles")
-            }
-            if (failedFiles.isNotEmpty()) {
-                if (isNotEmpty()) {
-                    append("\n")
-                }
-                append("Failed sounds: $failedFiles")
             }
             if (isNotEmpty()) {
                 insert(0, "🔊 <b>Synchronised sounds</b>:\n")

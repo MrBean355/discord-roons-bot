@@ -1,6 +1,7 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
+import com.github.mrbean355.roons.component.Statistics
 import com.github.mrbean355.roons.component.TOKEN
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
@@ -52,12 +53,13 @@ class DiscordBot @Autowired constructor(
         private val soundStore: SoundStore,
         private val telegramNotifier: TelegramNotifier,
         private val logger: Logger,
+        private val statistics: Statistics,
         @Qualifier(TOKEN) private val token: String
 ) : ListenerAdapter() {
 
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
-    private val bot: JDA = JDABuilder(token)
+    private val bot: JDA = JDABuilder.createDefault(token)
             .setActivity(Activity.playing("Get the roons!"))
             .addEventListeners(this)
             .build()
@@ -232,6 +234,7 @@ class DiscordBot @Autowired constructor(
     }
 
     private fun help(event: MessageReceivedEvent) {
+        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         event.channel.typeMessage("**My available commands**\n" +
                 "\n" +
                 "- `!help` :arrow_right: send this message\n" +
@@ -247,6 +250,7 @@ class DiscordBot @Autowired constructor(
     }
 
     private fun join(event: MessageReceivedEvent) {
+        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val channel = event.member?.voiceState?.channel
         if (channel == null) {
             event.textChannel.typeMessage("Please join a voice channel first, then type the command again.")
@@ -272,6 +276,7 @@ class DiscordBot @Autowired constructor(
     }
 
     private fun leave(event: MessageReceivedEvent) {
+        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val audioManager = event.guild.audioManager
         if (event.guild.isConnected()) {
             val channelName = audioManager.connectedChannel?.name
@@ -283,6 +288,7 @@ class DiscordBot @Autowired constructor(
     }
 
     private fun magic(event: MessageReceivedEvent) {
+        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val discordBotUser = findOrCreateUser(event.author, event.guild)
         event.author.openPrivateChannel().queue {
             it.typeMessage("Here's your magic number: `${discordBotUser.token}`\n" +
@@ -293,6 +299,7 @@ class DiscordBot @Autowired constructor(
     }
 
     private fun follow(event: MessageReceivedEvent) {
+        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val settings = discordBotSettingsRepository.loadSettings(event.guild.id)
         val followedUser = settings.followedUser
         if (followedUser == event.author.id) {
@@ -312,6 +319,7 @@ class DiscordBot @Autowired constructor(
     }
 
     private fun unfollow(event: MessageReceivedEvent) {
+        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val settings = discordBotSettingsRepository.loadSettings(event.guild.id)
         val followedUser = settings.followedUser
         if (followedUser == null) {
