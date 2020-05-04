@@ -18,6 +18,10 @@ class Statistics {
         return result
     }
 
+    fun isEmpty(): Boolean {
+        return stats.isEmpty()
+    }
+
     enum class Type {
         DISCORD_SOUNDS,
         DISCORD_COMMANDS,

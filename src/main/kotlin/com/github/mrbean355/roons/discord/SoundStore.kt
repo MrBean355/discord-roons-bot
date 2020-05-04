@@ -99,25 +99,33 @@ class SoundStore @Autowired constructor(
                     .mapKeys { it.key.name }
 
             logger.info("Done synchronising")
-            sendTelegramNotification(newFiles, localFiles)
+            if (firstSync) {
+                firstSync = false
+            } else {
+                sendTelegramNotification(newFiles, localFiles)
+            }
         }
-        if (!firstSync) {
-            telegramNotifier.sendMessage("""
-                📈 <b>Stats from the last hour</b>:
+    }
+
+    @Scheduled(fixedRate = 86_400_000)
+    fun sendStatisticsNotification() {
+        if (statistics.isEmpty()) {
+            return
+        }
+        telegramNotifier.sendMessage("""
+                📈 <b>Stats from the last day</b>:
                 Discord sounds: ${statistics.take(Statistics.Type.DISCORD_SOUNDS)}
                 Discord commands: ${statistics.take(Statistics.Type.DISCORD_COMMANDS)}
                 New app users: ${statistics.take(Statistics.Type.NEW_USERS)}
             """.trimIndent())
-        }
-        firstSync = false
     }
 
     private fun sendTelegramNotification(newFiles: Collection<String>, oldFiles: Collection<String>) {
         val message = buildString {
-            if (!firstSync && newFiles.isNotEmpty()) {
+            if (newFiles.isNotEmpty()) {
                 append("New sounds: $newFiles")
             }
-            if (!firstSync && oldFiles.isNotEmpty()) {
+            if (oldFiles.isNotEmpty()) {
                 if (isNotEmpty()) {
                     append("\n")
                 }
