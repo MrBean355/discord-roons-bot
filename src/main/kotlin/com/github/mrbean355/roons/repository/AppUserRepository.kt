@@ -9,3 +9,10 @@ interface AppUserRepository : CrudRepository<AppUser, Int> {
     fun findByGeneratedId(generatedId: String): AppUser?
     fun findByLastSeenAfter(date: Date): List<AppUser>
 }
+
+/** Update the user's last seen time to now. */
+fun AppUserRepository.updateLastSeen(userId: String) {
+    require(userId.isNotBlank())
+    val user = findByGeneratedId(userId) ?: AppUser(0, userId, null)
+    save(user.copy(lastSeen = Date()))
+}

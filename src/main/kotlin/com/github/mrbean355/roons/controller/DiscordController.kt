@@ -1,6 +1,5 @@
 package com.github.mrbean355.roons.controller
 
-import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.PlaySoundRequest
 import com.github.mrbean355.roons.component.Statistics
 import com.github.mrbean355.roons.discord.DiscordBot
@@ -9,6 +8,7 @@ import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
+import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMethod.GET
 import org.springframework.web.bind.annotation.RequestMethod.POST
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.util.Date
 
 @RestController("/")
 class DiscordController @Autowired constructor(
@@ -43,8 +42,7 @@ class DiscordController @Autowired constructor(
 
     @RequestMapping(method = [POST])
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
-        val appUser = appUserRepository.findByGeneratedId(request.userId) ?: AppUser(0, request.userId, null)
-        appUserRepository.save(appUser.copy(lastSeen = Date()))
+        appUserRepository.updateLastSeen(request.userId)
 
         if (request.token.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
