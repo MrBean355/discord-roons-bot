@@ -91,7 +91,6 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
         logger.info("Copied $exe to $ffmpegPath")
         val exitCode = runCommand("/bin/chmod", "755", ffmpegPath)
         return if (exitCode == 0) {
-            telegramNotifier.sendMessage("✔️ Successfully copied FFMPEG.")
             true
         } else {
             telegramNotifier.sendMessage("⚠️ Couldn't make FFMPEG executable; code=$exitCode")
