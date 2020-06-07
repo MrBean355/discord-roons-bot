@@ -123,26 +123,32 @@ class SoundStore @Autowired constructor(
     private fun sendTelegramNotification(newFiles: Collection<String>, changedFiles: Collection<String>, oldFiles: Collection<String>) {
         val message = buildString {
             if (newFiles.isNotEmpty()) {
-                append("New: ${newFiles.joinToString()}")
+                appendln("Added sounds:")
+                newFiles.forEach {
+                    appendln("- ${it.substringBeforeLast('.')}")
+                }
             }
             if (changedFiles.isNotEmpty()) {
                 if (isNotEmpty()) {
-                    append("\n")
+                    appendln()
                 }
-                append("Changed: ${changedFiles.joinToString()}")
+                appendln("Changed sounds:")
+                changedFiles.forEach {
+                    appendln("- ${it.substringBeforeLast('.')}")
+                }
             }
             if (oldFiles.isNotEmpty()) {
                 if (isNotEmpty()) {
-                    append("\n")
+                    appendln()
                 }
-                append("Old: ${oldFiles.joinToString()}")
-            }
-            if (isNotEmpty()) {
-                insert(0, "🔊 <b>Updated sound bites</b>:\n")
+                appendln("Removed sounds:")
+                oldFiles.forEach {
+                    appendln("- ${it.substringBeforeLast('.')}")
+                }
             }
         }
         if (message.isNotEmpty()) {
-            telegramNotifier.sendMessage(message)
+            telegramNotifier.sendChannelMessage("🔊 Play Sounds Updated 🔊\n\n$message")
         }
     }
 
