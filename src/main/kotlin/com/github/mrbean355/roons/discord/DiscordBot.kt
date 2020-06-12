@@ -98,10 +98,12 @@ class DiscordBot @Autowired constructor(
     }
 
     /** Try to play the given [soundFileName] in a guild. Determines the guild from the [token]. */
-    fun playSound(discordBotUser: DiscordBotUser, soundFileName: String): Boolean {
+    fun playSound(discordBotUser: DiscordBotUser, soundFileName: String, volume: Int, rate: Int): Boolean {
         val guild = bot.getGuildById(discordBotUser.guildId) ?: return false
         val file = soundStore.getFile(soundFileName) ?: return false
-        return playSound(guild, file.absolutePath)
+        val masterVolume = discordBotSettingsRepository.loadSettings(discordBotUser.guildId).volume
+        val finalVolume = (volume * masterVolume) / 100
+        return playSound(guild, file.absolutePath, finalVolume, rate)
     }
 
     /** Dump the current status for each joined guild. */
@@ -215,14 +217,14 @@ class DiscordBot @Autowired constructor(
         val parts = message.split(' ').filter { it.isNotBlank() }
         // Get the volume:
         if (parts.size == 1) {
-            val volume = getGuildAudioPlayer(event.guild).getVolume()
+            val volume = getGuildAudioPlayer(event.guild).getMasterVolume()
             event.channel.typeMessage("My volume is at ${volume}% :loud_sound:")
             return
         }
         // Set the volume:
         if (parts.size == 2) {
             parts[1].toIntOrNull()?.coerceVolume()?.let { volume ->
-                getGuildAudioPlayer(event.guild).setVolume(volume)
+                getGuildAudioPlayer(event.guild).setMasterVolume(volume)
                 event.channel.typeMessage("My volume has been set to ${volume}% :ok_hand:")
                 return
             }
@@ -347,7 +349,7 @@ class DiscordBot @Autowired constructor(
         }
     }
 
-    private fun playSound(guild: Guild, filePath: String): Boolean {
+    private fun playSound(guild: Guild, filePath: String, volume: Int, rate: Int): Boolean {
         if (!guild.isConnected()) {
             logger.warn("Tried to play sound while not in voice channel.")
             return false
@@ -356,7 +358,7 @@ class DiscordBot @Autowired constructor(
         playerManager.loadItemOrdered(manager, filePath, object : AudioLoadResultHandler {
 
             override fun trackLoaded(track: AudioTrack) {
-                manager.scheduler.queue(track)
+                manager.scheduler.queue(track, volume, rate)
             }
 
             override fun playlistLoaded(playlist: AudioPlaylist?) {

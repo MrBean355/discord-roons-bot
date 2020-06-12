@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.RequestMethod.POST
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+private const val DEFAULT_VOLUME = 100
+private const val DEFAULT_RATE = 100
+
 @RestController("/")
 class DiscordController @Autowired constructor(
         private val discordBot: DiscordBot,
@@ -51,7 +54,8 @@ class DiscordController @Autowired constructor(
                 ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
 
         return if (soundStore.soundExists(request.soundFileName)) {
-            if (discordBot.playSound(user, request.soundFileName)) {
+            if (discordBot.playSound(user, request.soundFileName, request.volume ?: DEFAULT_VOLUME, request.rate
+                            ?: DEFAULT_RATE)) {
                 statistics.increment(Statistics.Type.DISCORD_SOUNDS)
                 ResponseEntity.ok().build()
             } else {

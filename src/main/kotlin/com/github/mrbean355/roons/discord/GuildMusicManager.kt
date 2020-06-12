@@ -13,7 +13,6 @@ class GuildMusicManager(private val guildId: String, manager: AudioPlayerManager
     val scheduler = TrackScheduler(player)
 
     init {
-        player.volume = discordBotSettingsRepository.loadSettings(guildId).volume
         player.addListener(scheduler)
     }
 
@@ -21,12 +20,11 @@ class GuildMusicManager(private val guildId: String, manager: AudioPlayerManager
         return AudioPlayerSendHandler(player)
     }
 
-    fun getVolume(): Int {
-        return player.volume
+    fun getMasterVolume(): Int {
+        return discordBotSettingsRepository.loadSettings(guildId).volume
     }
 
-    fun setVolume(volume: Int) {
-        player.volume = volume
+    fun setMasterVolume(volume: Int) {
         discordBotSettingsRepository.loadSettings(guildId).let {
             it.volume = volume
             discordBotSettingsRepository.save(it)
