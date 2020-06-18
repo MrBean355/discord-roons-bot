@@ -104,10 +104,10 @@ class SoundStore @Autowired constructor(
         coroutineScope {
             playSounds.listRemoteFiles().forEach { remoteSoundFile ->
                 launch {
-                    try {
-                        playSounds.downloadFile(remoteSoundFile, soundsDirectory.dirName)
-                    } catch (t: Throwable) {
-                        logger.error("Failed to download $remoteSoundFile", t)
+                    if (!downloadSoundBite(remoteSoundFile, soundsDirectory)) {
+                        if (!copyFallbackFile(remoteSoundFile, soundsDirectory)) {
+                            telegramNotifier.sendMessage("⚠️ Failed to download ${remoteSoundFile.fileName}")
+                        }
                     }
                 }
             }
@@ -118,6 +118,44 @@ class SoundStore @Autowired constructor(
         return destination.listFiles()?.toList().orEmpty()
                 .associateWith { it.checksum() }
                 .mapKeys { it.key.name }
+    }
+
+    /**
+     * Download a [remoteSoundFile] and place it in the [soundsDirectory].
+     * Retries the download if it fails, a max of 5 times.
+     *
+     * @return `true` if the file was downloaded, `false` otherwise.
+     */
+    private fun downloadSoundBite(remoteSoundFile: PlaySounds.RemoteSoundFile, soundsDirectory: SoundsDirectory, attempts: Int = 5): Boolean {
+        return try {
+            playSounds.downloadFile(remoteSoundFile, soundsDirectory.dirName)
+            true
+        } catch (t: Throwable) {
+            logger.error("Failed to download $remoteSoundFile", t)
+            if (attempts > 0) {
+                logger.info("Retrying $remoteSoundFile")
+                downloadSoundBite(remoteSoundFile, soundsDirectory, attempts - 1)
+            } else {
+                false
+            }
+        }
+    }
+
+    /**
+     * Try to copy the local file from the alternate directory to the current one.
+     *
+     * @return `true` if the file was copied, `false` if no such file exists.
+     */
+    private fun copyFallbackFile(remoteSoundFile: PlaySounds.RemoteSoundFile, target: SoundsDirectory): Boolean {
+        val source = target.other()
+        val fallback = source.getSound(remoteSoundFile.localFileName)
+        return if (fallback == null) {
+            logger.error("No fallback for ${remoteSoundFile.fileName} in ${source.dirName}, giving up")
+            false
+        } else {
+            fallback.copyTo(File(target.dirName, remoteSoundFile.localFileName))
+            true
+        }
     }
 
     private fun sendTelegramNotification(newFiles: Collection<String>, changedFiles: Collection<String>, oldFiles: Collection<String>) {
