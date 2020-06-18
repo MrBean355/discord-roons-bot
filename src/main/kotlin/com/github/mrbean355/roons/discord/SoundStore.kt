@@ -1,7 +1,6 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.component.PlaySounds
-import com.github.mrbean355.roons.component.Statistics
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -29,8 +28,7 @@ private val SPECIAL_SOUNDS = listOf("useyourmidas.mp3", "wefuckinglost.mp3")
 class SoundStore @Autowired constructor(
         private val playSounds: PlaySounds,
         private val telegramNotifier: TelegramNotifier,
-        private val logger: Logger,
-        private val statistics: Statistics
+        private val logger: Logger
 ) {
     private val coroutineScope = CoroutineScope(IO + SupervisorJob())
     private var soundsDirectory = SoundsDirectory.PRIMARY
@@ -79,19 +77,6 @@ class SoundStore @Autowired constructor(
                     oldFiles = old.keys - new.keys
             )
         }
-    }
-
-    @Scheduled(fixedRateString = "P1D")
-    fun sendStatisticsNotification() {
-        if (statistics.isEmpty()) {
-            return
-        }
-        telegramNotifier.sendMessage("""
-                📈 <b>Stats from the last day</b>:
-                Discord sounds: ${statistics.take(Statistics.Type.DISCORD_SOUNDS)}
-                Discord commands: ${statistics.take(Statistics.Type.DISCORD_COMMANDS)}
-                New app users: ${statistics.take(Statistics.Type.NEW_USERS)}
-            """.trimIndent())
     }
 
     private suspend fun downloadAllSoundBites(soundsDirectory: SoundsDirectory): Map<String, String> {
