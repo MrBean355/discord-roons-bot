@@ -35,6 +35,7 @@ import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -74,7 +75,6 @@ class DiscordBot @Autowired constructor(
                 ?.replace("\\n", "\n")
 
         if (message != null && message.isNotBlank()) {
-            logger.info("Sending startup message to ${bot.guilds.size} guilds:\n$message")
             bot.guilds.forEach {
                 it.findWelcomeChannel()?.typeMessage(message)
             }
@@ -145,7 +145,6 @@ class DiscordBot @Autowired constructor(
         bot.presence.setStatus(OnlineStatus.OFFLINE)
         val connectedGuilds = bot.guilds.filter { it.isConnected() }
         connectedGuilds.forEach { guild ->
-            logger.info("Disconnecting from guild: ${guild.name}.")
             val settings = discordBotSettingsRepository.loadSettings(guild.id)
             val currentVoiceChannel = guild.selfMember.voiceState?.channel?.id
             discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
@@ -183,7 +182,7 @@ class DiscordBot @Autowired constructor(
 
         val channel = guild.findWelcomeChannel() ?: return
         channel.typeMessage("""
-            **Hello, ${guild.name}!** :wave:
+            **ALLO, ${guild.name}!** :wave:
             
             Type `!roons` for me to join your current voice channel.
             Type `!seeya` when you want me to leave the voice channel.
@@ -213,19 +212,26 @@ class DiscordBot @Autowired constructor(
         }
     }
 
+    override fun onPrivateMessageReceived(event: PrivateMessageReceivedEvent) {
+        if (event.author.isBot) {
+            return
+        }
+        event.message.channel.typeMessage(":no_entry: Please send me commands through a text channel in your server.")
+    }
+
     private fun volume(message: String, event: MessageReceivedEvent) {
         val parts = message.split(' ').filter { it.isNotBlank() }
         // Get the volume:
         if (parts.size == 1) {
             val volume = getGuildAudioPlayer(event.guild).getMasterVolume()
-            event.channel.typeMessage("My volume is at ${volume}% :loud_sound:")
+            event.channel.typeMessage("My volume is at `${volume}%` :loud_sound:")
             return
         }
         // Set the volume:
         if (parts.size == 2) {
             parts[1].toIntOrNull()?.coerceVolume()?.let { volume ->
                 getGuildAudioPlayer(event.guild).setMasterVolume(volume)
-                event.channel.typeMessage("My volume has been set to ${volume}% :ok_hand:")
+                event.channel.typeMessage("My volume has been set to `${volume}%` :ok_hand:")
                 return
             }
         }
@@ -293,11 +299,14 @@ class DiscordBot @Autowired constructor(
         statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val discordBotUser = findOrCreateUser(event.author, event.guild)
         event.author.openPrivateChannel().queue {
-            it.typeMessage("Here's your magic number: `${discordBotUser.token}`\n" +
-                    "Please don't give this to anyone else!\n" +
-                    "In the app, click \"Discord bot\" and tick the box to enable me.\n" +
-                    "Then paste your magic number in the text box.")
+            it.typeMessage("""
+                ALLO ${event.author.name}!
+                Here's your magic number for **${event.guild.name}**:
+                :point_right: `${discordBotUser.token}` :point_left:
+                *Don't share this with anyone!*
+            """.trimIndent())
         }
+        event.channel.typeMessage("Sent you a private message, ${event.author.asMention} :thumbsup:")
     }
 
     private fun follow(event: MessageReceivedEvent) {

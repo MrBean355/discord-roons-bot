@@ -6,6 +6,8 @@ import javax.persistence.Entity
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType.IDENTITY
 import javax.persistence.Id
+import javax.persistence.JoinColumn
+import javax.persistence.ManyToOne
 import javax.persistence.Temporal
 import javax.persistence.TemporalType
 
@@ -13,7 +15,8 @@ import javax.persistence.TemporalType
 data class AppUser(
         @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
         val generatedId: String,
-        @Temporal(TemporalType.TIMESTAMP) val lastSeen: Date?)
+        @Temporal(TemporalType.TIMESTAMP) val lastSeen: Date?
+)
 
 @Entity
 data class DiscordBotSettings(
@@ -21,14 +24,16 @@ data class DiscordBotSettings(
         val guildId: String,
         var volume: Int,
         var followedUser: String?,
-        var lastChannel: String?)
+        var lastChannel: String?
+)
 
 @Entity
 data class DiscordBotUser(
         @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
         val discordUserId: String,
         val guildId: String,
-        val token: String)
+        val token: String
+)
 
 @Entity
 data class AnalyticsEvent(
@@ -37,9 +42,19 @@ data class AnalyticsEvent(
         val eventType: String,
         @Column(columnDefinition = "TEXT") val eventData: String,
         val count: Int,
-        @Temporal(TemporalType.TIMESTAMP) val lastOccurred: Date?)
+        @Temporal(TemporalType.TIMESTAMP) val lastOccurred: Date?
+)
+
+@Entity
+data class AnalyticsProperty(
+        @Id @GeneratedValue(strategy = IDENTITY) val id: Int,
+        @ManyToOne @JoinColumn(referencedColumnName = "id") val user: AppUser,
+        val property: String,
+        @Column(columnDefinition = "TEXT") val value: String
+)
 
 @Entity
 data class Metadata(
         @Id @Column(name = "`key`") val key: String,
-        val value: String)
+        val value: String
+)
