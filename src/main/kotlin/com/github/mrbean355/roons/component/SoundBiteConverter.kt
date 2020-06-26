@@ -45,7 +45,7 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
             if (tempOutputFile.exists()) {
                 tempOutputFile.delete()
             }
-            return
+            throw IllegalStateException("Failed to convert $victim, exited with: $exitCode")
         }
         victim.delete()
         tempOutputFile.renameTo(File(parentDir, convertedName))
