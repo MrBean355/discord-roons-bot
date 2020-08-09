@@ -394,7 +394,7 @@ class DiscordBot @Autowired constructor(
 
     /** @return `true` if the bot is connected to a voice channel in `this` guild. */
     private fun Guild.isConnected(): Boolean {
-        return audioManager.isConnected || audioManager.isAttemptingToConnect
+        return audioManager.isConnected
     }
 
     /** @return the first (if any) [TextChannel] which the bot can read & write to. */

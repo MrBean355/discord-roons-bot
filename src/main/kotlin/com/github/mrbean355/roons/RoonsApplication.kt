@@ -1,8 +1,6 @@
 package com.github.mrbean355.roons
 
 import com.github.mrbean355.roons.component.BeanProvider
-import com.github.mrbean355.roons.discord.DiscordBot
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.scheduling.annotation.EnableScheduling
@@ -12,7 +10,7 @@ private const val ENV_TOKEN = "DISCORD_API_TOKEN"
 
 @SpringBootApplication
 @EnableScheduling
-class RoonsApplication @Autowired constructor(@Suppress("unused") private val bot: DiscordBot) {
+class RoonsApplication {
 
     companion object {
 
