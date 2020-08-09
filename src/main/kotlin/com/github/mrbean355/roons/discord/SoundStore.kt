@@ -91,7 +91,7 @@ class SoundStore @Autowired constructor(
                 launch {
                     if (!downloadSoundBite(remoteSoundFile, soundsDirectory)) {
                         if (!copyFallbackFile(remoteSoundFile, soundsDirectory)) {
-                            telegramNotifier.sendMessage("⚠️ Failed to download ${remoteSoundFile.fileName}")
+                            telegramNotifier.sendMessage("⚠️ Failed to download ${remoteSoundFile.name}")
                         }
                     }
                 }
@@ -133,12 +133,12 @@ class SoundStore @Autowired constructor(
      */
     private fun copyFallbackFile(remoteSoundFile: PlaySounds.RemoteSoundFile, target: SoundsDirectory): Boolean {
         val source = target.other()
-        val fallback = source.getSound(remoteSoundFile.localFileName)
+        val fallback = source.getSound(remoteSoundFile.fileName)
         return if (fallback == null) {
-            logger.error("No fallback for ${remoteSoundFile.fileName} in ${source.dirName}, giving up")
+            logger.error("No fallback for ${remoteSoundFile.name} in ${source.dirName}, giving up")
             false
         } else {
-            fallback.copyTo(File(target.dirName, remoteSoundFile.localFileName))
+            fallback.copyTo(File(target.dirName, remoteSoundFile.fileName))
             true
         }
     }

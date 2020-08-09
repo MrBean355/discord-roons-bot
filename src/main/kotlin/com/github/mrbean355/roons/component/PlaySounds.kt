@@ -29,9 +29,10 @@ class PlaySounds(private val soundBiteConverter: SoundBiteConverter) {
 
         return blocks.map { block ->
             val content = block.trim().substringBefore("</div>")
-            val url = content.split("data-link=\"")[1].substringBefore('\"')
-            val fileName = url.substringAfterLast('/')
-            RemoteSoundFile(fileName, url)
+            RemoteSoundFile(
+                    name = content.split("data-name=\"")[1].substringBefore('\"'),
+                    url = content.split("data-link=\"")[1].substringBefore('\"')
+            )
         }
     }
 
@@ -42,7 +43,7 @@ class PlaySounds(private val soundBiteConverter: SoundBiteConverter) {
         if (response.statusCode != HttpStatus.OK || responseBody == null) {
             throw RuntimeException("Unable to download $file, response=$response")
         }
-        val filePath = "$destination/${file.fileName}"
+        val filePath = "$destination/${file.name}"
         val stream = responseBody.inputStream()
         val output = FileOutputStream(filePath)
         val buffer = ByteArray(4096)
@@ -58,8 +59,8 @@ class PlaySounds(private val soundBiteConverter: SoundBiteConverter) {
         soundBiteConverter.convert(File(filePath))
     }
 
-    data class RemoteSoundFile(val fileName: String, val url: String) {
-        val localFileName = fileName.substringBeforeLast('.') + ".mp3"
+    data class RemoteSoundFile(val name: String, val url: String) {
+        val fileName = "$name.mp3"
     }
 }
 
