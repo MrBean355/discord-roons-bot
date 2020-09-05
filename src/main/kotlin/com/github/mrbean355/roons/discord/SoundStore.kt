@@ -7,7 +7,6 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
@@ -146,27 +145,27 @@ class SoundStore @Autowired constructor(
     private fun sendTelegramNotification(newFiles: Collection<String>, changedFiles: Collection<String>, oldFiles: Collection<String>) {
         val message = buildString {
             if (newFiles.isNotEmpty()) {
-                appendln("Added sounds:")
+                appendLine("Added sounds:")
                 newFiles.forEach {
-                    appendln("- ${it.substringBeforeLast('.')}")
+                    appendLine("- ${it.substringBeforeLast('.')}")
                 }
             }
             if (changedFiles.isNotEmpty()) {
                 if (isNotEmpty()) {
-                    appendln()
+                    appendLine()
                 }
-                appendln("Changed sounds:")
+                appendLine("Changed sounds:")
                 changedFiles.forEach {
-                    appendln("- ${it.substringBeforeLast('.')}")
+                    appendLine("- ${it.substringBeforeLast('.')}")
                 }
             }
             if (oldFiles.isNotEmpty()) {
                 if (isNotEmpty()) {
-                    appendln()
+                    appendLine()
                 }
-                appendln("Removed sounds:")
+                appendLine("Removed sounds:")
                 oldFiles.forEach {
-                    appendln("- ${it.substringBeforeLast('.')}")
+                    appendLine("- ${it.substringBeforeLast('.')}")
                 }
             }
         }
