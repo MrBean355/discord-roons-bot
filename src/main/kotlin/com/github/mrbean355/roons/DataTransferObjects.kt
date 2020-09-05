@@ -15,3 +15,9 @@ data class PlaySoundRequest(
         /** Only present from app 1.10.0 */
         val rate: Int?
 )
+
+data class StatisticsResponse(
+        val recentUsers: Int,
+        val dailyUsers: Int,
+        val properties: Map<String, Map<String, Int>>
+)
