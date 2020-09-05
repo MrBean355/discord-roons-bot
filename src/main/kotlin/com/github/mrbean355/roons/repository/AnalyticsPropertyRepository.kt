@@ -8,4 +8,6 @@ interface AnalyticsPropertyRepository : CrudRepository<AnalyticsProperty, Int> {
 
     fun findByUserAndPropertyIn(user: AppUser, properties: List<String>): List<AnalyticsProperty>
 
+    fun findByProperty(property: String): List<AnalyticsProperty>
+
 }
