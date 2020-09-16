@@ -13,16 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.File
-import java.io.FileOutputStream
 import java.math.BigInteger
 import java.security.MessageDigest
 import javax.annotation.PostConstruct
-
-/** Folder within resources where special sounds live. */
-private const val SPECIAL_SOUNDS_PATH = "special_sounds"
-
-/** Special sounds that don't exist on the PlaySounds page. */
-private val SPECIAL_SOUNDS = listOf("useyourmidas.mp3", "wefuckinglost.mp3")
 
 @Component
 class SoundStore @Autowired constructor(
@@ -98,8 +91,6 @@ class SoundStore @Autowired constructor(
             }
         }
 
-        copySpecialSounds(soundsDirectory)
-
         return destination.listFiles()?.toList().orEmpty()
                 .associateWith { it.checksum() }
                 .mapKeys { it.key.name }
@@ -172,21 +163,6 @@ class SoundStore @Autowired constructor(
         }
         if (message.isNotEmpty()) {
             telegramNotifier.sendChannelMessage("🔊 Play Sounds Updated 🔊\n\n$message")
-        }
-    }
-
-    /** Copy special sounds from resources to the destination folder. */
-    private fun copySpecialSounds(soundsDirectory: SoundsDirectory) {
-        SPECIAL_SOUNDS.forEach { sound ->
-            if (soundsDirectory.getSound(sound) == null) {
-                SoundStore::class.java.classLoader.getResourceAsStream("$SPECIAL_SOUNDS_PATH/$sound")?.use { input ->
-                    FileOutputStream(File(soundsDirectory.dirName, sound)).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-            } else {
-                logger.warn("Sound already exists; not copying special sound: $sound")
-            }
         }
     }
 
