@@ -80,7 +80,7 @@ class SoundStore @Autowired constructor(
         destination.mkdirs()
 
         coroutineScope {
-            playSounds.listRemoteFiles().forEach { remoteSoundFile ->
+            listRemoteSoundBites().forEach { remoteSoundFile ->
                 launch {
                     if (!downloadSoundBite(remoteSoundFile, soundsDirectory)) {
                         if (!copyFallbackFile(remoteSoundFile, soundsDirectory)) {
@@ -94,6 +94,24 @@ class SoundStore @Autowired constructor(
         return destination.listFiles()?.toList().orEmpty()
                 .associateWith { it.checksum() }
                 .mapKeys { it.key.name }
+    }
+
+    /**
+     * Fetch a list of the sounds that exist on the PlaySounds page.
+     * Retries the operation if it fails, a max of 5 times.
+     */
+    private fun listRemoteSoundBites(attempts: Int = 5): List<PlaySounds.RemoteSoundFile> {
+        return try {
+            playSounds.listRemoteFiles()
+        } catch (t: Throwable) {
+            logger.error("Failed to list remote sounds", t)
+            if (attempts > 0) {
+                logger.info("Retrying")
+                listRemoteSoundBites(attempts - 1)
+            } else {
+                throw t
+            }
+        }
     }
 
     /**
