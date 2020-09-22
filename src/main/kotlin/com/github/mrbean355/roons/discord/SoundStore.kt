@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.File
@@ -27,8 +28,19 @@ class SoundStore @Autowired constructor(
     private var soundsDirectory = SoundsDirectory.PRIMARY
     private var fileChecksums: Map<String, String> = emptyMap()
 
+    @Value("\${roons.soundBites.skipFirstDownload:false}")
+    private var skipFirstDownload: Boolean = false
+
     @PostConstruct
     fun onPostConstruct() {
+        if (skipFirstDownload) {
+            fileChecksums = File(soundsDirectory.dirName).listFiles().orEmpty().associate {
+                it.name to it.checksum()
+            }
+            if (fileChecksums.isNotEmpty()) {
+                return
+            }
+        }
         runBlocking {
             coroutineScope.launch {
                 fileChecksums = downloadAllSoundBites(soundsDirectory)
