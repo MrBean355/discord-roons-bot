@@ -1,5 +1,6 @@
 package com.github.mrbean355.roons.controller
 
+import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
 import org.springframework.beans.factory.annotation.Autowired
@@ -14,7 +15,11 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/metadata")
-class MetadataController @Autowired constructor(private val metadataRepository: MetadataRepository, private val context: ApplicationContext) {
+class MetadataController @Autowired constructor(
+        private val metadataRepository: MetadataRepository,
+        private val context: ApplicationContext,
+        private val discordBot: DiscordBot
+) {
 
     @RequestMapping("laterVersion", method = [GET])
     fun hasLaterVersion(@RequestParam("version") version: String): ResponseEntity<Boolean> {
@@ -35,6 +40,7 @@ class MetadataController @Autowired constructor(private val metadataRepository: 
         if (adminToken != token) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
+        discordBot.shutdown()
         (context as? ConfigurableApplicationContext)?.close()
         return ResponseEntity.ok("Goodbye")
     }
