@@ -28,8 +28,6 @@ class StatisticsController(
         if (token != metadataRepository.adminToken) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
-        println(getTimeAgo(5, MINUTE))
-        println(getTimeAgo(1, DAY_OF_MONTH))
         return ResponseEntity.ok(StatisticsResponse(
                 recentUsers = appUserRepository.findByLastSeenAfter(getTimeAgo(5, MINUTE)).size,
                 dailyUsers = appUserRepository.findByLastSeenAfter(getTimeAgo(1, DAY_OF_MONTH)).size,

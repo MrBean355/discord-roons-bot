@@ -10,19 +10,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.File
-import java.io.FileOutputStream
 import java.math.BigInteger
 import java.security.MessageDigest
 import javax.annotation.PostConstruct
-
-/** Folder within resources where special sounds live. */
-private const val SPECIAL_SOUNDS_PATH = "special_sounds"
-
-/** Special sounds that don't exist on the PlaySounds page. */
-private val SPECIAL_SOUNDS = listOf("useyourmidas.mp3", "wefuckinglost.mp3")
 
 @Component
 class SoundStore @Autowired constructor(
@@ -34,8 +28,19 @@ class SoundStore @Autowired constructor(
     private var soundsDirectory = SoundsDirectory.PRIMARY
     private var fileChecksums: Map<String, String> = emptyMap()
 
+    @Value("\${roons.soundBites.skipFirstDownload:false}")
+    private var skipFirstDownload: Boolean = false
+
     @PostConstruct
     fun onPostConstruct() {
+        if (skipFirstDownload) {
+            fileChecksums = File(soundsDirectory.dirName).listFiles().orEmpty().associate {
+                it.name to it.checksum()
+            }
+            if (fileChecksums.isNotEmpty()) {
+                return
+            }
+        }
         runBlocking {
             coroutineScope.launch {
                 fileChecksums = downloadAllSoundBites(soundsDirectory)
@@ -87,7 +92,7 @@ class SoundStore @Autowired constructor(
         destination.mkdirs()
 
         coroutineScope {
-            playSounds.listRemoteFiles().forEach { remoteSoundFile ->
+            listRemoteSoundBites().forEach { remoteSoundFile ->
                 launch {
                     if (!downloadSoundBite(remoteSoundFile, soundsDirectory)) {
                         if (!copyFallbackFile(remoteSoundFile, soundsDirectory)) {
@@ -98,11 +103,27 @@ class SoundStore @Autowired constructor(
             }
         }
 
-        copySpecialSounds(soundsDirectory)
-
         return destination.listFiles()?.toList().orEmpty()
                 .associateWith { it.checksum() }
                 .mapKeys { it.key.name }
+    }
+
+    /**
+     * Fetch a list of the sounds that exist on the PlaySounds page.
+     * Retries the operation if it fails, a max of 5 times.
+     */
+    private fun listRemoteSoundBites(attempts: Int = 5): List<PlaySounds.RemoteSoundFile> {
+        return try {
+            playSounds.listRemoteFiles()
+        } catch (t: Throwable) {
+            logger.error("Failed to list remote sounds", t)
+            if (attempts > 0) {
+                logger.info("Retrying")
+                listRemoteSoundBites(attempts - 1)
+            } else {
+                throw t
+            }
+        }
     }
 
     /**
@@ -146,47 +167,32 @@ class SoundStore @Autowired constructor(
     private fun sendTelegramNotification(newFiles: Collection<String>, changedFiles: Collection<String>, oldFiles: Collection<String>) {
         val message = buildString {
             if (newFiles.isNotEmpty()) {
-                appendln("Added sounds:")
+                appendLine("Added sounds:")
                 newFiles.forEach {
-                    appendln("- ${it.substringBeforeLast('.')}")
+                    appendLine("- ${it.substringBeforeLast('.')}")
                 }
             }
             if (changedFiles.isNotEmpty()) {
                 if (isNotEmpty()) {
-                    appendln()
+                    appendLine()
                 }
-                appendln("Changed sounds:")
+                appendLine("Changed sounds:")
                 changedFiles.forEach {
-                    appendln("- ${it.substringBeforeLast('.')}")
+                    appendLine("- ${it.substringBeforeLast('.')}")
                 }
             }
             if (oldFiles.isNotEmpty()) {
                 if (isNotEmpty()) {
-                    appendln()
+                    appendLine()
                 }
-                appendln("Removed sounds:")
+                appendLine("Removed sounds:")
                 oldFiles.forEach {
-                    appendln("- ${it.substringBeforeLast('.')}")
+                    appendLine("- ${it.substringBeforeLast('.')}")
                 }
             }
         }
         if (message.isNotEmpty()) {
             telegramNotifier.sendChannelMessage("🔊 Play Sounds Updated 🔊\n\n$message")
-        }
-    }
-
-    /** Copy special sounds from resources to the destination folder. */
-    private fun copySpecialSounds(soundsDirectory: SoundsDirectory) {
-        SPECIAL_SOUNDS.forEach { sound ->
-            if (soundsDirectory.getSound(sound) == null) {
-                SoundStore::class.java.classLoader.getResourceAsStream("$SPECIAL_SOUNDS_PATH/$sound")?.use { input ->
-                    FileOutputStream(File(soundsDirectory.dirName, sound)).use { output ->
-                        input.copyTo(output)
-                    }
-                }
-            } else {
-                logger.warn("Sound already exists; not copying special sound: $sound")
-            }
         }
     }
 
