@@ -5,24 +5,27 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.InjectionPoint
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Scope
+import org.springframework.context.support.GenericApplicationContext
 import org.springframework.stereotype.Component
 
+/** Environment variable for the Discord API token. */
+private const val ENV_DISCORD_TOKEN = "DISCORD_API_TOKEN"
+
 /** Bean qualifier for injecting the `token` string. */
-const val TOKEN = "token"
+const val DISCORD_TOKEN = "discord-token"
 
 @Component
 object BeanProvider {
-    private var token = ""
 
-    fun setToken(token: String) {
-        this.token = token
+    @Bean
+    @Qualifier(DISCORD_TOKEN)
+    fun discordToken(applicationContext: GenericApplicationContext): String {
+        return applicationContext.environment.systemEnvironment[ENV_DISCORD_TOKEN] as String
     }
 
     @Bean
-    @Qualifier(TOKEN)
-    fun token() = token
-
-    @Bean
+    @Scope("prototype")
     fun logger(injectionPoint: InjectionPoint): Logger {
         val clazz = injectionPoint.methodParameter?.containingClass
                 ?: injectionPoint.field?.declaringClass

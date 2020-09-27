@@ -1,8 +1,8 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
+import com.github.mrbean355.roons.component.DISCORD_TOKEN
 import com.github.mrbean355.roons.component.Statistics
-import com.github.mrbean355.roons.component.TOKEN
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
@@ -54,7 +54,7 @@ class DiscordBot @Autowired constructor(
         private val telegramNotifier: TelegramNotifier,
         private val logger: Logger,
         private val statistics: Statistics,
-        @Qualifier(TOKEN) private val token: String
+        @Qualifier(DISCORD_TOKEN) private val token: String
 ) : ListenerAdapter() {
 
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
