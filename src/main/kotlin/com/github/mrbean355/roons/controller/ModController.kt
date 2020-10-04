@@ -51,6 +51,7 @@ class ModController(
 
                     val url = s3Client.utilities().getUrl(GetUrlRequest.builder().bucket(MODS_BUCKET).key(it.key()).build())
                     DotaMod(
+                            id = id,
                             name = modInfo.substringAfter("name=").substringBefore('\n').ifBlank { id },
                             description = modInfo.substringAfter("description=").substringBefore('\n').ifEmpty { "Nondescript." },
                             size = it.size(),

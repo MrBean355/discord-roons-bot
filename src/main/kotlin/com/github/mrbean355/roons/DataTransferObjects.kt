@@ -23,6 +23,7 @@ data class StatisticsResponse(
 )
 
 data class DotaMod(
+        val id: String,
         val name: String,
         val description: String,
         val size: Long,
