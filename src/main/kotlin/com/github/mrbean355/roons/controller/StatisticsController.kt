@@ -42,7 +42,7 @@ class StatisticsController(
                         "mod.enabled",
                         "mod.version",
                         "mod.update"
-                ))
+                ) + soundTriggerTypes())
         ))
     }
 
@@ -52,5 +52,11 @@ class StatisticsController(
 
     private fun countValues(property: String): Map<String, Int> {
         return analyticsPropertyRepository.findByProperty(property).groupingBy { it.value }.eachCount()
+    }
+
+    private fun soundTriggerTypes(): Collection<String> {
+        return listOf("onBountyRunesSpawn", "onDeath", "onDefeat", "onHeal", "onKill", "onMatchStart", "onMidasReady",
+                "onRespawn", "onSmoked", "onVictory", "periodically")
+                .map { "sounds.triggers.$it" }
     }
 }
