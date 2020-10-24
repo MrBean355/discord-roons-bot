@@ -1,8 +1,8 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
+import com.github.mrbean355.roons.component.DISCORD_TOKEN
 import com.github.mrbean355.roons.component.Statistics
-import com.github.mrbean355.roons.component.TOKEN
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
@@ -42,7 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.UUID
-import javax.annotation.PreDestroy
 
 private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds/wiki/Discord-Bot"
 
@@ -55,7 +54,7 @@ class DiscordBot @Autowired constructor(
         private val telegramNotifier: TelegramNotifier,
         private val logger: Logger,
         private val statistics: Statistics,
-        @Qualifier(TOKEN) private val token: String
+        @Qualifier(DISCORD_TOKEN) private val token: String
 ) : ListenerAdapter() {
 
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
@@ -140,8 +139,7 @@ class DiscordBot @Autowired constructor(
     }
 
     /** Disconnect from voice channels when shutting down. */
-    @PreDestroy
-    fun onPreDestroy() {
+    fun shutdown() {
         bot.presence.setStatus(OnlineStatus.OFFLINE)
         val connectedGuilds = bot.guilds.filter { it.isConnected() }
         connectedGuilds.forEach { guild ->

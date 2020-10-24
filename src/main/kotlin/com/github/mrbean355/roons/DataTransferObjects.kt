@@ -21,3 +21,12 @@ data class StatisticsResponse(
         val dailyUsers: Int,
         val properties: Map<String, Map<String, Int>>
 )
+
+data class DotaMod(
+        val id: String,
+        val name: String,
+        val description: String,
+        val size: Long,
+        val hash: String,
+        val downloadUrl: String
+)
