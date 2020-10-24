@@ -39,10 +39,8 @@ class StatisticsController(
                         "tray.enabled",
                         "tray.permanent",
                         "bot.enabled",
-                        "mod.enabled",
-                        "mod.version",
-                        "mod.update"
-                ) + soundTriggerTypes())
+                        "mod.update",
+                ) + soundTriggerTypes()) + ("mod.selection" to modSelection())
         ))
     }
 
@@ -58,5 +56,15 @@ class StatisticsController(
         return listOf("onBountyRunesSpawn", "onDeath", "onDefeat", "onHeal", "onKill", "onMatchStart", "onMidasReady",
                 "onRespawn", "onSmoked", "onVictory", "periodically")
                 .map { "sounds.triggers.$it" }
+    }
+
+    private fun modSelection(): Map<String, Int> {
+        return analyticsPropertyRepository.findByProperty("mod.selection")
+                .flatMap { it.value.split(',') }
+                .groupingBy { it }
+                .eachCount()
+                .mapKeys {
+                    if (it.key.isBlank()) "(none)" else it.key
+                }
     }
 }
