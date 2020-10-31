@@ -22,11 +22,14 @@ data class StatisticsResponse(
         val properties: Map<String, Map<String, Int>>
 )
 
-data class DotaMod(
-        val id: String,
+data class DotaModDto(
+        val key: String,
         val name: String,
         val description: String,
-        val size: Long,
+        val size: Int,
         val hash: String,
-        val downloadUrl: String
+        val downloadUrl: String,
+        val infoUrl: String
 )
+
+fun DotaMod.asDto(): DotaModDto = DotaModDto(key, name, description, size, hash, downloadUrl, infoUrl)

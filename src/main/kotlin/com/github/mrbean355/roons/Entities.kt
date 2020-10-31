@@ -58,3 +58,14 @@ data class Metadata(
         @Id @Column(name = "`key`") val key: String,
         val value: String
 )
+
+@Entity
+data class DotaMod(
+        @Id @Column(name = "`key`") val key: String,
+        val name: String,
+        @Column(columnDefinition = "TEXT") val description: String,
+        val size: Int,
+        @Column(columnDefinition = "TEXT") val hash: String,
+        @Column(columnDefinition = "TEXT") val downloadUrl: String,
+        @Column(columnDefinition = "TEXT") val infoUrl: String
+)

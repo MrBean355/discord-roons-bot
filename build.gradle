@@ -25,7 +25,7 @@ apply plugin: "kotlin-jpa"
 apply plugin: "org.springframework.boot"
 
 group 'com.github.mrbean355'
-version '1.10.0'
+version '1.10.1'
 
 repositories {
     mavenCentral()
@@ -41,8 +41,6 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-data-jpa:$spring_version"
     implementation "mysql:mysql-connector-java:8.0.17"
     implementation 'com.google.code.gson:gson:2.8.6'
-    implementation platform('software.amazon.awssdk:bom:2.15.9')
-    implementation 'software.amazon.awssdk:s3'
 
     implementation 'ch.qos.logback:logback-classic:1.2.3'
     implementation 'net.dv8tion:JDA:4.2.0_209'
