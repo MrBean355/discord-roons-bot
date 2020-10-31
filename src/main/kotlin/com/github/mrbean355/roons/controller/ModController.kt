@@ -46,6 +46,7 @@ class ModController(
     fun patchMod(
             @PathVariable("key") key: String,
             @RequestParam("hash") hash: String,
+            @RequestParam("size") size: Int,
             @RequestParam("token") token: String
     ): ResponseEntity<Void> {
         if (token != metadataRepository.adminToken) {
@@ -55,7 +56,7 @@ class ModController(
         if (!mod.isPresent) {
             return ResponseEntity(NOT_FOUND)
         }
-        dotaModRepository.save(mod.get().copy(hash = hash))
+        dotaModRepository.save(mod.get().copy(size = size, hash = hash))
         cacheManager.getCache(DOTA_MOD_CACHE_NAME)?.clear()
         // TODO: Change to channel message once we're in prod.
         telegramNotifier.sendMessage("The \"${mod.get().name}\" mod has been updated.")
