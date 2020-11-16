@@ -1,6 +1,7 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.PlaySoundRequest
+import com.github.mrbean355.roons.PlaySoundsRequest
 import com.github.mrbean355.roons.component.Statistics
 import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.discord.SoundStore
@@ -12,6 +13,7 @@ import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod.GET
@@ -61,6 +63,26 @@ class DiscordController @Autowired constructor(
             } else {
                 ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).build()
             }
+        } else {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        }
+    }
+
+    @PostMapping("playSounds")
+    fun playSounds(@RequestBody request: PlaySoundsRequest): ResponseEntity<Void> {
+        appUserRepository.updateLastSeen(request.userId)
+
+        if (request.token.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        }
+        val user = discordBotUserRepository.findOneByToken(request.token)
+                ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+
+        val results = request.sounds.map { sound ->
+            discordBot.playSound(user, sound.soundFileName, sound.volume, sound.rate)
+        }
+        return if (results.any { it }) {
+            ResponseEntity.ok().build()
         } else {
             ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         }
