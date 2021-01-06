@@ -2,9 +2,7 @@ package com.github.mrbean355.roons
 
 data class CreateIdResponse(val userId: String)
 
-data class AnalyticsRequest(val userId: String, val eventType: String, val eventData: String)
-
-data class AnalyticsRequestV2(val userId: String, val properties: Map<String, String>)
+data class AnalyticsRequest(val userId: String, val properties: Map<String, String>)
 
 data class PlaySoundRequest(
         val userId: String,

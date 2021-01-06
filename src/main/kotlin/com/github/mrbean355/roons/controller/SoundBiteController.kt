@@ -12,12 +12,9 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("soundBites/", method = [GET])
-class SoundBiteController(private val soundStore: SoundStore) {
-
-    @RequestMapping("list")
-    fun list(): ResponseEntity<Collection<String>> {
-        return ResponseEntity.ok(soundStore.listAll().keys)
-    }
+class SoundBiteController(
+    private val soundStore: SoundStore
+) {
 
     @RequestMapping("listV2")
     fun listV2(): ResponseEntity<Map<String, String>> {
@@ -27,11 +24,11 @@ class SoundBiteController(private val soundStore: SoundStore) {
     @RequestMapping("{name}")
     fun get(@PathVariable("name") name: String): ResponseEntity<Resource> {
         val soundFile = soundStore.getFile(name)
-                ?: return ResponseEntity.notFound().build()
+            ?: return ResponseEntity.notFound().build()
 
         val resource = UrlResource(soundFile.toURI())
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${resource.filename}\"")
-                .body(resource)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${resource.filename}\"")
+            .body(resource)
     }
 }
