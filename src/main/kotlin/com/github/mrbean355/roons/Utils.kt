@@ -1,5 +1,7 @@
 package com.github.mrbean355.roons
 
+import org.telegram.telegrambots.meta.api.methods.ParseMode.HTML
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import java.util.Calendar
 import java.util.Date
 
@@ -12,3 +14,10 @@ fun getTimeAgo(amount: Int, field: Int): Date {
         time
     }
 }
+
+@Suppress("FunctionName")
+fun SendHtmlMessage(chatId: String, text: String): SendMessage = SendMessage.builder()
+    .chatId(chatId)
+    .text(text)
+    .parseMode(HTML)
+    .build()
