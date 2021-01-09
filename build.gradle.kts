@@ -1,22 +1,13 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath(kotlin("gradle-plugin", "1.4.21"))
-        classpath(kotlin("allopen", "1.4.21"))
-        classpath(kotlin("noarg", "1.4.21"))
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.4.1")
-    }
-}
-
 plugins {
-    application
-    kotlin("jvm") version "1.4.21"
-    id("org.jetbrains.kotlin.plugin.spring") version "1.4.21"
-    id("org.jetbrains.kotlin.plugin.jpa") version "1.4.21"
+    val kotlinVersion = "1.4.21"
+
+    kotlin("jvm") version kotlinVersion
+    id("org.jetbrains.kotlin.plugin.allopen") version kotlinVersion
+    id("org.jetbrains.kotlin.plugin.noarg") version kotlinVersion
+    id("org.jetbrains.kotlin.plugin.spring") version kotlinVersion
+    id("org.jetbrains.kotlin.plugin.jpa") version kotlinVersion
     id("org.springframework.boot") version "2.4.1"
 }
 
