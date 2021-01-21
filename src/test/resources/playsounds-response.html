@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name=viewport content="width=device-width, initial-scale=1">
+    <title>admiralbulldog - Playsounds</title>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="/static/images/favicon_admiralbulldog.ico"/>
+    <style>
+        .pui.badge.subscriber {
+            background-image: url('/static/images/badge_sub_admiralbulldog.png');
+            background-size: 100%;
+        }
+    </style>
+    <link rel="stylesheet" type="text/css"
+          href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css">
+
+    <link rel="stylesheet" type="text/css" href="/static/gen/css/base.453f505a.css">
+
+</head>
+<body class="main body">
+
+<header class="main header">
+
+    <div class="ui top fixed menu">
+        <div class="menu" style="margin:auto;">
+
+            <a class="item" href="/">
+
+                <img class="logo" src="/static/images/logo_admiralbulldog.png" alt="admiralbulldog logo"/>
+
+                Home</a>
+
+            <a class="item" href="/commands">
+
+                Commands</a>
+
+            <a class="item" href="/points">
+
+                Points</a>
+
+            <a class="item" href="/stats">
+
+                Stats</a>
+
+            <a class="item active" href="/playsounds">
+
+                Playsounds</a>
+
+
+        </div>
+        <div class="item">
+            <div class="ui transparent icon input">
+                <form id="usersearch">
+                    <div class="ui action input">
+                        <input type="text" name="username" class="username" placeholder="Username">
+                        <button class="ui icon button">
+                            <i class="search icon"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</header>
+<main class="main container">
+    <nav class="toc"></nav>
+    <div class="ui container">
+
+        <div class="ui icon message">
+            <i class="info circle icon"></i>
+            <div class="content">
+                <div class="header">
+                    Playsounds usage
+                </div>
+                <p>The playsound feature allows viewers to play predefined soundbites on stream.</p>
+
+                <p>
+                    Playing a sound
+
+                    costs <b>5000 points</b>.
+
+
+                    <br>
+                    There is a global cooldown of <b>5
+                    seconds</b>.
+                    Check the table below for the individual sample cooldown as it might be higher for individual
+                    samples.
+                </p>
+
+                <p>
+                    You can play each soundbite by typing the listed command in chat
+                    .
+                </p>
+            </div>
+        </div>
+
+        <div class="ui icon positive message">
+            <i class="check circle icon"></i>
+            <div class="content">
+                <div class="header">
+                    Playsounds are currently
+                    <b>enabled</b>.
+                </div>
+                <p>
+
+                </p>
+            </div>
+        </div>
+
+        <h2>List of available Playsounds</h2>
+
+        <h3 id="Age of Empires" class="category">Age of Empires</h3>
+        <table class="ui collapsing single line compact table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Command</th>
+                <th>Cost</th>
+                <th>Per-Sample Cooldown</th>
+                <th>Sub Required</th>
+                <th>Test</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            <tr>
+                <td>eight</td>
+                <td>
+                    <div class="ui action input compact">
+                        <input type="text" readonly="readonly" class="copyInput compact"
+                               value="!playsound eight">
+                        <button type="button" name="copyToken" title="Copy command to clipboard"
+                                class="copyButton ui right icon button compact">
+                            <i class="clipboard icon"></i>
+                        </button>
+                    </div>
+                </td>
+                <td>5000
+                    (global default)
+                </td>
+                <td>0
+                    seconds (global default)
+                </td>
+
+                <td>None</td>
+                <td>
+                    <div class="play-in-browser-wrapper"
+                         data-name="eight"
+                         data-link="https://admiralbullbot.github.io/playsounds/files/bulldog/8.ogg"
+                         data-volume="70">
+                        <button class="positive play-in-browser-play ui labeled icon button compact">
+                            <i class="play circle outline icon"></i>
+                            Test in browser
+                        </button>
+                        <button class="play-in-browser-stop ui labeled button compact icon disabled">
+                            <i class="stop circle outline icon"></i>Stop Playback
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            <tr>
+                <td>eleven</td>
+                <td>
+                    <div class="ui action input compact">
+                        <input type="text" readonly="readonly" class="copyInput compact"
+                               value="!playsound eleven">
+                        <button type="button" name="copyToken" title="Copy command to clipboard"
+                                class="copyButton ui right icon button compact">
+                            <i class="clipboard icon"></i>
+                        </button>
+                    </div>
+                </td>
+                <td>5000
+                    (global default)
+                </td>
+                <td>0
+                    seconds (global default)
+                </td>
+
+                <td>None</td>
+                <td>
+                    <div class="play-in-browser-wrapper"
+                         data-name="eleven"
+                         data-link="https://admiralbullbot.github.io/playsounds/files/bulldog/11.ogg"
+                         data-volume="80">
+                        <button class="positive play-in-browser-play ui labeled icon button compact">
+                            <i class="play circle outline icon"></i>
+                            Test in browser
+                        </button>
+                        <button class="play-in-browser-stop ui labeled button compact icon disabled">
+                            <i class="stop circle outline icon"></i>Stop Playback
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            </tbody>
+        </table>
+        </h4>
+
+        <h3 id="Bulldog&#39;s stream" class="category">Bulldog&#39;s stream</h3>
+        <table class="ui collapsing single line compact table">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Command</th>
+                <th>Cost</th>
+                <th>Per-Sample Cooldown</th>
+                <th>Sub Required</th>
+                <th>Test</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            <tr>
+                <td>ahaha4head</td>
+                <td>
+                    <div class="ui action input compact">
+                        <input type="text" readonly="readonly" class="copyInput compact"
+                               value="!playsound ahaha4head">
+                        <button type="button" name="copyToken" title="Copy command to clipboard"
+                                class="copyButton ui right icon button compact">
+                            <i class="clipboard icon"></i>
+                        </button>
+                    </div>
+                </td>
+                <td>5000
+                    (global default)
+                </td>
+                <td>0
+                    seconds (global default)
+                </td>
+
+                <td>None</td>
+                <td>
+                    <div class="play-in-browser-wrapper"
+                         data-name="ahaha4head"
+                         data-link="https://admiralbullbot.github.io/playsounds/files/bulldog/ahaha4head.ogg"
+                         data-volume="20">
+                        <button class="positive play-in-browser-play ui labeled icon button compact">
+                            <i class="play circle outline icon"></i>
+                            Test in browser
+                        </button>
+                        <button class="play-in-browser-stop ui labeled button compact icon disabled">
+                            <i class="stop circle outline icon"></i>Stop Playback
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            <tr>
+                <td>alchemist</td>
+                <td>
+                    <div class="ui action input compact">
+                        <input type="text" readonly="readonly" class="copyInput compact"
+                               value="!playsound alchemist">
+                        <button type="button" name="copyToken" title="Copy command to clipboard"
+                                class="copyButton ui right icon button compact">
+                            <i class="clipboard icon"></i>
+                        </button>
+                    </div>
+                </td>
+                <td>5000
+                    (global default)
+                </td>
+                <td>0
+                    seconds (global default)
+                </td>
+
+                <td>None</td>
+                <td>
+                    <div class="play-in-browser-wrapper"
+                         data-name="alchemist"
+                         data-link="https://admiralbullbot.github.io/playsounds/files/bulldog/alchemist.ogg"
+                         data-volume="30">
+                        <button class="positive play-in-browser-play ui labeled icon button compact">
+                            <i class="play circle outline icon"></i>
+                            Test in browser
+                        </button>
+                        <button class="play-in-browser-stop ui labeled button compact icon disabled">
+                            <i class="stop circle outline icon"></i>Stop Playback
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            </tbody>
+        </table>
+        </h4>
+
+
+    </div>
+</main>
+<br/>
+<footer class="main footer">
+    <div class="ui inverted vertical footer segment">
+        <div class="ui container">
+            <div class="ui stackable inverted divided equal height stackable grid">
+                <div class="three wide column">
+                    <h4 class="ui inverted header">Community</h4>
+                    <div class="ui inverted link list">
+                        <a class="item" href="https://github.com/admiralbullbot/bullbot/issues"><i
+                                class="warning circle icon"></i> Submit an Issue</a>
+                        <a class="item" href="/contact"><i class="mail icon"></i> Contact</a>
+                        <a class="item" href="https://twitter.com/pajlada"><i class="twitter icon"></i>Maintained by
+                            DatGuy1, created by @pajlada</a>
+                    </div>
+                </div>
+                <div class="three wide column">
+                    <h4 class="ui inverted header">Network</h4>
+                    <div class="ui inverted link list">
+                        <a class="item" href="https://github.com/admiralbullbot/bullbot/"><i class="github icon"></i>
+                            GitHub Repo</a>
+                        <a class="item" href="http://pajbot.com/"><i class="sitemap icon"></i> Other Bots</a>
+                    </div>
+                </div>
+                <div class="four wide column">
+                    <h4 class="ui inverted header">Login <i class="sign in icon"></i></h4>
+                    <div class="ui inverted link list">
+                        <a href="/login?returnTo=/playsounds" class="ui twitch button"><i class="twitch icon"></i>Connect
+                            with Twitch</a>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="column"><br/>
+                    <em style="color: #ccc;">Version: 1.47 DEV (master, f60fd3b7, commit 3335)</em> &mdash; <em
+                            style="color: #ccc;">Last commit: Sat Oct 31 20:36:21 2020 +0000</em>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<script>
+    var bot_name = 'admiralbullbot';
+</script>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.js"></script>
+<script type="text/javascript" src="/static/gen/scripts/base.6d22f1f7.js"></script>
+
+<script type="text/javascript" src="/static/gen/scripts/autolinker.ba09154b.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment-with-locales.min.js"
+        integrity="sha256-AdQN98MVZs44Eq2yTwtoKufhnU+uZ7v2kXnD5vqzZVo=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment-duration-format/2.3.2/moment-duration-format.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/livestamp/1.1.2/livestamp.min.js"></script>
+<script type="text/javascript" src="/static/gen/scripts/datetime.d144ef31.js"></script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-164355649-1"></script>
+<script>
+    window.ga = window.ga || function () {
+        (ga.q = ga.q || []).push(arguments)
+    };
+    ga.l = +new Date;
+    ga('create', 'UA-164355649-1', 'auto');
+    ga('send', 'pageview');
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.1.2/howler.min.js"></script>
+
+<script type="text/javascript" src="/static/gen/scripts/base.6d22f1f7.js"></script>
+
+<script type="text/javascript" src="/static/gen/scripts/playsound.common.3aca3621.js"></script>
+
+
+<link rel="stylesheet" href="/static/gen/css/playsound.ea359bdb.css">
+
+<script>
+    $(document).ready(function () {
+        tocbot.init({
+            tocSelector: '.toc',
+            contentSelector: 'div.ui.container',
+            headingSelector: 'h3.category'
+        });
+        $('.copyButton').click(function () {
+            let input = $(this).closest('div').find('.copyInput');
+
+            input.select();
+
+            document.execCommand("copy");
+        });
+    })
+</script>
+
+</body>
+</html>
