@@ -58,8 +58,9 @@ dependencies {
     implementation("com.google.code.gson:gson:2.8.6")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
-    implementation("net.dv8tion:JDA:4.2.0_225")
+    implementation("net.dv8tion:JDA:4.2.0_227")
     implementation("com.sedmelluq:lavaplayer:1.3.66")
+    implementation("com.github.natanbc:lavadsp:0.7.6")
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.telegram:telegrambots:5.0.1")
     implementation("org.telegram:telegrambots-spring-boot-starter:5.0.1")
