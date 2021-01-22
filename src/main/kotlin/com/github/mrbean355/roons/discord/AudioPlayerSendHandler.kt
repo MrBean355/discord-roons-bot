@@ -16,14 +16,19 @@
 
 package com.github.mrbean355.roons.discord
 
+import com.google.common.annotations.VisibleForTesting
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.track.playback.MutableAudioFrame
 import net.dv8tion.jda.api.audio.AudioSendHandler
 import java.nio.ByteBuffer
 
-class AudioPlayerSendHandler(private val audioPlayer: AudioPlayer) : AudioSendHandler {
-    private val buffer = ByteBuffer.allocate(1024)
-    private val frame = MutableAudioFrame()
+class AudioPlayerSendHandler @VisibleForTesting constructor(
+    private val audioPlayer: AudioPlayer,
+    private val buffer: ByteBuffer,
+    private val frame: MutableAudioFrame
+) : AudioSendHandler {
+
+    constructor(audioPlayer: AudioPlayer) : this(audioPlayer, ByteBuffer.allocate(1024), MutableAudioFrame())
 
     init {
         frame.setBuffer(buffer)
@@ -38,7 +43,6 @@ class AudioPlayerSendHandler(private val audioPlayer: AudioPlayer) : AudioSendHa
         return buffer
     }
 
-    override fun isOpus(): Boolean {
-        return true
-    }
+    override fun isOpus() = true
+
 }
