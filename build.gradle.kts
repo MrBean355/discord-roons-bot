@@ -15,6 +15,7 @@
  */
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.sonarqube.gradle.SonarQubeTask
 
 plugins {
     val kotlinVersion = "1.4.21"
@@ -25,6 +26,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.spring") version kotlinVersion
     id("org.jetbrains.kotlin.plugin.jpa") version kotlinVersion
     id("org.springframework.boot") version "2.4.2"
+    id("org.sonarqube") version "3.1"
+    jacoco
 }
 
 group = "com.github.mrbean355"
@@ -46,6 +49,26 @@ tasks.withType<KotlinCompile> {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.withType<JacocoReport> {
+    dependsOn(tasks.test)
+    sourceSets(sourceSets.main.get())
+    reports {
+        xml.isEnabled = true
+    }
+}
+
+tasks.withType<SonarQubeTask> {
+    dependsOn(tasks.named("jacocoTestReport"))
+}
+
+sonarqube {
+    properties {
+        property("sonar.projectKey", "discord-roons-bot")
+        property("sonar.organization", "admiral-bulldog-sounds")
+        property("sonar.host.url", "https://sonarcloud.io")
+    }
 }
 
 dependencies {
