@@ -18,7 +18,6 @@ package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.component.DISCORD_TOKEN
-import com.github.mrbean355.roons.component.Statistics
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
@@ -66,22 +65,21 @@ private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds
 
 @Component
 class DiscordBot @Autowired constructor(
-        private val discordBotUserRepository: DiscordBotUserRepository,
-        private val discordBotSettingsRepository: DiscordBotSettingsRepository,
-        private val metadataRepository: MetadataRepository,
-        private val soundStore: SoundStore,
-        private val telegramNotifier: TelegramNotifier,
-        private val logger: Logger,
-        private val statistics: Statistics,
-        @Qualifier(DISCORD_TOKEN) private val token: String
+    private val discordBotUserRepository: DiscordBotUserRepository,
+    private val discordBotSettingsRepository: DiscordBotSettingsRepository,
+    private val metadataRepository: MetadataRepository,
+    private val soundStore: SoundStore,
+    private val telegramNotifier: TelegramNotifier,
+    private val logger: Logger,
+    @Qualifier(DISCORD_TOKEN) private val token: String
 ) : ListenerAdapter() {
 
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
     private val bot: JDA = JDABuilder.createDefault(token)
-            .setActivity(Activity.playing("Get the roons!"))
-            .addEventListeners(this)
-            .build()
+        .setActivity(Activity.playing("Get the roons!"))
+        .addEventListeners(this)
+        .build()
 
     init {
         AudioSourceManagers.registerLocalSource(playerManager)
@@ -90,7 +88,7 @@ class DiscordBot @Autowired constructor(
     override fun onReady(event: ReadyEvent) {
         // Show startup message if there is one:
         val message = metadataRepository.takeStartupMessage()
-                ?.replace("\\n", "\n")
+            ?.replace("\\n", "\n")
 
         if (message != null && message.isNotBlank()) {
             bot.guilds.forEach {
@@ -112,7 +110,7 @@ class DiscordBot @Autowired constructor(
             }
         }
 
-        telegramNotifier.sendMessage("⚙️ <b>Started up</b>:\nReconnected to <b>$reconnects</b> voice channels.")
+        telegramNotifier.sendPrivateMessage("⚙️ <b>Started up</b>:\nReconnected to <b>$reconnects</b> voice channels.")
     }
 
     /** Try to play the given [soundFileName] in a guild. Determines the guild from the [token]. */
@@ -128,19 +126,19 @@ class DiscordBot @Autowired constructor(
     fun dumpStatus(): String {
         val builder = StringBuilder()
         val (activeGuilds, inactiveGuilds) = bot.guilds
-                .sortedBy { it.name.toLowerCase() }
-                .partition { it.isConnected() }
+            .sortedBy { it.name.toLowerCase() }
+            .partition { it.isConnected() }
 
         builder.append("<h1>In ${activeGuilds.size + inactiveGuilds.size} Total Guilds</h1>")
         builder.append("<h2>Active Guilds</h2>")
         builder.append("<ul>")
         activeGuilds.forEach {
             builder.append("<li>")
-                    .append(it.name).append(" | ")
-                    .append(it.memberCount).append(" members | ")
-                    .append(it.region.getName()).append(" | ")
-                    .append("in voice channel: ${it.audioManager.connectedChannel?.name}")
-                    .append("</li>")
+                .append(it.name).append(" | ")
+                .append(it.memberCount).append(" members | ")
+                .append(it.region.getName()).append(" | ")
+                .append("in voice channel: ${it.audioManager.connectedChannel?.name}")
+                .append("</li>")
         }
         builder.append("</ul>")
 
@@ -148,10 +146,10 @@ class DiscordBot @Autowired constructor(
         builder.append("<ul>")
         inactiveGuilds.forEach {
             builder.append("<li>")
-                    .append(it.name).append(" | ")
-                    .append(it.memberCount).append(" members | ")
-                    .append(it.region.getName())
-                    .append("</li>")
+                .append(it.name).append(" | ")
+                .append(it.memberCount).append(" members | ")
+                .append(it.region.getName())
+                .append("</li>")
         }
         builder.append("</ul>")
         return builder.toString()
@@ -167,7 +165,7 @@ class DiscordBot @Autowired constructor(
             discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
             guild.audioManager.closeAudioConnection()
         }
-        telegramNotifier.sendMessage("⚙️ <b>Shutting down</b>:\nDisconnected from <b>${connectedGuilds.size}</b> voice channels.")
+        telegramNotifier.sendPrivateMessage("⚙️ <b>Shutting down</b>:\nDisconnected from <b>${connectedGuilds.size}</b> voice channels.")
     }
 
     fun getGuildById(id: String): Guild? {
@@ -195,21 +193,22 @@ class DiscordBot @Autowired constructor(
 
     override fun onGuildJoin(event: GuildJoinEvent) {
         val guild = event.guild
-        telegramNotifier.sendMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.region}, ${guild.memberCount} members")
+        telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.region}, ${guild.memberCount} members")
 
-        val channel = guild.findWelcomeChannel() ?: return
-        channel.typeMessage("""
+        guild.findWelcomeChannel()?.typeMessage(
+            """
             **ALLO, ${guild.name}!** :wave:
             
             Type `!roons` for me to join your current voice channel.
             Type `!seeya` when you want me to leave the voice channel.
             Type `!follow` for me to follow you when you join & leave voice channels.
             Type `!help` for more commands.
-        """.trimIndent())
+            """.trimIndent()
+        )
     }
 
     override fun onGuildLeave(event: GuildLeaveEvent) {
-        telegramNotifier.sendMessage("😔 <b>Left a guild</b>:\n${event.guild.name}")
+        telegramNotifier.sendPrivateMessage("😔 <b>Left a guild</b>:\n${event.guild.name}")
         val guildId = event.guild.id
         discordBotUserRepository.deleteByGuildId(guildId)
         discordBotSettingsRepository.deleteByGuildId(guildId)
@@ -253,29 +252,35 @@ class DiscordBot @Autowired constructor(
             }
         }
         // Invalid command:
-        event.channel.typeMessage("I'm not sure what you meant :disappointed:\n" +
-                "Type `!volume` to check the volume level.\n" +
-                "Type `!volume 50` to set the volume to 50%.")
+        event.channel.typeMessage(
+            """
+            I'm not sure what you meant :disappointed:
+            Type `!volume` to check the volume level.
+            Type `!volume 50` to set the volume to 50%.
+            """.trimIndent()
+        )
     }
 
     private fun help(event: MessageReceivedEvent) {
-        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
-        event.channel.typeMessage("**My available commands**\n" +
-                "\n" +
-                "- `!help` :arrow_right: send this message\n" +
-                "- `!roons` :arrow_right: join your current voice channel\n" +
-                "- `!seeya` :arrow_right: leave the current voice channel\n" +
-                "- `!magic` :arrow_right: send a private message with your magic number\n" +
-                "- `!follow` :arrow_right: follow you when you join & leave voice channels\n" +
-                "- `!unfollow` :arrow_right: stop following you\n" +
-                "- `!volume` :arrow_right: show the current volume\n" +
-                "- `!volume x` :arrow_right: set the current volume to x% (example: `!volume 50`)\n" +
-                "\n" +
-                "For more info or to log a bug, please visit: $HELP_URL")
+        event.channel.typeMessage(
+            """
+            **My available commands**
+            
+            - `!help` :arrow_right: send this message
+            - `!roons` :arrow_right: join your current voice channel
+            - `!seeya` :arrow_right: leave the current voice channel
+            - `!magic` :arrow_right: send a private message with your magic number
+            - `!follow` :arrow_right: follow you when you join & leave voice channels
+            - `!unfollow` :arrow_right: stop following you
+            - `!volume` :arrow_right: show the current volume
+            - `!volume x` :arrow_right: set the current volume to x% (example: `!volume 50`)
+            
+            For more info or to log a bug, please visit: $HELP_URL
+            """.trimIndent()
+        )
     }
 
     private fun join(event: MessageReceivedEvent) {
-        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val channel = event.member?.voiceState?.channel
         if (channel == null) {
             event.textChannel.typeMessage("Please join a voice channel first, then type the command again.")
@@ -295,13 +300,12 @@ class DiscordBot @Autowired constructor(
             event.textChannel.typeMessage("I don't have permission to speak in `${channel.name}`.")
         } else {
             runCatching { event.guild.audioManager.openAudioConnection(channel) }
-                    .onSuccess { event.textChannel.typeMessage("I've connected to `${channel.name}`.") }
-                    .onFailure { event.textChannel.typeMessage("I can't connect to `${channel.name}` at the moment.") }
+                .onSuccess { event.textChannel.typeMessage("I've connected to `${channel.name}`.") }
+                .onFailure { event.textChannel.typeMessage("I can't connect to `${channel.name}` at the moment.") }
         }
     }
 
     private fun leave(event: MessageReceivedEvent) {
-        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val audioManager = event.guild.audioManager
         if (event.guild.isConnected()) {
             val channelName = audioManager.connectedChannel?.name
@@ -313,21 +317,20 @@ class DiscordBot @Autowired constructor(
     }
 
     private fun magic(event: MessageReceivedEvent) {
-        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val discordBotUser = findOrCreateUser(event.author, event.guild)
         event.author.openPrivateChannel().queue {
-            it.typeMessage("""
-                ALLO ${event.author.name}!
+            it.typeMessage(
+                """
                 Here's your magic number for **${event.guild.name}**:
                 :point_right: `${discordBotUser.token}` :point_left:
                 *Don't share this with anyone!*
-            """.trimIndent())
+                """.trimIndent()
+            )
         }
         event.channel.typeMessage("Sent you a private message, ${event.author.asMention} :thumbsup:")
     }
 
     private fun follow(event: MessageReceivedEvent) {
-        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val settings = discordBotSettingsRepository.loadSettings(event.guild.id)
         val followedUser = settings.followedUser
         if (followedUser == event.author.id) {
@@ -342,12 +345,15 @@ class DiscordBot @Autowired constructor(
             val previousUser = bot.getUserById(followedUser)
             "instead of ${previousUser?.asMention ?: "unknown"} "
         } else ""
-        event.textChannel.typeMessage("I'm now following ${event.author.asMention} ${insteadOf}:ok_hand:\n" +
-                "Type `!unfollow` and I'll stop")
+        event.textChannel.typeMessage(
+            """
+            I'm now following ${event.author.asMention} ${insteadOf}:ok_hand:
+            Type `!unfollow` and I'll stop.
+            """.trimIndent()
+        )
     }
 
     private fun unfollow(event: MessageReceivedEvent) {
-        statistics.increment(Statistics.Type.DISCORD_COMMANDS)
         val settings = discordBotSettingsRepository.loadSettings(event.guild.id)
         val followedUser = settings.followedUser
         if (followedUser == null) {
@@ -363,7 +369,7 @@ class DiscordBot @Autowired constructor(
         val userId = user.id
         val guildId = guild.id
         return discordBotUserRepository.findOneByDiscordUserIdAndGuildId(userId, guildId)
-                ?: discordBotUserRepository.save(DiscordBotUser(0, userId, guildId, UUID.randomUUID().toString()))
+            ?: discordBotUserRepository.save(DiscordBotUser(0, userId, guildId, UUID.randomUUID().toString()))
     }
 
     /** @return a guild-specific [GuildMusicManager]. */

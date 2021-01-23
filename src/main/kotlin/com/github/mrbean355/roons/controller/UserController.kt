@@ -18,7 +18,6 @@ package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.CreateIdResponse
-import com.github.mrbean355.roons.component.Statistics
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,8 +33,7 @@ import java.util.UUID
 @RestController
 @RequestMapping("/", method = [POST])
 class UserController @Autowired constructor(
-        private val appUserRepository: AppUserRepository,
-        private val statistics: Statistics
+    private val appUserRepository: AppUserRepository
 ) {
     @RequestMapping("createId")
     fun createId(): ResponseEntity<CreateIdResponse> {
@@ -48,7 +46,6 @@ class UserController @Autowired constructor(
             return ResponseEntity.status(HttpStatus.LOOP_DETECTED).build()
         }
         appUserRepository.save(AppUser(0, generated, Date()))
-        statistics.increment(Statistics.Type.NEW_USERS)
         return ResponseEntity.ok(CreateIdResponse(generated))
     }
 

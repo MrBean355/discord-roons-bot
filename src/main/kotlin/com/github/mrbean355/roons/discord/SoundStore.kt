@@ -36,9 +36,9 @@ import javax.annotation.PostConstruct
 
 @Component
 class SoundStore @Autowired constructor(
-        private val playSounds: PlaySounds,
-        private val telegramNotifier: TelegramNotifier,
-        private val logger: Logger
+    private val playSounds: PlaySounds,
+    private val telegramNotifier: TelegramNotifier,
+    private val logger: Logger
 ) {
     private val coroutineScope = CoroutineScope(IO + SupervisorJob())
     private var soundsDirectory = SoundsDirectory.PRIMARY
@@ -93,9 +93,9 @@ class SoundStore @Autowired constructor(
             fileChecksums = new
             soundsDirectory = nextDirectory
             sendTelegramNotification(
-                    newFiles = new.keys - old.keys,
-                    changedFiles = new.filter { it.key in old.keys }.filter { it.value != old.getValue(it.key) }.keys,
-                    oldFiles = old.keys - new.keys
+                newFiles = new.keys - old.keys,
+                changedFiles = new.filter { it.key in old.keys }.filter { it.value != old.getValue(it.key) }.keys,
+                oldFiles = old.keys - new.keys
             )
         }
     }
@@ -111,17 +111,15 @@ class SoundStore @Autowired constructor(
             listRemoteSoundBites().forEach { remoteSoundFile ->
                 launch {
                     if (!downloadSoundBite(remoteSoundFile, soundsDirectory)) {
-                        if (!copyFallbackFile(remoteSoundFile, soundsDirectory)) {
-                            telegramNotifier.sendMessage("⚠️ Failed to download ${remoteSoundFile.name}")
-                        }
+                        copyFallbackFile(remoteSoundFile, soundsDirectory)
                     }
                 }
             }
         }
 
         return destination.listFiles()?.toList().orEmpty()
-                .associateWith { it.checksum() }
-                .mapKeys { it.key.name }
+            .associateWith { it.checksum() }
+            .mapKeys { it.key.name }
     }
 
     /**
@@ -168,15 +166,13 @@ class SoundStore @Autowired constructor(
      *
      * @return `true` if the file was copied, `false` if no such file exists.
      */
-    private fun copyFallbackFile(remoteSoundFile: PlaySounds.RemoteSoundFile, target: SoundsDirectory): Boolean {
+    private fun copyFallbackFile(remoteSoundFile: PlaySounds.RemoteSoundFile, target: SoundsDirectory) {
         val source = target.other()
         val fallback = source.getSound(remoteSoundFile.fileName)
-        return if (fallback == null) {
+        if (fallback == null) {
             logger.error("No fallback for ${remoteSoundFile.name} in ${source.dirName}, giving up")
-            false
         } else {
             fallback.copyTo(File(target.dirName, remoteSoundFile.fileName))
-            true
         }
     }
 

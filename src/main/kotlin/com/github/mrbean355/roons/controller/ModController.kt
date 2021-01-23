@@ -20,6 +20,7 @@ import com.github.mrbean355.roons.DotaModDto
 import com.github.mrbean355.roons.annotation.DOTA_MOD_CACHE_NAME
 import com.github.mrbean355.roons.annotation.DotaModCache
 import com.github.mrbean355.roons.asDto
+import com.github.mrbean355.roons.orNull
 import com.github.mrbean355.roons.repository.DotaModRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
@@ -38,10 +39,10 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/mods")
 class ModController(
-        private val dotaModRepository: DotaModRepository,
-        private val metadataRepository: MetadataRepository,
-        private val telegramNotifier: TelegramNotifier,
-        private val cacheManager: CacheManager
+    private val dotaModRepository: DotaModRepository,
+    private val metadataRepository: MetadataRepository,
+    private val telegramNotifier: TelegramNotifier,
+    private val cacheManager: CacheManager
 ) {
 
     @GetMapping
@@ -51,31 +52,31 @@ class ModController(
     @GetMapping("{key}")
     @DotaModCache
     fun getMod(@PathVariable("key") key: String): ResponseEntity<DotaModDto> {
-        val mod = dotaModRepository.findById(key)
-        if (!mod.isPresent) {
-            return ResponseEntity(NOT_FOUND)
-        }
-        return ResponseEntity.ok(mod.get().asDto())
+        val mod = dotaModRepository.findById(key).orNull()
+            ?: return ResponseEntity(NOT_FOUND)
+
+        return ResponseEntity.ok(mod.asDto())
     }
 
     @PatchMapping("{key}")
     fun patchMod(
-            @PathVariable("key") key: String,
-            @RequestParam("hash") hash: String,
-            @RequestParam("size") size: Int,
-            @RequestParam("token") token: String
+        @PathVariable("key") key: String,
+        @RequestParam("hash") hash: String,
+        @RequestParam("size") size: Int,
+        @RequestParam("token") token: String
     ): ResponseEntity<Void> {
         if (token != metadataRepository.adminToken) {
             return ResponseEntity(UNAUTHORIZED)
         }
-        val mod = dotaModRepository.findById(key)
-        if (!mod.isPresent) {
-            return ResponseEntity(NOT_FOUND)
-        }
-        dotaModRepository.save(mod.get().copy(size = size, hash = hash))
+        val mod = dotaModRepository.findById(key).orNull()
+            ?: return ResponseEntity(NOT_FOUND)
+
+        dotaModRepository.save(mod.copy(size = size, hash = hash))
         cacheManager.getCache(DOTA_MOD_CACHE_NAME)?.clear()
-        // TODO: Change to channel message once we're in prod.
-        telegramNotifier.sendMessage("The \"${mod.get().name}\" mod has been updated.")
+
+        val friendlyName = mod.name.removeSuffix(" mod")
+        telegramNotifier.sendChannelMessage("The <b>$friendlyName</b> mod has been updated to work with the latest Dota 2 update.")
+
         return ResponseEntity.ok().build()
     }
 

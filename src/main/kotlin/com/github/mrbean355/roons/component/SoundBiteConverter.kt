@@ -46,7 +46,6 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
     fun convert(victim: File) {
         if (!ensureInstalled()) {
             logger.warn("Skipping MP3 conversion; FFMPEG not copied")
-            telegramNotifier.sendMessage("⚠️ Can't convert <b>${victim.name}</b>; FFMPEG not installed.")
             return
         }
         val victimPath = victim.absolutePath
@@ -57,7 +56,6 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
         val exitCode = runCommand(ffmpegPath, "-i", victimPath, tempOutputFile.absolutePath)
         if (exitCode != 0) {
             logger.error("Failed to convert $victim, exited with: $exitCode")
-            telegramNotifier.sendMessage("⚠️ Can't convert <b>${victim.name}</b>; FFMPEG failed; code=$exitCode.")
             if (tempOutputFile.exists()) {
                 tempOutputFile.delete()
             }
@@ -99,26 +97,20 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
 
         if (!target.exists()) {
             logger.error("Failed to copy '$exe' to: ${dir.absolutePath}")
-            telegramNotifier.sendMessage("⚠️ Failed to copy FFMPEG.")
             return false
         }
 
         val ffmpegPath = target.absolutePath
         logger.info("Copied $exe to $ffmpegPath")
         val exitCode = runCommand("/bin/chmod", "755", ffmpegPath)
-        return if (exitCode == 0) {
-            true
-        } else {
-            telegramNotifier.sendMessage("⚠️ Couldn't make FFMPEG executable; code=$exitCode")
-            false
-        }
+        return exitCode == 0
     }
 
     private fun runCommand(vararg arg: String): Int {
         val process = ProcessBuilder(*arg)
-                .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                .redirectError(ProcessBuilder.Redirect.PIPE)
-                .start()
+            .redirectOutput(ProcessBuilder.Redirect.PIPE)
+            .redirectError(ProcessBuilder.Redirect.PIPE)
+            .start()
 
         process.waitFor(1, TimeUnit.HOURS)
         val exitValue = process.exitValue()
