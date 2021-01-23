@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 Michael Johnston
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.discord.DiscordBot
@@ -16,18 +32,10 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/metadata")
 class MetadataController @Autowired constructor(
-        private val metadataRepository: MetadataRepository,
-        private val context: ApplicationContext,
-        private val discordBot: DiscordBot
+    private val metadataRepository: MetadataRepository,
+    private val context: ApplicationContext,
+    private val discordBot: DiscordBot
 ) {
-
-    @RequestMapping("laterVersion", method = [GET])
-    fun hasLaterVersion(@RequestParam("version") version: String): ResponseEntity<Boolean> {
-        // As of app version 1.8.0, we no longer call this service to check for a new app release.
-        // Instead, we use the GitHub API to determine what the latest release is.
-        // Therefore, only old apps will call this service. There will always be a new version for them.
-        return ResponseEntity.ok(true)
-    }
 
     @RequestMapping("shutdown", method = [GET])
     fun shutdown(@RequestParam("token") token: String): ResponseEntity<String> {
@@ -35,7 +43,7 @@ class MetadataController @Autowired constructor(
             return ResponseEntity(HttpStatus.BAD_REQUEST)
         }
         val adminToken = metadataRepository.adminToken
-                ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+            ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
 
         if (adminToken != token) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)

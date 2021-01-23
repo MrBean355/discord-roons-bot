@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package com.github.mrbean355.roons.repository
+package com.github.mrbean355.roons
 
-import com.github.mrbean355.roons.DiscordBotUser
-import org.springframework.data.repository.CrudRepository
-import javax.transaction.Transactional
+import java.io.File
 
-interface DiscordBotUserRepository : CrudRepository<DiscordBotUser, Int> {
-
-    fun findOneByDiscordUserIdAndGuildId(userId: String, guildId: String): DiscordBotUser?
-
-    fun findOneByToken(token: String): DiscordBotUser?
-
-    @Transactional
-    fun deleteByGuildId(guildId: String): Int
-
+fun loadTestResource(name: String): String {
+    val pathname = Thread.currentThread().contextClassLoader.getResource(name)?.file
+    require(pathname != null) { "Resource not found: $name" }
+    return File(pathname).readText()
 }

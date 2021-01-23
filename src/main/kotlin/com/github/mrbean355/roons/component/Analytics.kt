@@ -1,29 +1,32 @@
+/*
+ * Copyright 2021 Michael Johnston
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.github.mrbean355.roons.component
 
-import com.github.mrbean355.roons.AnalyticsEvent
 import com.github.mrbean355.roons.AnalyticsProperty
-import com.github.mrbean355.roons.repository.AnalyticsEventRepository
 import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import java.util.Date
 
 @Component
 class Analytics @Autowired constructor(
-        private val analyticsEventRepository: AnalyticsEventRepository,
-        private val appUserRepository: AppUserRepository,
-        private val analyticsPropertyRepository: AnalyticsPropertyRepository
+    private val appUserRepository: AppUserRepository,
+    private val analyticsPropertyRepository: AnalyticsPropertyRepository
 ) {
-
-    fun logEvent(userId: String, eventType: String, eventData: String): Boolean {
-        val nonEmptyUserId = userId.ifEmpty { "unknown" }
-        val userEvent = analyticsEventRepository.findByAppUserIdAndEventTypeAndEventData(nonEmptyUserId, eventType, eventData)
-                ?: AnalyticsEvent(0, nonEmptyUserId, eventType, eventData, 0, null)
-
-        analyticsEventRepository.save(userEvent.copy(count = userEvent.count.inc(), lastOccurred = Date()))
-        return true
-    }
 
     fun logProperties(userId: String, properties: Map<String, String>): Boolean {
         val user = appUserRepository.findByGeneratedId(userId)
@@ -34,7 +37,7 @@ class Analytics @Autowired constructor(
         val existing = analyticsPropertyRepository.findByUserAndPropertyIn(user, properties.keys.toList())
         val entities = properties.map { (property, value) ->
             existing.firstOrNull { it.property == property }?.copy(value = value)
-                    ?: AnalyticsProperty(0, user, property, value)
+                ?: AnalyticsProperty(0, user, property, value)
         }
 
         analyticsPropertyRepository.saveAll(entities)

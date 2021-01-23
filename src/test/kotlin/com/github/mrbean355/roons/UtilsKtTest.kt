@@ -14,19 +14,26 @@
  * limitations under the License.
  */
 
-package com.github.mrbean355.roons.repository
+package com.github.mrbean355.roons
 
-import com.github.mrbean355.roons.DiscordBotUser
-import org.springframework.data.repository.CrudRepository
-import javax.transaction.Transactional
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Test
+import java.util.Optional
 
-interface DiscordBotUserRepository : CrudRepository<DiscordBotUser, Int> {
+internal class UtilsKtTest {
 
-    fun findOneByDiscordUserIdAndGuildId(userId: String, guildId: String): DiscordBotUser?
+    @Test
+    internal fun testOptionalOrNull_NullValue_ReturnsNull() {
+        val result = Optional.ofNullable<String>(null).orNull()
 
-    fun findOneByToken(token: String): DiscordBotUser?
+        assertNull(result)
+    }
 
-    @Transactional
-    fun deleteByGuildId(guildId: String): Int
+    @Test
+    internal fun testOptionalOrNull_NonNullValue_ReturnsValue() {
+        val result = Optional.ofNullable<String>("abc").orNull()
 
+        assertEquals("abc", result)
+    }
 }

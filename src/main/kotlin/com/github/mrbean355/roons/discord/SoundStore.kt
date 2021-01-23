@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 Michael Johnston
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.component.PlaySounds
@@ -20,9 +36,9 @@ import javax.annotation.PostConstruct
 
 @Component
 class SoundStore @Autowired constructor(
-        private val playSounds: PlaySounds,
-        private val telegramNotifier: TelegramNotifier,
-        private val logger: Logger
+    private val playSounds: PlaySounds,
+    private val telegramNotifier: TelegramNotifier,
+    private val logger: Logger
 ) {
     private val coroutineScope = CoroutineScope(IO + SupervisorJob())
     private var soundsDirectory = SoundsDirectory.PRIMARY
@@ -76,11 +92,31 @@ class SoundStore @Autowired constructor(
             val new = downloadAllSoundBites(nextDirectory)
             fileChecksums = new
             soundsDirectory = nextDirectory
-            sendTelegramNotification(
-                    newFiles = new.keys - old.keys,
-                    changedFiles = new.filter { it.key in old.keys }.filter { it.value != old.getValue(it.key) }.keys,
-                    oldFiles = old.keys - new.keys
-            )
+
+            val addedSounds = new.keys - old.keys
+            val removedSounds = old.keys - new.keys
+
+            if (addedSounds.size > 15 || removedSounds.size > 15) {
+                // Occasionally, 2 strange Telegram messages are sent.
+                // The first one says that many new sounds were added (but they have existed for a long time).
+                // The second one says that many sounds were removed (even though they still exist).
+                // Instead of sending the message, send a private debugging one to figure out why it happens.
+
+                telegramNotifier.sendPrivateMessage(
+                    """
+                    Something weird happened.
+                    Added: ${addedSounds.size}
+                    Removed: ${removedSounds.size}
+                    Before sync: ${old.size}
+                    """.trimIndent()
+                )
+            } else {
+                sendTelegramNotification(
+                    addedSounds = addedSounds,
+                    changedSounds = new.filter { it.key in old.keys }.filter { it.value != old.getValue(it.key) }.keys,
+                    removedSounds = removedSounds
+                )
+            }
         }
     }
 
@@ -95,17 +131,20 @@ class SoundStore @Autowired constructor(
             listRemoteSoundBites().forEach { remoteSoundFile ->
                 launch {
                     if (!downloadSoundBite(remoteSoundFile, soundsDirectory)) {
-                        if (!copyFallbackFile(remoteSoundFile, soundsDirectory)) {
-                            telegramNotifier.sendMessage("⚠️ Failed to download ${remoteSoundFile.name}")
-                        }
+                        copyFallbackFile(remoteSoundFile, soundsDirectory)
                     }
                 }
             }
         }
 
-        return destination.listFiles()?.toList().orEmpty()
-                .associateWith { it.checksum() }
-                .mapKeys { it.key.name }
+        val files = destination.listFiles()
+        if (files == null || files.isEmpty()) {
+            telegramNotifier.sendPrivateMessage("Failed to list destination files")
+            throw IllegalStateException("Failed to list files for ${destination.name}")
+        }
+
+        return files.associateWith { it.checksum() }
+            .mapKeys { it.key.name }
     }
 
     /**
@@ -116,11 +155,11 @@ class SoundStore @Autowired constructor(
         return try {
             playSounds.listRemoteFiles()
         } catch (t: Throwable) {
-            logger.error("Failed to list remote sounds", t)
             if (attempts > 0) {
-                logger.info("Retrying")
                 listRemoteSoundBites(attempts - 1)
             } else {
+                logger.error("Failed to list remote sounds", t)
+                telegramNotifier.sendPrivateMessage("Couldn't reach the PlaySounds page after 5 tries")
                 throw t
             }
         }
@@ -137,11 +176,11 @@ class SoundStore @Autowired constructor(
             playSounds.downloadFile(remoteSoundFile, soundsDirectory.dirName)
             true
         } catch (t: Throwable) {
-            logger.error("Failed to download $remoteSoundFile", t)
             if (attempts > 0) {
-                logger.info("Retrying $remoteSoundFile")
                 downloadSoundBite(remoteSoundFile, soundsDirectory, attempts - 1)
             } else {
+                logger.error("Failed to download $remoteSoundFile", t)
+                telegramNotifier.sendPrivateMessage("Couldn't download ${remoteSoundFile.name} after 5 tries")
                 false
             }
         }
@@ -152,43 +191,29 @@ class SoundStore @Autowired constructor(
      *
      * @return `true` if the file was copied, `false` if no such file exists.
      */
-    private fun copyFallbackFile(remoteSoundFile: PlaySounds.RemoteSoundFile, target: SoundsDirectory): Boolean {
+    private fun copyFallbackFile(remoteSoundFile: PlaySounds.RemoteSoundFile, target: SoundsDirectory) {
         val source = target.other()
         val fallback = source.getSound(remoteSoundFile.fileName)
-        return if (fallback == null) {
+        if (fallback == null) {
             logger.error("No fallback for ${remoteSoundFile.name} in ${source.dirName}, giving up")
-            false
         } else {
             fallback.copyTo(File(target.dirName, remoteSoundFile.fileName))
-            true
         }
     }
 
-    private fun sendTelegramNotification(newFiles: Collection<String>, changedFiles: Collection<String>, oldFiles: Collection<String>) {
+    private fun sendTelegramNotification(addedSounds: Collection<String>, changedSounds: Collection<String>, removedSounds: Collection<String>) {
         val message = buildString {
-            if (newFiles.isNotEmpty()) {
-                appendLine("Added sounds:")
-                newFiles.forEach {
-                    appendLine("- ${it.substringBeforeLast('.')}")
-                }
+            if (addedSounds.isNotEmpty()) {
+                append("<b>Added:</b> ")
+                appendLine(addedSounds.joinToString())
             }
-            if (changedFiles.isNotEmpty()) {
-                if (isNotEmpty()) {
-                    appendLine()
-                }
-                appendLine("Changed sounds:")
-                changedFiles.forEach {
-                    appendLine("- ${it.substringBeforeLast('.')}")
-                }
+            if (changedSounds.isNotEmpty()) {
+                append("<b>Changed:</b> ")
+                appendLine(changedSounds.joinToString())
             }
-            if (oldFiles.isNotEmpty()) {
-                if (isNotEmpty()) {
-                    appendLine()
-                }
-                appendLine("Removed sounds:")
-                oldFiles.forEach {
-                    appendLine("- ${it.substringBeforeLast('.')}")
-                }
+            if (removedSounds.isNotEmpty()) {
+                append("<b>Removed:</b> ")
+                appendLine(removedSounds.joinToString())
             }
         }
         if (message.isNotEmpty()) {
