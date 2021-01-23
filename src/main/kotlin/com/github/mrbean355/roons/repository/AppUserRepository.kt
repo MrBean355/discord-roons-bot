@@ -23,7 +23,7 @@ import java.util.Date
 interface AppUserRepository : CrudRepository<AppUser, Int> {
     fun countByGeneratedId(generatedId: String): Int
     fun findByGeneratedId(generatedId: String): AppUser?
-    fun findByLastSeenAfter(date: Date): List<AppUser>
+    fun countByLastSeenAfter(date: Date): Long
 }
 
 /** Update the user's last seen time to now. */
