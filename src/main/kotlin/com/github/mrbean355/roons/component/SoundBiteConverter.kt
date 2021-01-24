@@ -16,18 +16,16 @@
 
 package com.github.mrbean355.roons.component
 
-import com.github.mrbean355.roons.telegram.TelegramNotifier
 import org.slf4j.Logger
 import org.springframework.stereotype.Component
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 private const val UNIX_EXECUTABLE = "ffmpeg"
 private const val WINDOWS_EXECUTABLE = "ffmpeg.exe"
 
 /** Convert downloaded sound bites to a consistent MP3 format. */
 @Component
-class SoundBiteConverter(private val logger: Logger, private val telegramNotifier: TelegramNotifier) {
+class SoundBiteConverter(private val logger: Logger) {
     private val isWindows = System.getProperty("os.name").contains("windows", ignoreCase = true)
     private val ffmpegPath: String
 
@@ -53,7 +51,7 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
         val convertedName = victim.nameWithoutExtension + ".mp3"
         val tempOutputName = "tmp_$convertedName"
         val tempOutputFile = File(parentDir, tempOutputName)
-        val exitCode = runCommand(ffmpegPath, "-i", victimPath, tempOutputFile.absolutePath)
+        val exitCode = SystemCommands.execute(ffmpegPath, "-i", victimPath, tempOutputFile.absolutePath)
         if (exitCode != 0) {
             logger.error("Failed to convert $victim, exited with: $exitCode")
             if (tempOutputFile.exists()) {
@@ -102,21 +100,7 @@ class SoundBiteConverter(private val logger: Logger, private val telegramNotifie
 
         val ffmpegPath = target.absolutePath
         logger.info("Copied $exe to $ffmpegPath")
-        val exitCode = runCommand("/bin/chmod", "755", ffmpegPath)
+        val exitCode = SystemCommands.execute("/bin/chmod", "755", ffmpegPath)
         return exitCode == 0
-    }
-
-    private fun runCommand(vararg arg: String): Int {
-        val process = ProcessBuilder(*arg)
-            .redirectOutput(ProcessBuilder.Redirect.PIPE)
-            .redirectError(ProcessBuilder.Redirect.PIPE)
-            .start()
-
-        process.waitFor(1, TimeUnit.HOURS)
-        val exitValue = process.exitValue()
-        if (exitValue != 0) {
-            logger.error(process.inputStream.bufferedReader().readText().trim())
-        }
-        return process.exitValue()
     }
 }
