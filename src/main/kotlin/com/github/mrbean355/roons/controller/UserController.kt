@@ -18,11 +18,13 @@ package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.CreateIdResponse
+import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod.POST
 import org.springframework.web.bind.annotation.RequestParam
@@ -33,7 +35,8 @@ import java.util.UUID
 @RestController
 @RequestMapping("/", method = [POST])
 class UserController @Autowired constructor(
-    private val appUserRepository: AppUserRepository
+    private val appUserRepository: AppUserRepository,
+    private val analyticsPropertyRepository: AnalyticsPropertyRepository
 ) {
     @RequestMapping("createId")
     fun createId(): ResponseEntity<CreateIdResponse> {
@@ -52,5 +55,25 @@ class UserController @Autowired constructor(
     @RequestMapping("heartbeat")
     fun heartbeat(@RequestParam("userId") userId: String) {
         appUserRepository.updateLastSeen(userId)
+    }
+
+    @GetMapping("findPeers")
+    fun findPeers(@RequestParam("userId") userId: String): ResponseEntity<List<String>> {
+        val user = appUserRepository.findByGeneratedId(userId)
+            ?: return ResponseEntity.notFound().build()
+
+        val matchId = analyticsPropertyRepository.findByUserAndProperty(user, "dota.matchId")?.value
+            ?: return ResponseEntity.notFound().build()
+
+        if (matchId.isBlank()) {
+            return ResponseEntity.ok(emptyList())
+        }
+
+        val users = analyticsPropertyRepository.findByPropertyAndValue("dota.matchId", matchId)
+            .map { it.user }
+
+        return ResponseEntity.ok(users.mapNotNull {
+            analyticsPropertyRepository.findByUserAndProperty(it, "dota.heroName")?.value
+        })
     }
 }

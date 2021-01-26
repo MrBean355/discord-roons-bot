@@ -23,11 +23,15 @@ import org.springframework.data.repository.CrudRepository
 
 interface AnalyticsPropertyRepository : CrudRepository<AnalyticsProperty, Int> {
 
+    fun findByUserAndProperty(user: AppUser, property: String): AnalyticsProperty?
+
     fun findByUserAndPropertyIn(user: AppUser, properties: List<String>): List<AnalyticsProperty>
 
     @Query("SELECT DISTINCT property from AnalyticsProperty ")
     fun findDistinctProperties(): List<String>
 
     fun findByProperty(property: String): List<AnalyticsProperty>
+
+    fun findByPropertyAndValue(property: String, value: String): List<AnalyticsProperty>
 
 }
