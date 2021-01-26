@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package com.github.mrbean355.roons
+package com.github.mrbean355.roons.component
 
-import org.telegram.telegrambots.meta.api.methods.ParseMode.HTML
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage
-import java.util.Optional
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 
-@Suppress("FunctionName")
-fun SendHtmlMessage(chatId: String, text: String): SendMessage = SendMessage.builder()
-    .chatId(chatId)
-    .text(text)
-    .parseMode(HTML)
-    .build()
+internal class DefaultClockTest {
 
-@Suppress("NOTHING_TO_INLINE")
-inline fun <T> Optional<T>.orNull(): T? = orElse(null)
+    @Test
+    internal fun testCurrentTimeMs_ReturnsRoughlyCurrentTime() {
+        val ms = DefaultClock().currentTimeMs
+
+        assertTrue(System.currentTimeMillis() - ms < 250)
+    }
+}

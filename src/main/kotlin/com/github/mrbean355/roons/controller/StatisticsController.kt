@@ -16,8 +16,7 @@
 
 package com.github.mrbean355.roons.controller
 
-import com.github.mrbean355.roons.StatisticsResponse
-import com.github.mrbean355.roons.getTimeAgo
+import com.github.mrbean355.roons.component.Clock
 import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
@@ -25,62 +24,52 @@ import com.github.mrbean355.roons.repository.adminToken
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.util.Calendar.DAY_OF_MONTH
-import java.util.Calendar.MINUTE
+import java.util.Date
+import java.util.concurrent.TimeUnit
 
 @RestController
 @RequestMapping("/statistics")
 class StatisticsController(
-        private val appUserRepository: AppUserRepository,
-        private val analyticsPropertyRepository: AnalyticsPropertyRepository,
-        private val metadataRepository: MetadataRepository
+    private val appUserRepository: AppUserRepository,
+    private val analyticsPropertyRepository: AnalyticsPropertyRepository,
+    private val metadataRepository: MetadataRepository,
+    private val clock: Clock
 ) {
 
-    @GetMapping("/get")
-    fun getStatistics(@RequestParam("token") token: String): ResponseEntity<StatisticsResponse> {
+    @GetMapping("properties")
+    fun listProperties(@RequestParam("token") token: String): ResponseEntity<List<String>> {
         if (token != metadataRepository.adminToken) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
-        return ResponseEntity.ok(StatisticsResponse(
-                recentUsers = appUserRepository.findByLastSeenAfter(getTimeAgo(5, MINUTE)).size,
-                dailyUsers = appUserRepository.findByLastSeenAfter(getTimeAgo(1, DAY_OF_MONTH)).size,
-                properties = constructProperties(listOf(
-                        "app.version",
-                        "app.distribution",
-                        "app.update",
-                        "sounds.update",
-                        "tray.enabled",
-                        "tray.permanent",
-                        "bot.enabled",
-                        "mod.update",
-                ) + soundTriggerTypes()) + ("mod.selection" to modSelection())
-        ))
+        return ResponseEntity.ok(analyticsPropertyRepository.findDistinctProperties())
     }
 
-    private fun constructProperties(stats: List<String>): Map<String, Map<String, Int>> {
-        return stats.associateWith(this::countValues)
+    @GetMapping("recentUsers")
+    fun getRecentUsers(@RequestParam("token") token: String, @RequestParam("period") period: Long): ResponseEntity<Long> {
+        if (token != metadataRepository.adminToken) {
+            return ResponseEntity(HttpStatus.UNAUTHORIZED)
+        }
+        val since = clock.currentTimeMs - TimeUnit.MINUTES.toMillis(period)
+        return ResponseEntity.ok(appUserRepository.countByLastSeenAfter(Date(since)))
     }
 
-    private fun countValues(property: String): Map<String, Int> {
-        return analyticsPropertyRepository.findByProperty(property).groupingBy { it.value }.eachCount()
-    }
-
-    private fun soundTriggerTypes(): Collection<String> {
-        return listOf("onBountyRunesSpawn", "onDeath", "onDefeat", "onHeal", "onKill", "onMatchStart", "onMidasReady",
-                "onRespawn", "onSmoked", "onVictory", "periodically")
-                .map { "sounds.triggers.$it" }
-    }
-
-    private fun modSelection(): Map<String, Int> {
-        return analyticsPropertyRepository.findByProperty("mod.selection")
-                .flatMap { it.value.split(',') }
+    @GetMapping("{property}")
+    fun getStatistic(@RequestParam("token") token: String, @PathVariable("property") property: String): ResponseEntity<Map<String, Int>> {
+        if (token != metadataRepository.adminToken) {
+            return ResponseEntity(HttpStatus.UNAUTHORIZED)
+        }
+        val properties = analyticsPropertyRepository.findByProperty(property)
+        if (properties.isEmpty()) {
+            return ResponseEntity(HttpStatus.NOT_FOUND)
+        }
+        return ResponseEntity.ok(
+            properties.flatMap { it.value.split(',') }
                 .groupingBy { it }
                 .eachCount()
-                .mapKeys {
-                    if (it.key.isBlank()) "(none)" else it.key
-                }
+        )
     }
 }

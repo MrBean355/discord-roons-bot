@@ -16,10 +16,15 @@
 
 package com.github.mrbean355.roons
 
+import com.github.mrbean355.roons.component.Clock
 import java.io.File
 
 fun loadTestResource(name: String): String {
     val pathname = Thread.currentThread().contextClassLoader.getResource(name)?.file
     require(pathname != null) { "Resource not found: $name" }
     return File(pathname).readText()
+}
+
+class TestClock(time: Long) : Clock {
+    override val currentTimeMs = time
 }
