@@ -52,4 +52,10 @@ data class DotaModDto(
     val infoUrl: String
 )
 
+data class FeedbackRequest(
+    val userId: String,
+    val rating: Int,
+    val comments: String
+)
+
 fun DotaMod.asDto(): DotaModDto = DotaModDto(key, name, description, size, hash, downloadUrl, infoUrl)
