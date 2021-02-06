@@ -66,6 +66,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds/wiki/Discord-Bot"
 
@@ -107,7 +108,7 @@ class DiscordBot @Autowired constructor(
             }
         }
 
-        var reconnects = 0
+        val reconnects = AtomicInteger()
         // Reconnect to previous voice channels:
         supervisorScope {
             discordBotSettingsRepository.findAll().forEach { settings ->
@@ -117,7 +118,7 @@ class DiscordBot @Autowired constructor(
                         val channel = guild?.getVoiceChannelById(lastChannel)
                         if (channel != null) {
                             guild.audioManager.openAudioConnection(channel)
-                            ++reconnects
+                            reconnects.incrementAndGet()
                         }
                         discordBotSettingsRepository.save(settings.copy(lastChannel = null))
                     }
@@ -125,7 +126,7 @@ class DiscordBot @Autowired constructor(
             }
         }
 
-        telegramNotifier.sendPrivateMessage("⚙️ <b>Started up</b>:\nReconnected to <b>$reconnects</b> voice channels.")
+        telegramNotifier.sendPrivateMessage("⚙️ <b>Started up</b>:\nReconnected to <b>${reconnects.get()}</b> voice channels.")
     }
 
     /** Try to play the given [soundFileName] in a guild. Determines the guild from the [token]. */
