@@ -18,12 +18,10 @@ package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.component.PlaySounds
 import com.github.mrbean355.roons.telegram.TelegramNotifier
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -40,7 +38,6 @@ class SoundStore @Autowired constructor(
     private val telegramNotifier: TelegramNotifier,
     private val logger: Logger
 ) {
-    private val coroutineScope = CoroutineScope(IO + SupervisorJob())
     private var soundsDirectory = SoundsDirectory.PRIMARY
     private var fileChecksums: Map<String, String> = emptyMap()
 
@@ -48,19 +45,13 @@ class SoundStore @Autowired constructor(
     private var skipFirstDownload: Boolean = false
 
     @PostConstruct
-    fun onPostConstruct() {
-        if (skipFirstDownload) {
-            fileChecksums = File(soundsDirectory.dirName).listFiles().orEmpty().associate {
+    fun onPostConstruct(): Unit = runBlocking(IO) {
+        fileChecksums = if (skipFirstDownload) {
+            File(soundsDirectory.dirName).listFiles().orEmpty().associate {
                 it.name to it.checksum()
             }
-            if (fileChecksums.isNotEmpty()) {
-                return
-            }
-        }
-        runBlocking {
-            coroutineScope.launch {
-                fileChecksums = downloadAllSoundBites(soundsDirectory)
-            }.join() // wait for sound bites to download.
+        } else {
+            downloadAllSoundBites(soundsDirectory)
         }
     }
 
@@ -85,38 +76,36 @@ class SoundStore @Autowired constructor(
      * Downloads into the non-active [SoundsDirectory] and then flips the active & non-active directories.
      */
     @Scheduled(initialDelayString = "PT1H", fixedRateString = "PT1H")
-    fun synchroniseSoundBites() {
-        coroutineScope.launch {
-            val old = fileChecksums
-            val nextDirectory = soundsDirectory.other()
-            val new = downloadAllSoundBites(nextDirectory)
-            fileChecksums = new
-            soundsDirectory = nextDirectory
+    fun synchroniseSoundBites(): Unit = runBlocking(IO) {
+        val old = fileChecksums
+        val nextDirectory = soundsDirectory.other()
+        val new = downloadAllSoundBites(nextDirectory)
+        fileChecksums = new
+        soundsDirectory = nextDirectory
 
-            val addedSounds = new.keys - old.keys
-            val removedSounds = old.keys - new.keys
+        val addedSounds = new.keys - old.keys
+        val removedSounds = old.keys - new.keys
 
-            if (addedSounds.size > 15 || removedSounds.size > 15) {
-                // Occasionally, 2 strange Telegram messages are sent.
-                // The first one says that many new sounds were added (but they have existed for a long time).
-                // The second one says that many sounds were removed (even though they still exist).
-                // Instead of sending the message, send a private debugging one to figure out why it happens.
+        if (addedSounds.size > 15 || removedSounds.size > 15) {
+            // Occasionally, 2 strange Telegram messages are sent.
+            // The first one says that many new sounds were added (but they have existed for a long time).
+            // The second one says that many sounds were removed (even though they still exist).
+            // Instead of sending the message, send a private debugging one to figure out why it happens.
 
-                telegramNotifier.sendPrivateMessage(
-                    """
-                    Something weird happened.
-                    Added: ${addedSounds.size}
-                    Removed: ${removedSounds.size}
-                    Before sync: ${old.size}
-                    """.trimIndent()
-                )
-            } else {
-                sendTelegramNotification(
-                    addedSounds = addedSounds,
-                    changedSounds = new.filter { it.key in old.keys }.filter { it.value != old.getValue(it.key) }.keys,
-                    removedSounds = removedSounds
-                )
-            }
+            telegramNotifier.sendPrivateMessage(
+                """
+                Something weird happened.
+                Added: ${addedSounds.size}
+                Removed: ${removedSounds.size}
+                Before sync: ${old.size}
+                """.trimIndent()
+            )
+        } else {
+            sendTelegramNotification(
+                addedFiles = addedSounds,
+                changedFiles = new.filter { it.key in old.keys }.filter { it.value != old.getValue(it.key) }.keys,
+                removedFiles = removedSounds
+            )
         }
     }
 
@@ -127,7 +116,7 @@ class SoundStore @Autowired constructor(
         }
         destination.mkdirs()
 
-        coroutineScope {
+        supervisorScope {
             listRemoteSoundBites().forEach { remoteSoundFile ->
                 launch {
                     if (!downloadSoundBite(remoteSoundFile, soundsDirectory)) {
@@ -201,19 +190,19 @@ class SoundStore @Autowired constructor(
         }
     }
 
-    private fun sendTelegramNotification(addedSounds: Collection<String>, changedSounds: Collection<String>, removedSounds: Collection<String>) {
+    private fun sendTelegramNotification(addedFiles: Collection<String>, changedFiles: Collection<String>, removedFiles: Collection<String>) {
         val message = buildString {
-            if (addedSounds.isNotEmpty()) {
+            if (addedFiles.isNotEmpty()) {
                 append("<b>Added:</b> ")
-                appendLine(addedSounds.joinToString())
+                appendLine(addedFiles.removeExtensions().joinToString())
             }
-            if (changedSounds.isNotEmpty()) {
+            if (changedFiles.isNotEmpty()) {
                 append("<b>Changed:</b> ")
-                appendLine(changedSounds.joinToString())
+                appendLine(changedFiles.removeExtensions().joinToString())
             }
-            if (removedSounds.isNotEmpty()) {
+            if (removedFiles.isNotEmpty()) {
                 append("<b>Removed:</b> ")
-                appendLine(removedSounds.joinToString())
+                appendLine(removedFiles.removeExtensions().joinToString())
             }
         }
         if (message.isNotEmpty()) {
@@ -231,6 +220,9 @@ class SoundStore @Autowired constructor(
         }
         return hashText
     }
+
+    private fun Iterable<String>.removeExtensions(): List<String> =
+        map { it.substringBeforeLast('.') }
 
     private enum class SoundsDirectory(val dirName: String) {
         PRIMARY("sounds"),

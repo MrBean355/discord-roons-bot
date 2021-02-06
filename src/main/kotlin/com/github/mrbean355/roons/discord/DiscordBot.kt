@@ -31,6 +31,12 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.OnlineStatus
@@ -74,6 +80,7 @@ class DiscordBot @Autowired constructor(
     @Qualifier(DISCORD_TOKEN) private val token: String
 ) : ListenerAdapter() {
 
+    private val botScope = CoroutineScope(IO + SupervisorJob())
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
     private val bot: JDA = JDABuilder.createDefault(token)
@@ -85,28 +92,36 @@ class DiscordBot @Autowired constructor(
         AudioSourceManagers.registerLocalSource(playerManager)
     }
 
-    override fun onReady(event: ReadyEvent) {
+    override fun onReady(event: ReadyEvent) = runBlocking(IO) {
         // Show startup message if there is one:
         val message = metadataRepository.takeStartupMessage()
             ?.replace("\\n", "\n")
 
         if (message != null && message.isNotBlank()) {
-            bot.guilds.forEach {
-                it.findWelcomeChannel()?.typeMessage(message)
+            supervisorScope {
+                bot.guilds.forEach {
+                    launch {
+                        it.findWelcomeChannel()?.typeMessage(message)
+                    }
+                }
             }
         }
 
         var reconnects = 0
         // Reconnect to previous voice channels:
-        discordBotSettingsRepository.findAll().forEach { settings ->
-            settings.lastChannel?.let { lastChannel ->
-                val guild = bot.getGuildById(settings.guildId)
-                val channel = guild?.getVoiceChannelById(lastChannel)
-                if (channel != null) {
-                    guild.audioManager.openAudioConnection(channel)
-                    ++reconnects
+        supervisorScope {
+            discordBotSettingsRepository.findAll().forEach { settings ->
+                launch {
+                    settings.lastChannel?.let { lastChannel ->
+                        val guild = bot.getGuildById(settings.guildId)
+                        val channel = guild?.getVoiceChannelById(lastChannel)
+                        if (channel != null) {
+                            guild.audioManager.openAudioConnection(channel)
+                            ++reconnects
+                        }
+                        discordBotSettingsRepository.save(settings.copy(lastChannel = null))
+                    }
                 }
-                discordBotSettingsRepository.save(settings.copy(lastChannel = null))
             }
         }
 
@@ -156,14 +171,18 @@ class DiscordBot @Autowired constructor(
     }
 
     /** Disconnect from voice channels when shutting down. */
-    fun shutdown() {
+    fun shutdown() = runBlocking(IO) {
         bot.presence.setStatus(OnlineStatus.OFFLINE)
         val connectedGuilds = bot.guilds.filter { it.isConnected() }
-        connectedGuilds.forEach { guild ->
-            val settings = discordBotSettingsRepository.loadSettings(guild.id)
-            val currentVoiceChannel = guild.selfMember.voiceState?.channel?.id
-            discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
-            guild.audioManager.closeAudioConnection()
+        supervisorScope {
+            connectedGuilds.forEach { guild ->
+                launch {
+                    val settings = discordBotSettingsRepository.loadSettings(guild.id)
+                    val currentVoiceChannel = guild.selfMember.voiceState?.channel?.id
+                    discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
+                    guild.audioManager.closeAudioConnection()
+                }
+            }
         }
         telegramNotifier.sendPrivateMessage("⚙️ <b>Shutting down</b>:\nDisconnected from <b>${connectedGuilds.size}</b> voice channels.")
     }
@@ -173,66 +192,75 @@ class DiscordBot @Autowired constructor(
     }
 
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        if (event.author.isBot || !event.isFromType(ChannelType.TEXT)) {
-            return
-        }
-        val message = event.message.contentRaw.trim()
-        if (message.startsWith("!volume")) {
-            volume(message, event)
-            return
-        }
-        when (message) {
-            "!help" -> help(event)
-            "!roons" -> join(event)
-            "!seeya" -> leave(event)
-            "!magic" -> magic(event)
-            "!follow" -> follow(event)
-            "!unfollow" -> unfollow(event)
+        botScope.launch {
+            if (event.author.isBot || !event.isFromType(ChannelType.TEXT)) {
+                return@launch
+            }
+            val message = event.message.contentRaw.trim()
+            if (message.startsWith("!volume")) {
+                volume(message, event)
+                return@launch
+            }
+            when (message) {
+                "!help" -> help(event)
+                "!roons" -> join(event)
+                "!seeya" -> leave(event)
+                "!magic" -> magic(event)
+                "!follow" -> follow(event)
+                "!unfollow" -> unfollow(event)
+            }
         }
     }
 
     override fun onGuildJoin(event: GuildJoinEvent) {
-        val guild = event.guild
-        telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.region}, ${guild.memberCount} members")
+        botScope.launch {
+            val guild = event.guild
+            telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.region}, ${guild.memberCount} members")
 
-        guild.findWelcomeChannel()?.typeMessage(
-            """
-            **ALLO, ${guild.name}!** :wave:
-            
-            Type `!roons` for me to join your current voice channel.
-            Type `!seeya` when you want me to leave the voice channel.
-            Type `!follow` for me to follow you when you join & leave voice channels.
-            Type `!help` for more commands.
-            """.trimIndent()
-        )
+            guild.findWelcomeChannel()?.typeMessage(
+                """
+                **ALLO, ${guild.name}!** :wave:
+                
+                Type `!roons` for me to join your current voice channel.
+                Type `!seeya` when you want me to leave the voice channel.
+                Type `!follow` for me to follow you when you join & leave voice channels.
+                Type `!help` for more commands.
+                """.trimIndent()
+            )
+        }
     }
 
     override fun onGuildLeave(event: GuildLeaveEvent) {
-        telegramNotifier.sendPrivateMessage("😔 <b>Left a guild</b>:\n${event.guild.name}")
-        val guildId = event.guild.id
-        discordBotUserRepository.deleteByGuildId(guildId)
-        discordBotSettingsRepository.deleteByGuildId(guildId)
+        botScope.launch {
+            telegramNotifier.sendPrivateMessage("😔 <b>Left a guild</b>:\n${event.guild.name}")
+            val guildId = event.guild.id
+            discordBotUserRepository.deleteByGuildId(guildId)
+            discordBotSettingsRepository.deleteByGuildId(guildId)
+        }
     }
 
     override fun onGenericGuildVoice(event: GenericGuildVoiceEvent) {
-        if (event.member.user.isBot) {
-            return
-        }
-        val settings = discordBotSettingsRepository.findOneByGuildId(event.guild.id) ?: return
-        if (settings.followedUser == event.member.id) {
-            when (event) {
-                is GuildVoiceJoinEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
-                is GuildVoiceMoveEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
-                is GuildVoiceLeaveEvent -> event.guild.audioManager.closeAudioConnection()
+        botScope.launch {
+            if (event.member.user.isBot) {
+                return@launch
+            }
+            val settings = discordBotSettingsRepository.findOneByGuildId(event.guild.id) ?: return@launch
+            if (settings.followedUser == event.member.id) {
+                when (event) {
+                    is GuildVoiceJoinEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
+                    is GuildVoiceMoveEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
+                    is GuildVoiceLeaveEvent -> event.guild.audioManager.closeAudioConnection()
+                }
             }
         }
     }
 
     override fun onPrivateMessageReceived(event: PrivateMessageReceivedEvent) {
-        if (event.author.isBot) {
-            return
+        botScope.launch {
+            if (!event.author.isBot) {
+                event.message.channel.typeMessage(":no_entry: Please send me commands through a text channel in your server.")
+            }
         }
-        event.message.channel.typeMessage(":no_entry: Please send me commands through a text channel in your server.")
     }
 
     private fun volume(message: String, event: MessageReceivedEvent) {
