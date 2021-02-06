@@ -24,21 +24,20 @@ import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod.POST
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.Date
 import java.util.UUID
 
 @RestController
-@RequestMapping("/", method = [POST])
+@RequestMapping("/")
 class UserController @Autowired constructor(
     private val appUserRepository: AppUserRepository,
     private val analyticsPropertyRepository: AnalyticsPropertyRepository
 ) {
-    @RequestMapping("createId")
+    @PostMapping("createId")
     fun createId(): ResponseEntity<CreateIdResponse> {
         var tries = 0
         var generated: String
@@ -52,12 +51,12 @@ class UserController @Autowired constructor(
         return ResponseEntity.ok(CreateIdResponse(generated))
     }
 
-    @RequestMapping("heartbeat")
+    @PostMapping("heartbeat")
     fun heartbeat(@RequestParam("userId") userId: String) {
         appUserRepository.updateLastSeen(userId)
     }
 
-    @GetMapping("findPeers")
+    @PostMapping("findPeers")
     fun findPeers(@RequestParam("userId") userId: String): ResponseEntity<List<String>> {
         val user = appUserRepository.findByGeneratedId(userId)
             ?: return ResponseEntity.notFound().build()

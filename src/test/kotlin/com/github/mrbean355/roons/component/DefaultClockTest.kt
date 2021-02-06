@@ -16,7 +16,7 @@
 
 package com.github.mrbean355.roons.component
 
-import org.junit.jupiter.api.Assertions.assertTrue
+import com.github.mrbean355.roons.assertTimeIsRoughlyNow
 import org.junit.jupiter.api.Test
 
 internal class DefaultClockTest {
@@ -25,6 +25,6 @@ internal class DefaultClockTest {
     internal fun testCurrentTimeMs_ReturnsRoughlyCurrentTime() {
         val ms = DefaultClock().currentTimeMs
 
-        assertTrue(System.currentTimeMillis() - ms < 250)
+        assertTimeIsRoughlyNow(ms)
     }
 }
