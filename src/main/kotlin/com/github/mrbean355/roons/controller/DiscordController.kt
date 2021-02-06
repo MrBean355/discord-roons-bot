@@ -28,11 +28,9 @@ import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod.GET
-import org.springframework.web.bind.annotation.RequestMethod.POST
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
@@ -48,7 +46,7 @@ class DiscordController @Autowired constructor(
     private val soundStore: SoundStore
 ) {
 
-    @RequestMapping("lookupToken", method = [GET])
+    @GetMapping("lookupToken")
     fun lookupToken(@RequestParam("token") token: String): ResponseEntity<String> {
         val user = discordBotUserRepository.findOneByToken(token)
             ?: return ResponseEntity.notFound().build()
@@ -59,7 +57,7 @@ class DiscordController @Autowired constructor(
         return ResponseEntity.ok(guild.name)
     }
 
-    @RequestMapping(method = [POST])
+    @PostMapping
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
         appUserRepository.updateLastSeen(request.userId)
 
@@ -87,6 +85,9 @@ class DiscordController @Autowired constructor(
         if (request.token.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         }
+        if (request.sounds.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        }
         val user = discordBotUserRepository.findOneByToken(request.token)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
 
@@ -100,7 +101,7 @@ class DiscordController @Autowired constructor(
         }
     }
 
-    @RequestMapping("dumpStatus", method = [GET])
+    @GetMapping("dumpStatus")
     fun dumpStatus(@RequestParam("token") token: String): ResponseEntity<String> {
         if (token.isBlank()) {
             return ResponseEntity(HttpStatus.BAD_REQUEST)
