@@ -175,8 +175,9 @@ internal class ModControllerTest {
 
     @Test
     internal fun testRefreshMods_CacheNotFound_NoExceptionThrown() {
-        controller.refreshMods("12345")
         every { cacheManager.getCache(DOTA_MOD_CACHE_NAME) } returns null
+
+        controller.refreshMods("12345")
 
         verify {
             cacheManager.getCache(DOTA_MOD_CACHE_NAME)
