@@ -31,7 +31,9 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
@@ -78,6 +80,7 @@ class DiscordBot @Autowired constructor(
     @Qualifier(DISCORD_TOKEN) private val token: String
 ) : ListenerAdapter() {
 
+    private val botScope = CoroutineScope(IO + SupervisorJob())
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
     private val bot: JDA = JDABuilder.createDefault(token)
@@ -189,66 +192,75 @@ class DiscordBot @Autowired constructor(
     }
 
     override fun onMessageReceived(event: MessageReceivedEvent) {
-        if (event.author.isBot || !event.isFromType(ChannelType.TEXT)) {
-            return
-        }
-        val message = event.message.contentRaw.trim()
-        if (message.startsWith("!volume")) {
-            volume(message, event)
-            return
-        }
-        when (message) {
-            "!help" -> help(event)
-            "!roons" -> join(event)
-            "!seeya" -> leave(event)
-            "!magic" -> magic(event)
-            "!follow" -> follow(event)
-            "!unfollow" -> unfollow(event)
+        botScope.launch {
+            if (event.author.isBot || !event.isFromType(ChannelType.TEXT)) {
+                return@launch
+            }
+            val message = event.message.contentRaw.trim()
+            if (message.startsWith("!volume")) {
+                volume(message, event)
+                return@launch
+            }
+            when (message) {
+                "!help" -> help(event)
+                "!roons" -> join(event)
+                "!seeya" -> leave(event)
+                "!magic" -> magic(event)
+                "!follow" -> follow(event)
+                "!unfollow" -> unfollow(event)
+            }
         }
     }
 
     override fun onGuildJoin(event: GuildJoinEvent) {
-        val guild = event.guild
-        telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.region}, ${guild.memberCount} members")
+        botScope.launch {
+            val guild = event.guild
+            telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.region}, ${guild.memberCount} members")
 
-        guild.findWelcomeChannel()?.typeMessage(
-            """
-            **ALLO, ${guild.name}!** :wave:
-            
-            Type `!roons` for me to join your current voice channel.
-            Type `!seeya` when you want me to leave the voice channel.
-            Type `!follow` for me to follow you when you join & leave voice channels.
-            Type `!help` for more commands.
-            """.trimIndent()
-        )
+            guild.findWelcomeChannel()?.typeMessage(
+                """
+                **ALLO, ${guild.name}!** :wave:
+                
+                Type `!roons` for me to join your current voice channel.
+                Type `!seeya` when you want me to leave the voice channel.
+                Type `!follow` for me to follow you when you join & leave voice channels.
+                Type `!help` for more commands.
+                """.trimIndent()
+            )
+        }
     }
 
     override fun onGuildLeave(event: GuildLeaveEvent) {
-        telegramNotifier.sendPrivateMessage("😔 <b>Left a guild</b>:\n${event.guild.name}")
-        val guildId = event.guild.id
-        discordBotUserRepository.deleteByGuildId(guildId)
-        discordBotSettingsRepository.deleteByGuildId(guildId)
+        botScope.launch {
+            telegramNotifier.sendPrivateMessage("😔 <b>Left a guild</b>:\n${event.guild.name}")
+            val guildId = event.guild.id
+            discordBotUserRepository.deleteByGuildId(guildId)
+            discordBotSettingsRepository.deleteByGuildId(guildId)
+        }
     }
 
     override fun onGenericGuildVoice(event: GenericGuildVoiceEvent) {
-        if (event.member.user.isBot) {
-            return
-        }
-        val settings = discordBotSettingsRepository.findOneByGuildId(event.guild.id) ?: return
-        if (settings.followedUser == event.member.id) {
-            when (event) {
-                is GuildVoiceJoinEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
-                is GuildVoiceMoveEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
-                is GuildVoiceLeaveEvent -> event.guild.audioManager.closeAudioConnection()
+        botScope.launch {
+            if (event.member.user.isBot) {
+                return@launch
+            }
+            val settings = discordBotSettingsRepository.findOneByGuildId(event.guild.id) ?: return@launch
+            if (settings.followedUser == event.member.id) {
+                when (event) {
+                    is GuildVoiceJoinEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
+                    is GuildVoiceMoveEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
+                    is GuildVoiceLeaveEvent -> event.guild.audioManager.closeAudioConnection()
+                }
             }
         }
     }
 
     override fun onPrivateMessageReceived(event: PrivateMessageReceivedEvent) {
-        if (event.author.isBot) {
-            return
+        botScope.launch {
+            if (!event.author.isBot) {
+                event.message.channel.typeMessage(":no_entry: Please send me commands through a text channel in your server.")
+            }
         }
-        event.message.channel.typeMessage(":no_entry: Please send me commands through a text channel in your server.")
     }
 
     private fun volume(message: String, event: MessageReceivedEvent) {
