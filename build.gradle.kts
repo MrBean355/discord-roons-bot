@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.sonarqube.gradle.SonarQubeTask
 
 plugins {
-    val kotlinVersion = "1.4.21"
+    val kotlinVersion = "1.4.30"
 
     kotlin("jvm") version kotlinVersion
     id("org.jetbrains.kotlin.plugin.allopen") version kotlinVersion
@@ -82,13 +82,13 @@ dependencies {
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
     implementation("net.dv8tion:JDA:4.2.0_227")
-    implementation("com.sedmelluq:lavaplayer:1.3.66")
+    implementation("com.sedmelluq:lavaplayer:1.3.67")
     implementation("com.github.natanbc:lavadsp:0.7.6")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots:5.0.1")
-    implementation("org.telegram:telegrambots-spring-boot-starter:5.0.1")
+    implementation("org.telegram:telegrambots:5.0.1.1")
+    implementation("org.telegram:telegrambots-spring-boot-starter:5.0.1.1")
 
-    testImplementation(platform("org.junit:junit-bom:5.7.0"))
+    testImplementation(platform("org.junit:junit-bom:5.7.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.mockk:mockk:1.10.5")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.2")
