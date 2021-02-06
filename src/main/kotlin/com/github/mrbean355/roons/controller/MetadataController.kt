@@ -24,8 +24,8 @@ import org.springframework.context.ApplicationContext
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod.GET
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
@@ -37,11 +37,8 @@ class MetadataController @Autowired constructor(
     private val discordBot: DiscordBot
 ) {
 
-    @RequestMapping("shutdown", method = [GET])
+    @GetMapping("shutdown")
     fun shutdown(@RequestParam("token") token: String): ResponseEntity<String> {
-        if (token.isBlank()) {
-            return ResponseEntity(HttpStatus.BAD_REQUEST)
-        }
         val adminToken = metadataRepository.adminToken
             ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
 
