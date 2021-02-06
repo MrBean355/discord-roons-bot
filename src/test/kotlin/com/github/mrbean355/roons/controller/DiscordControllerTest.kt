@@ -24,7 +24,6 @@ import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
-import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.updateLastSeen
 import io.mockk.MockKAnnotations
 import io.mockk.every
@@ -54,9 +53,6 @@ internal class DiscordControllerTest {
     private lateinit var discordBotUserRepository: DiscordBotUserRepository
 
     @MockK
-    private lateinit var metadataRepository: MetadataRepository
-
-    @MockK
     private lateinit var soundStore: SoundStore
     private lateinit var controller: DiscordController
 
@@ -65,7 +61,7 @@ internal class DiscordControllerTest {
         MockKAnnotations.init(this)
         mockkStatic(AppUserRepository::updateLastSeen)
         justRun { appUserRepository.updateLastSeen(any()) }
-        controller = DiscordController(discordBot, appUserRepository, discordBotUserRepository, metadataRepository, soundStore)
+        controller = DiscordController(discordBot, appUserRepository, discordBotUserRepository, soundStore)
     }
 
     @Test

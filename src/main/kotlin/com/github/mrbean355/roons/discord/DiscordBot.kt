@@ -138,39 +138,6 @@ class DiscordBot @Autowired constructor(
         return playSound(guild, file.absolutePath, finalVolume, rate)
     }
 
-    /** Dump the current status for each joined guild. */
-    fun dumpStatus(): String {
-        val builder = StringBuilder()
-        val (activeGuilds, inactiveGuilds) = bot.guilds
-            .sortedBy { it.name.toLowerCase() }
-            .partition { it.isConnected() }
-
-        builder.append("<h1>In ${activeGuilds.size + inactiveGuilds.size} Total Guilds</h1>")
-        builder.append("<h2>Active Guilds</h2>")
-        builder.append("<ul>")
-        activeGuilds.forEach {
-            builder.append("<li>")
-                .append(it.name).append(" | ")
-                .append(it.memberCount).append(" members | ")
-                .append(it.region.getName()).append(" | ")
-                .append("in voice channel: ${it.audioManager.connectedChannel?.name}")
-                .append("</li>")
-        }
-        builder.append("</ul>")
-
-        builder.append("<h2>Inactive Guilds</h2>")
-        builder.append("<ul>")
-        inactiveGuilds.forEach {
-            builder.append("<li>")
-                .append(it.name).append(" | ")
-                .append(it.memberCount).append(" members | ")
-                .append(it.region.getName())
-                .append("</li>")
-        }
-        builder.append("</ul>")
-        return builder.toString()
-    }
-
     /** Disconnect from voice channels when shutting down. */
     fun shutdown() = runBlocking(IO) {
         bot.presence.setStatus(OnlineStatus.OFFLINE)
@@ -187,6 +154,8 @@ class DiscordBot @Autowired constructor(
         }
         telegramNotifier.sendPrivateMessage("⚙️ <b>Shutting down</b>:\nDisconnected from <b>${connectedGuilds.size}</b> voice channels.")
     }
+
+    fun getGuilds(): List<Guild> = bot.guilds
 
     fun getGuildById(id: String): Guild? {
         return bot.getGuildById(id)

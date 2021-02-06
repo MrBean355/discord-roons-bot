@@ -58,4 +58,11 @@ data class FeedbackRequest(
     val comments: String
 )
 
+data class DiscordServerDto(
+    val name: String,
+    val members: Int,
+    val region: String,
+    val voiceChannel: String?
+)
+
 fun DotaMod.asDto(): DotaModDto = DotaModDto(key, name, description, size, hash, downloadUrl, infoUrl)

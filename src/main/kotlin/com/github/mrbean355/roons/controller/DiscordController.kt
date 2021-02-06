@@ -22,8 +22,6 @@ import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
 import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -42,7 +40,6 @@ class DiscordController @Autowired constructor(
     private val discordBot: DiscordBot,
     private val appUserRepository: AppUserRepository,
     private val discordBotUserRepository: DiscordBotUserRepository,
-    private val metadataRepository: MetadataRepository,
     private val soundStore: SoundStore
 ) {
 
@@ -99,19 +96,5 @@ class DiscordController @Autowired constructor(
         } else {
             ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         }
-    }
-
-    @GetMapping("dumpStatus")
-    fun dumpStatus(@RequestParam("token") token: String): ResponseEntity<String> {
-        if (token.isBlank()) {
-            return ResponseEntity(HttpStatus.BAD_REQUEST)
-        }
-        val adminToken = metadataRepository.adminToken
-            ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
-
-        if (adminToken != token) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
-        return ResponseEntity.ok(discordBot.dumpStatus())
     }
 }

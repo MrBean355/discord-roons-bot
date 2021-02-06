@@ -16,24 +16,30 @@
 
 package com.github.mrbean355.roons.controller
 
+import com.github.mrbean355.roons.DiscordServerDto
 import com.github.mrbean355.roons.TestClock
+import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
-import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import net.dv8tion.jda.api.Region
+import net.dv8tion.jda.api.entities.Guild
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.http.HttpStatus
 import java.util.Date
 
+@ExtendWith(MockKExtension::class)
 internal class StatisticsControllerTest {
     @MockK
     private lateinit var appUserRepository: AppUserRepository
@@ -43,13 +49,15 @@ internal class StatisticsControllerTest {
 
     @MockK
     private lateinit var metadataRepository: MetadataRepository
+
+    @MockK
+    private lateinit var discordBot: DiscordBot
     private lateinit var controller: StatisticsController
 
     @BeforeEach
     internal fun setUp() {
-        MockKAnnotations.init(this)
         every { metadataRepository.adminToken } returns "12345"
-        controller = StatisticsController(appUserRepository, analyticsPropertyRepository, metadataRepository, TestClock(1_000_000))
+        controller = StatisticsController(appUserRepository, analyticsPropertyRepository, metadataRepository, discordBot, TestClock(1_000_000))
     }
 
     @Test
@@ -122,5 +130,52 @@ internal class StatisticsControllerTest {
         assertEquals(3, result.body?.getValue("two"))
         assertEquals(2, result.body?.getValue("three"))
         assertEquals(1, result.body?.getValue("four"))
+    }
+
+    @Test
+    internal fun testGetDiscordServers_IncorrectToken_ReturnsUnauthorizedResponse() {
+        val result = controller.getDiscordServers("67890")
+
+        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
+    }
+
+    @Test
+    internal fun testGetDiscordServers_CorrectToken_ReturnsGuildList() {
+        every { discordBot.getGuilds() } returns listOf(
+            mockGuild("Mr Bean Dota", 284, Region.SOUTH_AFRICA, "Squad"),
+            mockGuild("The Krappa Kleb", 74, Region.SINGAPORE, "General"),
+            mockGuild("Bruh", 10, Region.US_EAST),
+            mockGuild("Dungeon", 25, Region.EUROPE)
+        )
+
+        val result = controller.getDiscordServers("12345")
+        val body = result.body.orEmpty()
+
+        assertSame(HttpStatus.OK, result.statusCode)
+        assertEquals(4, body.size)
+        assertEquals(DiscordServerDto("Mr Bean Dota", 284, Region.SOUTH_AFRICA.getName(), "Squad"), body[0])
+        assertEquals(DiscordServerDto("The Krappa Kleb", 74, Region.SINGAPORE.getName(), "General"), body[1])
+        assertEquals(DiscordServerDto("Bruh", 10, Region.US_EAST.getName(), null), body[2])
+        assertEquals(DiscordServerDto("Dungeon", 25, Region.EUROPE.getName(), null), body[3])
+    }
+
+    private fun mockGuild(
+        guildName: String,
+        guildMembers: Int,
+        guildRegion: Region,
+        guildVoiceChannel: String? = null
+    ): Guild = mockk {
+        every { name } returns guildName
+        every { memberCount } returns guildMembers
+        every { region } returns guildRegion
+        every { audioManager } returns mockk {
+            if (guildVoiceChannel != null) {
+                every { connectedChannel } returns mockk {
+                    every { name } returns guildVoiceChannel
+                }
+            } else {
+                every { connectedChannel } returns null
+            }
+        }
     }
 }
