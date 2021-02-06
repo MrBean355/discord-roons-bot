@@ -47,16 +47,7 @@ class ModController(
 
     @GetMapping
     @DotaModCache
-    fun listMods(): Iterable<DotaModDto> = dotaModRepository.findAll().map { it.asDto() }
-
-    @GetMapping("{key}")
-    @DotaModCache
-    fun getMod(@PathVariable("key") key: String): ResponseEntity<DotaModDto> {
-        val mod = dotaModRepository.findById(key).orNull()
-            ?: return ResponseEntity(NOT_FOUND)
-
-        return ResponseEntity.ok(mod.asDto())
-    }
+    fun listMods(): List<DotaModDto> = dotaModRepository.findAll().map { it.asDto() }
 
     @PatchMapping("{key}")
     fun patchMod(
