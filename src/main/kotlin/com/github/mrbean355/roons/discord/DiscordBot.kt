@@ -31,6 +31,10 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.OnlineStatus
@@ -85,28 +89,36 @@ class DiscordBot @Autowired constructor(
         AudioSourceManagers.registerLocalSource(playerManager)
     }
 
-    override fun onReady(event: ReadyEvent) {
+    override fun onReady(event: ReadyEvent) = runBlocking(IO) {
         // Show startup message if there is one:
         val message = metadataRepository.takeStartupMessage()
             ?.replace("\\n", "\n")
 
         if (message != null && message.isNotBlank()) {
-            bot.guilds.forEach {
-                it.findWelcomeChannel()?.typeMessage(message)
+            supervisorScope {
+                bot.guilds.forEach {
+                    launch {
+                        it.findWelcomeChannel()?.typeMessage(message)
+                    }
+                }
             }
         }
 
         var reconnects = 0
         // Reconnect to previous voice channels:
-        discordBotSettingsRepository.findAll().forEach { settings ->
-            settings.lastChannel?.let { lastChannel ->
-                val guild = bot.getGuildById(settings.guildId)
-                val channel = guild?.getVoiceChannelById(lastChannel)
-                if (channel != null) {
-                    guild.audioManager.openAudioConnection(channel)
-                    ++reconnects
+        supervisorScope {
+            discordBotSettingsRepository.findAll().forEach { settings ->
+                launch {
+                    settings.lastChannel?.let { lastChannel ->
+                        val guild = bot.getGuildById(settings.guildId)
+                        val channel = guild?.getVoiceChannelById(lastChannel)
+                        if (channel != null) {
+                            guild.audioManager.openAudioConnection(channel)
+                            ++reconnects
+                        }
+                        discordBotSettingsRepository.save(settings.copy(lastChannel = null))
+                    }
                 }
-                discordBotSettingsRepository.save(settings.copy(lastChannel = null))
             }
         }
 
@@ -156,14 +168,18 @@ class DiscordBot @Autowired constructor(
     }
 
     /** Disconnect from voice channels when shutting down. */
-    fun shutdown() {
+    fun shutdown() = runBlocking(IO) {
         bot.presence.setStatus(OnlineStatus.OFFLINE)
         val connectedGuilds = bot.guilds.filter { it.isConnected() }
-        connectedGuilds.forEach { guild ->
-            val settings = discordBotSettingsRepository.loadSettings(guild.id)
-            val currentVoiceChannel = guild.selfMember.voiceState?.channel?.id
-            discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
-            guild.audioManager.closeAudioConnection()
+        supervisorScope {
+            connectedGuilds.forEach { guild ->
+                launch {
+                    val settings = discordBotSettingsRepository.loadSettings(guild.id)
+                    val currentVoiceChannel = guild.selfMember.voiceState?.channel?.id
+                    discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
+                    guild.audioManager.closeAudioConnection()
+                }
+            }
         }
         telegramNotifier.sendPrivateMessage("⚙️ <b>Shutting down</b>:\nDisconnected from <b>${connectedGuilds.size}</b> voice channels.")
     }
