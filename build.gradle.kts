@@ -90,6 +90,6 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.7.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.10.5")
+    testImplementation("io.mockk:mockk:1.10.6")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.2")
 }
