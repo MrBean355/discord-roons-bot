@@ -18,13 +18,11 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.sonarqube.gradle.SonarQubeTask
 
 plugins {
-    val kotlinVersion = "1.4.30"
-
-    kotlin("jvm") version kotlinVersion
-    id("org.jetbrains.kotlin.plugin.allopen") version kotlinVersion
-    id("org.jetbrains.kotlin.plugin.noarg") version kotlinVersion
-    id("org.jetbrains.kotlin.plugin.spring") version kotlinVersion
-    id("org.jetbrains.kotlin.plugin.jpa") version kotlinVersion
+    kotlin("jvm") version "1.4.31"
+    id("org.jetbrains.kotlin.plugin.allopen") version "1.4.31"
+    id("org.jetbrains.kotlin.plugin.noarg") version "1.4.31"
+    id("org.jetbrains.kotlin.plugin.spring") version "1.4.31"
+    id("org.jetbrains.kotlin.plugin.jpa") version "1.4.31"
     id("org.springframework.boot") version "2.4.3"
     id("org.sonarqube") version "3.1.1"
     jacoco
