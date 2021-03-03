@@ -71,7 +71,7 @@ sonarqube {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.3")
 
     implementation("org.springframework.boot:spring-boot-starter-data-rest:2.4.3")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.4.3")
@@ -89,5 +89,5 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.7.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.mockk:mockk:1.10.6")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.3")
 }
