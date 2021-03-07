@@ -18,7 +18,6 @@ package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.DotaMod
 import com.github.mrbean355.roons.DotaModDto
-import com.github.mrbean355.roons.annotation.DOTA_MOD_CACHE_NAME
 import com.github.mrbean355.roons.repository.DotaModRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
@@ -64,7 +63,7 @@ internal class ModControllerTest {
         mockkStatic(MetadataRepository::takeStartupMessage)
         every { dotaModRepository.save(any()) } returns mockk()
         every { metadataRepository.adminToken } returns "12345"
-        every { cacheManager.getCache(DOTA_MOD_CACHE_NAME) } returns modCache
+        every { cacheManager.getCache("dota_mod_cache") } returns modCache
         controller = ModController(dotaModRepository, metadataRepository, telegramNotifier, cacheManager)
     }
 
@@ -83,8 +82,27 @@ internal class ModControllerTest {
     }
 
     @Test
+    internal fun testGetMod_ModNotFound_ReturnsNotFoundResult() {
+        every { dotaModRepository.findById("base-mod") } returns Optional.empty()
+
+        val result = controller.getMod("base-mod")
+
+        assertSame(HttpStatus.NOT_FOUND, result.statusCode)
+    }
+
+    @Test
+    internal fun testGetMod_ModFound_ReturnsOkResultWithModInfo() {
+        every { dotaModRepository.findById("base-mod") } returns Optional.of(createMod())
+
+        val result = controller.getMod("base-mod")
+
+        assertSame(HttpStatus.OK, result.statusCode)
+        assertEquals(DotaModDto("1", "Base mod", "Lots of stuff", 123, "abc-123", "mods://base", "github://base"), result.body)
+    }
+
+    @Test
     internal fun testPatchMod_IncorrectToken_ReturnsUnauthorized() {
-        val result = controller.patchMod("", "", 0, "67890")
+        val result = controller.patchMod("", "", 0, "67890", "Mod updated")
 
         assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
     }
@@ -93,7 +111,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModNotFound_ReturnsNotFoundResult() {
         every { dotaModRepository.findById("1") } returns Optional.empty()
 
-        val result = controller.patchMod("1", "", 0, "12345")
+        val result = controller.patchMod("1", "", 0, "12345", "Mod updated")
 
         assertSame(HttpStatus.NOT_FOUND, result.statusCode)
     }
@@ -102,7 +120,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModFound_SavesModWithUpdatedSizeAndHash() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
 
-        controller.patchMod("1", "new-hash", 999, "12345")
+        controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
 
         verify { dotaModRepository.save(DotaMod("1", "Base mod", "Lots of stuff", 999, "new-hash", "mods://base", "github://base")) }
     }
@@ -111,10 +129,10 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModFound_ClearsCache() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
 
-        controller.patchMod("1", "new-hash", 999, "12345")
+        controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
 
         verify {
-            cacheManager.getCache(DOTA_MOD_CACHE_NAME)
+            cacheManager.getCache("dota_mod_cache")
             modCache.clear()
         }
     }
@@ -122,36 +140,36 @@ internal class ModControllerTest {
     @Test
     internal fun testPatchMod_ModFound_CacheNotFound_NoExceptionThrown() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
-        every { cacheManager.getCache(DOTA_MOD_CACHE_NAME) } returns null
+        every { cacheManager.getCache("dota_mod_cache") } returns null
 
-        controller.patchMod("1", "new-hash", 999, "12345")
+        controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
 
-        verify { cacheManager.getCache(DOTA_MOD_CACHE_NAME) }
+        verify { cacheManager.getCache("dota_mod_cache") }
     }
 
     @Test
-    internal fun testPatchMod_NormalModFound_SendsTelegramChannelMessage() {
+    internal fun testPatchMod_NullMessage_DoesNotSendTelegramChannelMessage() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod("Custom spell sounds"))
 
-        controller.patchMod("1", "new-hash", 999, "12345")
+        controller.patchMod("1", "new-hash", 999, "12345", null)
 
-        verify { telegramNotifier.sendChannelMessage("The <b>Custom spell sounds</b> mod has been updated to work with the latest Dota 2 update.") }
+        verify(inverse = true) { telegramNotifier.sendChannelMessage(any()) }
     }
 
     @Test
-    internal fun testPatchMod_BaseModFound_SendsTelegramChannelMessage() {
+    internal fun testPatchMod_NonNullMessage_SendsTelegramChannelMessage() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
 
-        controller.patchMod("1", "new-hash", 999, "12345")
+        controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
 
-        verify { telegramNotifier.sendChannelMessage("The <b>Base</b> mod has been updated to work with the latest Dota 2 update.") }
+        verify { telegramNotifier.sendChannelMessage("Mod updated") }
     }
 
     @Test
     internal fun testPatchMod_ModFound_ReturnsOkResult() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
 
-        val result = controller.patchMod("1", "new-hash", 999, "12345")
+        val result = controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
 
         assertSame(HttpStatus.OK, result.statusCode)
     }
@@ -168,19 +186,19 @@ internal class ModControllerTest {
         controller.refreshMods("12345")
 
         verify {
-            cacheManager.getCache(DOTA_MOD_CACHE_NAME)
+            cacheManager.getCache("dota_mod_cache")
             modCache.clear()
         }
     }
 
     @Test
     internal fun testRefreshMods_CacheNotFound_NoExceptionThrown() {
-        every { cacheManager.getCache(DOTA_MOD_CACHE_NAME) } returns null
+        every { cacheManager.getCache("dota_mod_cache") } returns null
 
         controller.refreshMods("12345")
 
         verify {
-            cacheManager.getCache(DOTA_MOD_CACHE_NAME)
+            cacheManager.getCache("dota_mod_cache")
         }
     }
 
