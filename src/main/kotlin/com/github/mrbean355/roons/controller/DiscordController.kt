@@ -22,17 +22,13 @@ import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
 import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod.GET
-import org.springframework.web.bind.annotation.RequestMethod.POST
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
@@ -44,11 +40,10 @@ class DiscordController @Autowired constructor(
     private val discordBot: DiscordBot,
     private val appUserRepository: AppUserRepository,
     private val discordBotUserRepository: DiscordBotUserRepository,
-    private val metadataRepository: MetadataRepository,
     private val soundStore: SoundStore
 ) {
 
-    @RequestMapping("lookupToken", method = [GET])
+    @GetMapping("lookupToken")
     fun lookupToken(@RequestParam("token") token: String): ResponseEntity<String> {
         val user = discordBotUserRepository.findOneByToken(token)
             ?: return ResponseEntity.notFound().build()
@@ -59,7 +54,7 @@ class DiscordController @Autowired constructor(
         return ResponseEntity.ok(guild.name)
     }
 
-    @RequestMapping(method = [POST])
+    @PostMapping
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
         appUserRepository.updateLastSeen(request.userId)
 
@@ -87,6 +82,9 @@ class DiscordController @Autowired constructor(
         if (request.token.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         }
+        if (request.sounds.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+        }
         val user = discordBotUserRepository.findOneByToken(request.token)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
 
@@ -98,19 +96,5 @@ class DiscordController @Autowired constructor(
         } else {
             ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         }
-    }
-
-    @RequestMapping("dumpStatus", method = [GET])
-    fun dumpStatus(@RequestParam("token") token: String): ResponseEntity<String> {
-        if (token.isBlank()) {
-            return ResponseEntity(HttpStatus.BAD_REQUEST)
-        }
-        val adminToken = metadataRepository.adminToken
-            ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
-
-        if (adminToken != token) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
-        return ResponseEntity.ok(discordBot.dumpStatus())
     }
 }

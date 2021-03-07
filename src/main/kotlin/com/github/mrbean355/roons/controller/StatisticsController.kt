@@ -16,7 +16,9 @@
 
 package com.github.mrbean355.roons.controller
 
+import com.github.mrbean355.roons.DiscordServerDto
 import com.github.mrbean355.roons.component.Clock
+import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
@@ -37,6 +39,7 @@ class StatisticsController(
     private val appUserRepository: AppUserRepository,
     private val analyticsPropertyRepository: AnalyticsPropertyRepository,
     private val metadataRepository: MetadataRepository,
+    private val discordBot: DiscordBot,
     private val clock: Clock
 ) {
 
@@ -70,6 +73,23 @@ class StatisticsController(
             properties.flatMap { it.value.split(',') }
                 .groupingBy { it }
                 .eachCount()
+        )
+    }
+
+    @GetMapping("discordServers")
+    fun getDiscordServers(@RequestParam("token") token: String): ResponseEntity<List<DiscordServerDto>> {
+        if (token != metadataRepository.adminToken) {
+            return ResponseEntity(HttpStatus.UNAUTHORIZED)
+        }
+        return ResponseEntity.ok(
+            discordBot.getGuilds().map {
+                DiscordServerDto(
+                    it.name,
+                    it.memberCount,
+                    it.region.getName(),
+                    it.audioManager.connectedChannel?.name
+                )
+            }
         )
     }
 }

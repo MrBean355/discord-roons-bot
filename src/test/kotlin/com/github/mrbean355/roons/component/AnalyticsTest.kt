@@ -42,7 +42,7 @@ internal class AnalyticsTest {
     @BeforeEach
     internal fun setUp() {
         MockKAnnotations.init(this)
-        every { analyticsPropertyRepository.saveAll(any()) } returns emptyList()
+        every { analyticsPropertyRepository.saveAll(any<List<AnalyticsProperty>>()) } returns emptyList()
         analytics = Analytics(appUserRepository, analyticsPropertyRepository)
     }
 

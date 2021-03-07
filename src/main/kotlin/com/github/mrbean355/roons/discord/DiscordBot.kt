@@ -66,6 +66,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds/wiki/Discord-Bot"
 
@@ -107,7 +108,7 @@ class DiscordBot @Autowired constructor(
             }
         }
 
-        var reconnects = 0
+        val reconnects = AtomicInteger()
         // Reconnect to previous voice channels:
         supervisorScope {
             discordBotSettingsRepository.findAll().forEach { settings ->
@@ -117,7 +118,7 @@ class DiscordBot @Autowired constructor(
                         val channel = guild?.getVoiceChannelById(lastChannel)
                         if (channel != null) {
                             guild.audioManager.openAudioConnection(channel)
-                            ++reconnects
+                            reconnects.incrementAndGet()
                         }
                         discordBotSettingsRepository.save(settings.copy(lastChannel = null))
                     }
@@ -125,7 +126,7 @@ class DiscordBot @Autowired constructor(
             }
         }
 
-        telegramNotifier.sendPrivateMessage("⚙️ <b>Started up</b>:\nReconnected to <b>$reconnects</b> voice channels.")
+        telegramNotifier.sendPrivateMessage("⚙️ <b>Started up</b>:\nReconnected to <b>${reconnects.get()}</b> voice channels.")
     }
 
     /** Try to play the given [soundFileName] in a guild. Determines the guild from the [token]. */
@@ -135,39 +136,6 @@ class DiscordBot @Autowired constructor(
         val masterVolume = discordBotSettingsRepository.loadSettings(discordBotUser.guildId).volume
         val finalVolume = (volume * masterVolume) / 100
         return playSound(guild, file.absolutePath, finalVolume, rate)
-    }
-
-    /** Dump the current status for each joined guild. */
-    fun dumpStatus(): String {
-        val builder = StringBuilder()
-        val (activeGuilds, inactiveGuilds) = bot.guilds
-            .sortedBy { it.name.toLowerCase() }
-            .partition { it.isConnected() }
-
-        builder.append("<h1>In ${activeGuilds.size + inactiveGuilds.size} Total Guilds</h1>")
-        builder.append("<h2>Active Guilds</h2>")
-        builder.append("<ul>")
-        activeGuilds.forEach {
-            builder.append("<li>")
-                .append(it.name).append(" | ")
-                .append(it.memberCount).append(" members | ")
-                .append(it.region.getName()).append(" | ")
-                .append("in voice channel: ${it.audioManager.connectedChannel?.name}")
-                .append("</li>")
-        }
-        builder.append("</ul>")
-
-        builder.append("<h2>Inactive Guilds</h2>")
-        builder.append("<ul>")
-        inactiveGuilds.forEach {
-            builder.append("<li>")
-                .append(it.name).append(" | ")
-                .append(it.memberCount).append(" members | ")
-                .append(it.region.getName())
-                .append("</li>")
-        }
-        builder.append("</ul>")
-        return builder.toString()
     }
 
     /** Disconnect from voice channels when shutting down. */
@@ -186,6 +154,8 @@ class DiscordBot @Autowired constructor(
         }
         telegramNotifier.sendPrivateMessage("⚙️ <b>Shutting down</b>:\nDisconnected from <b>${connectedGuilds.size}</b> voice channels.")
     }
+
+    fun getGuilds(): List<Guild> = bot.guilds
 
     fun getGuildById(id: String): Guild? {
         return bot.getGuildById(id)

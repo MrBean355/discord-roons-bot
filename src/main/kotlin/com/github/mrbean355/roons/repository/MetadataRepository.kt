@@ -31,3 +31,13 @@ fun MetadataRepository.takeStartupMessage(): String? {
     delete(metadata)
     return metadata.value
 }
+
+fun MetadataRepository.getWelcomeMessage(): String? =
+        findByKey("app_welcome_message")?.value
+
+fun MetadataRepository.saveWelcomeMessage(newMessage: String) {
+    val metadata = findByKey("app_welcome_message")?.copy(value = newMessage)
+            ?: Metadata("app_welcome_message", newMessage)
+
+    save(metadata)
+}

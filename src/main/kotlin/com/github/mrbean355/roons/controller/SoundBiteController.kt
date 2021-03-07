@@ -21,23 +21,21 @@ import org.springframework.core.io.Resource
 import org.springframework.core.io.UrlResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod.GET
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("soundBites/", method = [GET])
+@RequestMapping("soundBites/")
 class SoundBiteController(
     private val soundStore: SoundStore
 ) {
 
-    @RequestMapping("listV2")
-    fun listV2(): ResponseEntity<Map<String, String>> {
-        return ResponseEntity.ok(soundStore.listAll())
-    }
+    @GetMapping("listV2")
+    fun listV2(): Map<String, String> = soundStore.listAll()
 
-    @RequestMapping("{name}")
+    @GetMapping("{name}")
     fun get(@PathVariable("name") name: String): ResponseEntity<Resource> {
         val soundFile = soundStore.getFile(name)
             ?: return ResponseEntity.notFound().build()

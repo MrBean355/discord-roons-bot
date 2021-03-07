@@ -18,15 +18,17 @@ package com.github.mrbean355.roons
 
 data class CreateIdResponse(val userId: String)
 
+data class WelcomeMessageResponse(val message: String)
+
 data class AnalyticsRequest(val userId: String, val properties: Map<String, String>)
 
 data class PlaySoundRequest(
-    val userId: String,
-    val token: String,
-    val soundFileName: String,
-    /** Only present from app 1.10.0 */
-    val volume: Int?,
-    /** Only present from app 1.10.0 */
+        val userId: String,
+        val token: String,
+        val soundFileName: String,
+        /** Only present from app 1.10.0 */
+        val volume: Int?,
+        /** Only present from app 1.10.0 */
     val rate: Int?
 )
 
@@ -56,6 +58,13 @@ data class FeedbackRequest(
     val userId: String,
     val rating: Int,
     val comments: String
+)
+
+data class DiscordServerDto(
+    val name: String,
+    val members: Int,
+    val region: String,
+    val voiceChannel: String?
 )
 
 fun DotaMod.asDto(): DotaModDto = DotaModDto(key, name, description, size, hash, downloadUrl, infoUrl)

@@ -17,8 +17,6 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.DotaModDto
-import com.github.mrbean355.roons.annotation.DOTA_MOD_CACHE_NAME
-import com.github.mrbean355.roons.annotation.DotaModCache
 import com.github.mrbean355.roons.asDto
 import com.github.mrbean355.roons.orNull
 import com.github.mrbean355.roons.repository.DotaModRepository
@@ -26,6 +24,7 @@ import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import org.springframework.cache.CacheManager
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.HttpStatus.UNAUTHORIZED
 import org.springframework.http.ResponseEntity
@@ -47,7 +46,7 @@ class ModController(
 
     @GetMapping
     @DotaModCache
-    fun listMods(): Iterable<DotaModDto> = dotaModRepository.findAll().map { it.asDto() }
+    fun listMods(): List<DotaModDto> = dotaModRepository.findAll().map { it.asDto() }
 
     @GetMapping("{key}")
     @DotaModCache
@@ -63,7 +62,8 @@ class ModController(
         @PathVariable("key") key: String,
         @RequestParam("hash") hash: String,
         @RequestParam("size") size: Int,
-        @RequestParam("token") token: String
+        @RequestParam("token") token: String,
+        @RequestParam("message") message: String?
     ): ResponseEntity<Void> {
         if (token != metadataRepository.adminToken) {
             return ResponseEntity(UNAUTHORIZED)
@@ -74,8 +74,9 @@ class ModController(
         dotaModRepository.save(mod.copy(size = size, hash = hash))
         cacheManager.getCache(DOTA_MOD_CACHE_NAME)?.clear()
 
-        val friendlyName = mod.name.removeSuffix(" mod")
-        telegramNotifier.sendChannelMessage("The <b>$friendlyName</b> mod has been updated to work with the latest Dota 2 update.")
+        if (message != null) {
+            telegramNotifier.sendChannelMessage(message)
+        }
 
         return ResponseEntity.ok().build()
     }
@@ -89,3 +90,8 @@ class ModController(
         return ResponseEntity.ok().build()
     }
 }
+
+private const val DOTA_MOD_CACHE_NAME = "dota_mod_cache"
+
+@Cacheable(DOTA_MOD_CACHE_NAME)
+private annotation class DotaModCache
