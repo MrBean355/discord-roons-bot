@@ -83,7 +83,7 @@ dependencies {
     implementation("com.sedmelluq:lavaplayer:1.3.73")
     implementation("com.github.natanbc:lavadsp:0.7.6")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots:5.1.1")
+    implementation("org.telegram:telegrambots:5.2.0")
     implementation("org.telegram:telegrambots-spring-boot-starter:5.1.1")
 
     testImplementation(platform("org.junit:junit-bom:5.7.1"))
