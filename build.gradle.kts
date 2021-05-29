@@ -75,7 +75,7 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-data-rest:2.4.5")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.4.5")
-    implementation("mysql:mysql-connector-java:8.0.24")
+    implementation("mysql:mysql-connector-java:8.0.25")
     implementation("com.google.code.gson:gson:2.8.6")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
