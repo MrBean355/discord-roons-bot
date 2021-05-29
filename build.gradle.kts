@@ -24,7 +24,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.spring") version "1.5.0"
     id("org.jetbrains.kotlin.plugin.jpa") version "1.5.0"
     id("org.springframework.boot") version "2.4.5"
-    id("org.sonarqube") version "3.1.1"
+    id("org.sonarqube") version "3.2.0"
     jacoco
 }
 
