@@ -49,7 +49,7 @@ class PlaySounds(
         val response = listRestTemplate.getForEntity<String>(PLAY_SOUNDS_URL)
         val responseBody = response.body
         if (response.statusCode != HttpStatus.OK || responseBody == null) {
-            throw RuntimeException("Unable to download HTML, response=$response")
+            throw RuntimeException("Error downloading PlaySounds page. Response code: ${response.statusCodeValue}")
         }
 
         val blocks = responseBody.split("<div class=\"play-in-browser-wrapper\"")
@@ -69,7 +69,7 @@ class PlaySounds(
         val response = downloadRestTemplate.getForEntity<ByteArray>(file.url)
         val responseBody = response.body
         if (response.statusCode != HttpStatus.OK || responseBody == null) {
-            throw RuntimeException("Unable to download $file, response=$response")
+            throw RuntimeException("Error downloading file: ${file.name}. Response code: ${response.statusCodeValue}")
         }
 
         val filePath = "$destination/${file.name}"
