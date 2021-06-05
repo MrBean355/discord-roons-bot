@@ -198,12 +198,14 @@ class DiscordEventHandler(
     }
 
     override fun onSlashCommand(event: SlashCommandEvent) {
-        if (event.guild == null) {
-            event.queueEphemeralReply("Please use that command in a server's text channel.")
-            return
+        botScope.launch {
+            if (event.guild == null) {
+                event.queueEphemeralReply("Please use that command in a server's text channel.")
+                return@launch
+            }
+            commands.find { it.name == event.name }
+                ?.process(event)
         }
-        commands.find { it.name == event.name }
-            ?.process(event)
     }
 
     /** @return the first (if any) [TextChannel] which the bot can read & write to. */
