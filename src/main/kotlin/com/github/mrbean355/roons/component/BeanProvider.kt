@@ -16,6 +16,10 @@
 
 package com.github.mrbean355.roons.component
 
+import com.github.mrbean355.roons.discord.DiscordEventHandler
+import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.JDABuilder
+import net.dv8tion.jda.api.entities.Activity
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.InjectionPoint
@@ -41,10 +45,19 @@ object BeanProvider {
     }
 
     @Bean
+    fun jda(
+        @Qualifier(DISCORD_TOKEN) token: String,
+        discordEventHandler: DiscordEventHandler
+    ): JDA = JDABuilder.createDefault(token)
+        .setActivity(Activity.playing("Get the roons!"))
+        .addEventListeners(discordEventHandler)
+        .build()
+
+    @Bean
     @Scope("prototype")
     fun logger(injectionPoint: InjectionPoint): Logger {
         val clazz = injectionPoint.methodParameter?.containingClass
-                ?: injectionPoint.field?.declaringClass
+            ?: injectionPoint.field?.declaringClass
         return LoggerFactory.getLogger(clazz)
     }
 }
