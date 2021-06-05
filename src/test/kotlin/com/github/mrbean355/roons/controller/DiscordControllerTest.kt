@@ -21,7 +21,6 @@ import com.github.mrbean355.roons.PlaySoundRequest
 import com.github.mrbean355.roons.PlaySoundsRequest
 import com.github.mrbean355.roons.SingleSound
 import com.github.mrbean355.roons.discord.DiscordBot
-import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.updateLastSeen
@@ -51,9 +50,6 @@ internal class DiscordControllerTest {
 
     @MockK
     private lateinit var discordBotUserRepository: DiscordBotUserRepository
-
-    @MockK
-    private lateinit var soundStore: SoundStore
     private lateinit var controller: DiscordController
 
     @BeforeEach
@@ -61,7 +57,7 @@ internal class DiscordControllerTest {
         MockKAnnotations.init(this)
         mockkStatic(AppUserRepository::updateLastSeen)
         justRun { appUserRepository.updateLastSeen(any()) }
-        controller = DiscordController(discordBot, appUserRepository, discordBotUserRepository, soundStore)
+        controller = DiscordController(discordBot, appUserRepository, discordBotUserRepository)
     }
 
     @Test
@@ -124,21 +120,10 @@ internal class DiscordControllerTest {
     }
 
     @Test
-    internal fun testPlaySound_SoundNotFound_ReturnsBadRequestResult() {
-        every { discordBotUserRepository.findOneByToken("token") } returns mockk()
-        every { soundStore.soundExists("roons.mp3") } returns false
-
-        val result = controller.playSound(mockRequest())
-
-        assertSame(HttpStatus.BAD_REQUEST, result.statusCode)
-    }
-
-    @Test
     internal fun testPlaySound_SoundFound_PlaysSound(
         @MockK discordBotUser: DiscordBotUser
     ) {
         every { discordBotUserRepository.findOneByToken("token") } returns discordBotUser
-        every { soundStore.soundExists("roons.mp3") } returns true
         every { discordBot.playSound(any(), any(), any(), any()) } returns false
 
         controller.playSound(mockRequest())
@@ -151,7 +136,6 @@ internal class DiscordControllerTest {
         @MockK discordBotUser: DiscordBotUser
     ) {
         every { discordBotUserRepository.findOneByToken("token") } returns discordBotUser
-        every { soundStore.soundExists("roons.mp3") } returns true
         every { discordBot.playSound(any(), any(), any(), any()) } returns false
 
         controller.playSound(mockEmptyRequest())
@@ -160,20 +144,18 @@ internal class DiscordControllerTest {
     }
 
     @Test
-    internal fun testPlaySound_SoundFailedToPlay_ReturnsPreconditionFailedResult() {
+    internal fun testPlaySound_SoundFailedToPlay_ReturnsBadRequestResult() {
         every { discordBotUserRepository.findOneByToken("token") } returns mockk()
-        every { soundStore.soundExists("roons.mp3") } returns true
         every { discordBot.playSound(any(), any(), any(), any()) } returns false
 
         val result = controller.playSound(mockRequest())
 
-        assertSame(HttpStatus.PRECONDITION_FAILED, result.statusCode)
+        assertSame(HttpStatus.BAD_REQUEST, result.statusCode)
     }
 
     @Test
     internal fun testPlaySound_SoundPlaysSuccessfully_ReturnsOkResult() {
         every { discordBotUserRepository.findOneByToken("token") } returns mockk()
-        every { soundStore.soundExists("roons.mp3") } returns true
         every { discordBot.playSound(any(), any(), any(), any()) } returns true
 
         val result = controller.playSound(mockRequest())

@@ -19,11 +19,10 @@ package com.github.mrbean355.roons.component
 import com.github.mrbean355.roons.AnalyticsProperty
 import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class Analytics @Autowired constructor(
+class Analytics(
     private val appUserRepository: AppUserRepository,
     private val analyticsPropertyRepository: AnalyticsPropertyRepository
 ) {

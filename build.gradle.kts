@@ -18,22 +18,23 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.sonarqube.gradle.SonarQubeTask
 
 plugins {
-    kotlin("jvm") version "1.4.31"
-    id("org.jetbrains.kotlin.plugin.allopen") version "1.4.31"
-    id("org.jetbrains.kotlin.plugin.noarg") version "1.4.31"
-    id("org.jetbrains.kotlin.plugin.spring") version "1.4.31"
-    id("org.jetbrains.kotlin.plugin.jpa") version "1.4.31"
-    id("org.springframework.boot") version "2.4.3"
-    id("org.sonarqube") version "3.1.1"
+    kotlin("jvm") version "1.5.10"
+    id("org.jetbrains.kotlin.plugin.allopen") version "1.5.10"
+    id("org.jetbrains.kotlin.plugin.noarg") version "1.5.10"
+    id("org.jetbrains.kotlin.plugin.spring") version "1.5.10"
+    id("org.jetbrains.kotlin.plugin.jpa") version "1.5.10"
+    id("org.springframework.boot") version "2.5.0"
+    id("org.sonarqube") version "3.2.0"
     jacoco
 }
 
 group = "com.github.mrbean355"
-version = "1.13.0"
+version = "1.14.0"
 
 repositories {
     mavenCentral()
-    jcenter()
+    maven("https://m2.dv8tion.net/releases")
+    jcenter() // needed for 'lavadsp'
 }
 
 java {
@@ -71,23 +72,23 @@ sonarqube {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.4.3")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.4.3")
-    implementation("mysql:mysql-connector-java:8.0.23")
-    implementation("com.google.code.gson:gson:2.8.6")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.0")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.0")
+    implementation("mysql:mysql-connector-java:8.0.25")
+    implementation("com.google.code.gson:gson:2.8.7")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
-    implementation("net.dv8tion:JDA:4.2.0_231")
-    implementation("com.sedmelluq:lavaplayer:1.3.72")
-    implementation("com.github.natanbc:lavadsp:0.7.6")
+    implementation("net.dv8tion:JDA:4.2.1_269")
+    implementation("com.sedmelluq:lavaplayer:1.3.77")
+    implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots:5.0.1.1")
-    implementation("org.telegram:telegrambots-spring-boot-starter:5.0.1.1")
+    implementation("org.telegram:telegrambots:5.2.0")
+    implementation("org.telegram:telegrambots-spring-boot-starter:5.2.0")
 
-    testImplementation(platform("org.junit:junit-bom:5.7.1"))
+    testImplementation(platform("org.junit:junit-bom:5.7.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.10.6")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.3")
+    testImplementation("io.mockk:mockk:1.11.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.0")
 }

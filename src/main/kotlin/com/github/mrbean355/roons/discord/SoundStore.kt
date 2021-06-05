@@ -19,26 +19,31 @@ package com.github.mrbean355.roons.discord
 import com.github.mrbean355.roons.component.PlaySounds
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.supervisorScope
 import org.slf4j.Logger
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.File
 import java.math.BigInteger
 import java.security.MessageDigest
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.annotation.PostConstruct
+import kotlin.concurrent.read
+import kotlin.concurrent.write
+
+private const val SOUNDS_DIR = "sounds"
+private const val TEMP_SOUNDS_DIR = "sounds_temp"
 
 @Component
-class SoundStore @Autowired constructor(
+class SoundStore(
     private val playSounds: PlaySounds,
     private val telegramNotifier: TelegramNotifier,
     private val logger: Logger
 ) {
-    private var soundsDirectory = SoundsDirectory.PRIMARY
+    private val lock = ReentrantReadWriteLock()
     private var fileChecksums: Map<String, String> = emptyMap()
 
     @Value("\${roons.soundBites.skipFirstDownload:false}")
@@ -46,147 +51,77 @@ class SoundStore @Autowired constructor(
 
     @PostConstruct
     fun onPostConstruct(): Unit = runBlocking(IO) {
-        fileChecksums = if (skipFirstDownload) {
-            File(soundsDirectory.dirName).listFiles().orEmpty().associate {
-                it.name to it.checksum()
-            }
+        if (skipFirstDownload) {
+            loadSoundBitesFromDisk()
         } else {
-            downloadAllSoundBites(soundsDirectory)
+            downloadAllSoundBites()
         }
     }
 
     /** @return map of sound bite name to its file's checksum. */
-    fun listAll(): Map<String, String> {
-        return fileChecksums
+    fun listAll(): Map<String, String> = lock.read {
+        fileChecksums
     }
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
-    fun getFile(soundFileName: String): File? {
-        return soundsDirectory.getSound(soundFileName.trim())
-    }
-
-    /** @return `true` if the sound file exists, `false` otherwise. */
-    fun soundExists(soundFileName: String): Boolean {
-        return getFile(soundFileName) != null
+    fun getFile(soundFileName: String): File? = lock.read {
+        File(SOUNDS_DIR, soundFileName.trim()).let {
+            if (it.exists()) it else null
+        }
     }
 
     /**
      * Synchronise our collection of sound bites with the PlaySounds page.
      * Re-downloads all sounds to make sure that sounds with the same name but different content are also downloaded.
-     * Downloads into the non-active [SoundsDirectory] and then flips the active & non-active directories.
      */
-    @Scheduled(initialDelayString = "PT1H", fixedRateString = "PT1H")
+    @Scheduled(cron = "0 0 * * * *")
     fun synchroniseSoundBites(): Unit = runBlocking(IO) {
         val old = fileChecksums
-        val nextDirectory = soundsDirectory.other()
-        val new = downloadAllSoundBites(nextDirectory)
-        fileChecksums = new
-        soundsDirectory = nextDirectory
+        downloadAllSoundBites()
 
-        val addedSounds = new.keys - old.keys
-        val removedSounds = old.keys - new.keys
+        sendTelegramNotification(
+            addedFiles = fileChecksums.keys - old.keys,
+            changedFiles = fileChecksums.filter { it.key in old.keys }.filter { it.value != old[it.key] }.keys,
+            removedFiles = old.keys - fileChecksums.keys
+        )
+    }
 
-        if (addedSounds.size > 15 || removedSounds.size > 15) {
-            // Occasionally, 2 strange Telegram messages are sent.
-            // The first one says that many new sounds were added (but they have existed for a long time).
-            // The second one says that many sounds were removed (even though they still exist).
-            // Instead of sending the message, send a private debugging one to figure out why it happens.
-
-            telegramNotifier.sendPrivateMessage(
-                """
-                Something weird happened.
-                Added: ${addedSounds.size}
-                Removed: ${removedSounds.size}
-                Before sync: ${old.size}
-                """.trimIndent()
-            )
-        } else {
-            sendTelegramNotification(
-                addedFiles = addedSounds,
-                changedFiles = new.filter { it.key in old.keys }.filter { it.value != old.getValue(it.key) }.keys,
-                removedFiles = removedSounds
-            )
+    private fun loadSoundBitesFromDisk() {
+        fileChecksums = File(SOUNDS_DIR).listFiles().orEmpty().associate {
+            it.name to it.checksum()
         }
     }
 
-    private suspend fun downloadAllSoundBites(soundsDirectory: SoundsDirectory): Map<String, String> {
-        val destination = File(soundsDirectory.dirName)
-        if (destination.exists()) {
-            destination.deleteRecursively()
+    private suspend fun downloadAllSoundBites() {
+        val tempSoundsDir = File(TEMP_SOUNDS_DIR).also {
+            if (it.exists()) {
+                it.deleteRecursively()
+            }
+            it.mkdir()
         }
-        destination.mkdirs()
 
-        supervisorScope {
-            listRemoteSoundBites().forEach { remoteSoundFile ->
-                launch {
-                    if (!downloadSoundBite(remoteSoundFile, soundsDirectory)) {
-                        copyFallbackFile(remoteSoundFile, soundsDirectory)
+        try {
+            coroutineScope {
+                playSounds.listRemoteFiles().forEach { file ->
+                    launch {
+                        playSounds.downloadFile(file, TEMP_SOUNDS_DIR)
                     }
                 }
             }
-        }
-
-        val files = destination.listFiles()
-        if (files == null || files.isEmpty()) {
-            telegramNotifier.sendPrivateMessage("Failed to list destination files")
-            throw IllegalStateException("Failed to list files for ${destination.name}")
-        }
-
-        return files.associateWith { it.checksum() }
-            .mapKeys { it.key.name }
-    }
-
-    /**
-     * Fetch a list of the sounds that exist on the PlaySounds page.
-     * Retries the operation if it fails, a max of 5 times.
-     */
-    private fun listRemoteSoundBites(attempts: Int = 5): List<PlaySounds.RemoteSoundFile> {
-        return try {
-            playSounds.listRemoteFiles()
         } catch (t: Throwable) {
-            if (attempts > 0) {
-                listRemoteSoundBites(attempts - 1)
-            } else {
-                logger.error("Failed to list remote sounds", t)
-                telegramNotifier.sendPrivateMessage("Couldn't reach the PlaySounds page after 5 tries")
-                throw t
-            }
+            logger.error("Error downloading sound bites", t)
+            telegramNotifier.sendPrivateMessage(t.message.orEmpty())
+            throw t
         }
-    }
 
-    /**
-     * Download a [remoteSoundFile] and place it in the [soundsDirectory].
-     * Retries the download if it fails, a max of 5 times.
-     *
-     * @return `true` if the file was downloaded, `false` otherwise.
-     */
-    private fun downloadSoundBite(remoteSoundFile: PlaySounds.RemoteSoundFile, soundsDirectory: SoundsDirectory, attempts: Int = 5): Boolean {
-        return try {
-            playSounds.downloadFile(remoteSoundFile, soundsDirectory.dirName)
-            true
-        } catch (t: Throwable) {
-            if (attempts > 0) {
-                downloadSoundBite(remoteSoundFile, soundsDirectory, attempts - 1)
-            } else {
-                logger.error("Failed to download $remoteSoundFile", t)
-                telegramNotifier.sendPrivateMessage("Couldn't download ${remoteSoundFile.name} after 5 tries")
-                false
-            }
-        }
-    }
-
-    /**
-     * Try to copy the local file from the alternate directory to the current one.
-     *
-     * @return `true` if the file was copied, `false` if no such file exists.
-     */
-    private fun copyFallbackFile(remoteSoundFile: PlaySounds.RemoteSoundFile, target: SoundsDirectory) {
-        val source = target.other()
-        val fallback = source.getSound(remoteSoundFile.fileName)
-        if (fallback == null) {
-            logger.error("No fallback for ${remoteSoundFile.name} in ${source.dirName}, giving up")
-        } else {
-            fallback.copyTo(File(target.dirName, remoteSoundFile.fileName))
+        lock.write {
+            val soundsDir = File(SOUNDS_DIR)
+            soundsDir.deleteRecursively()
+            tempSoundsDir.renameTo(soundsDir)
+            fileChecksums = soundsDir.listFiles()
+                .orEmpty()
+                .associateWith { it.checksum() }
+                .mapKeys { it.key.name }
         }
     }
 
@@ -223,18 +158,4 @@ class SoundStore @Autowired constructor(
 
     private fun Iterable<String>.removeExtensions(): List<String> =
         map { it.substringBeforeLast('.') }
-
-    private enum class SoundsDirectory(val dirName: String) {
-        PRIMARY("sounds"),
-        SECONDARY("sounds_alt");
-
-        fun getSound(name: String): File? {
-            val file = File(dirName, name)
-            return if (file.exists()) file else null
-        }
-
-        fun other(): SoundsDirectory {
-            return if (this == PRIMARY) SECONDARY else PRIMARY
-        }
-    }
 }
