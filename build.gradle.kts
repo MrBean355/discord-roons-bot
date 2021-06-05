@@ -33,7 +33,8 @@ version = "1.14.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    jcenter()
+    maven("https://m2.dv8tion.net/releases")
+    jcenter() // needed for 'lavadsp'
 }
 
 java {
@@ -79,8 +80,8 @@ dependencies {
     implementation("com.google.code.gson:gson:2.8.7")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
-    implementation("net.dv8tion:JDA:4.2.0_247")
-    implementation("com.sedmelluq:lavaplayer:1.3.73")
+    implementation("net.dv8tion:JDA:4.2.1_269")
+    implementation("com.sedmelluq:lavaplayer:1.3.77")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.telegram:telegrambots:5.2.0")
