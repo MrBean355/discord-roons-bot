@@ -33,8 +33,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.OnlineStatus
+import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.Guild
 import org.slf4j.Logger
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
@@ -48,9 +50,26 @@ class DiscordBot(
 
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
+    private val activities = listOf(
+        Activity.playing("with the roons"),
+        Activity.playing("with your mom"),
+        Activity.listening("Bulldog yelling"),
+        Activity.listening("Bulldog malding"),
+        Activity.listening("STUN HIM!"),
+        Activity.listening("COVER THE EXITS!"),
+        Activity.watching("a god gamer"),
+        Activity.watching("bad game design"),
+        Activity.watching("Bulldog being stomped"),
+        Activity.competing("Cute Tales"),
+    )
 
     init {
         AudioSourceManagers.registerLocalSource(playerManager)
+    }
+
+    @Scheduled(fixedRate = 86_400_000) // daily
+    fun updateBotPresence() {
+        bot.presence.setPresence(OnlineStatus.ONLINE, activities.random())
     }
 
     /** Try to play the given [soundFileName] in a guild. */
