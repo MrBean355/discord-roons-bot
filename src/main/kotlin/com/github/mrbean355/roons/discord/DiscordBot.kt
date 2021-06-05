@@ -25,6 +25,7 @@ import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.loadSettings
 import com.github.mrbean355.roons.repository.takeStartupMessage
+import com.github.mrbean355.roons.repository.takeUpdateSlashCommandsFlag
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
@@ -65,6 +66,7 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -88,15 +90,28 @@ class DiscordBot @Autowired constructor(
         .addEventListeners(this)
         .build()
 
+    @Value("\${roons.slashCommands.testGuild:false}")
+    private var testSlashCommands: Boolean = false
+
     init {
         AudioSourceManagers.registerLocalSource(playerManager)
     }
 
     override fun onReady(event: ReadyEvent) = runBlocking(IO) {
         // Register slash commands:
-        bot.updateCommands()
-            .addCommands(commands.map { CommandData(it.name, it.description).apply(it::build) })
-            .queue()
+        if (testSlashCommands) {
+            logger.info("Testing slash commands")
+            event.jda.guilds.forEach { guild ->
+                guild.updateCommands()
+                    .addCommands(commands.map { CommandData(it.name, it.description).apply(it::build) })
+                    .queue()
+            }
+        } else if (metadataRepository.takeUpdateSlashCommandsFlag()) {
+            logger.info("Updating slash commands")
+            bot.updateCommands()
+                .addCommands(commands.map { CommandData(it.name, it.description).apply(it::build) })
+                .queue()
+        }
 
         // Show startup message if there is one:
         val message = metadataRepository.takeStartupMessage()

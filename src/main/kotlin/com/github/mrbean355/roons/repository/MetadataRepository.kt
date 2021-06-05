@@ -23,21 +23,32 @@ interface MetadataRepository : CrudRepository<Metadata, String> {
     fun findByKey(key: String): Metadata?
 }
 
+private const val KEY_ADMIN_TOKEN = "admin_token"
+private const val KEY_STARTUP_MESSAGE = "startup_message"
+private const val KEY_WELCOME_MESSAGE = "app_welcome_message"
+private const val KEY_UPDATE_SLASH_COMMANDS = "update_slash_commands"
+
 val MetadataRepository.adminToken: String?
-    get() = findByKey("admin_token")?.value
+    get() = findByKey(KEY_ADMIN_TOKEN)?.value
 
 fun MetadataRepository.takeStartupMessage(): String? {
-    val metadata = findByKey("startup_message") ?: return null
+    val metadata = findByKey(KEY_STARTUP_MESSAGE) ?: return null
     delete(metadata)
     return metadata.value
 }
 
 fun MetadataRepository.getWelcomeMessage(): String? =
-        findByKey("app_welcome_message")?.value
+    findByKey(KEY_WELCOME_MESSAGE)?.value
 
 fun MetadataRepository.saveWelcomeMessage(newMessage: String) {
-    val metadata = findByKey("app_welcome_message")?.copy(value = newMessage)
-            ?: Metadata("app_welcome_message", newMessage)
+    val metadata = findByKey(KEY_WELCOME_MESSAGE)?.copy(value = newMessage)
+        ?: Metadata(KEY_WELCOME_MESSAGE, newMessage)
 
     save(metadata)
+}
+
+fun MetadataRepository.takeUpdateSlashCommandsFlag(): Boolean {
+    val metadata = findByKey(KEY_UPDATE_SLASH_COMMANDS) ?: return false
+    delete(metadata)
+    return true
 }
