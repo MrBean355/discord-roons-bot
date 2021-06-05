@@ -22,29 +22,32 @@ import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
 import com.github.mrbean355.roons.repository.getWelcomeMessage
 import com.github.mrbean355.roons.repository.saveWelcomeMessage
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/metadata")
-class MetadataController @Autowired constructor(
-        private val metadataRepository: MetadataRepository,
-        private val context: ApplicationContext,
-        private val discordBot: DiscordBot,
-        private val cacheManager: CacheManager
+class MetadataController(
+    private val metadataRepository: MetadataRepository,
+    private val context: ApplicationContext,
+    private val discordBot: DiscordBot,
+    private val cacheManager: CacheManager
 ) {
 
     @GetMapping("welcomeMessage")
     @WelcomeMessageCache
     fun getWelcomeMessage(): ResponseEntity<WelcomeMessageResponse> {
         val message = metadataRepository.getWelcomeMessage()
-                ?: return ResponseEntity.notFound().build()
+            ?: return ResponseEntity.notFound().build()
 
         return ResponseEntity.ok(WelcomeMessageResponse(message))
     }
@@ -64,7 +67,7 @@ class MetadataController @Autowired constructor(
     @GetMapping("shutdown")
     fun shutdown(@RequestParam("token") token: String): ResponseEntity<String> {
         val adminToken = metadataRepository.adminToken
-                ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+            ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
 
         if (adminToken != token) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)

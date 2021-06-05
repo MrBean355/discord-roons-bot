@@ -19,11 +19,9 @@ package com.github.mrbean355.roons.controller
 import com.github.mrbean355.roons.PlaySoundRequest
 import com.github.mrbean355.roons.PlaySoundsRequest
 import com.github.mrbean355.roons.discord.DiscordBot
-import com.github.mrbean355.roons.discord.SoundStore
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.updateLastSeen
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -36,11 +34,10 @@ private const val DEFAULT_VOLUME = 100
 private const val DEFAULT_RATE = 100
 
 @RestController("/")
-class DiscordController @Autowired constructor(
+class DiscordController(
     private val discordBot: DiscordBot,
     private val appUserRepository: AppUserRepository,
-    private val discordBotUserRepository: DiscordBotUserRepository,
-    private val soundStore: SoundStore
+    private val discordBotUserRepository: DiscordBotUserRepository
 ) {
 
     @GetMapping("lookupToken")

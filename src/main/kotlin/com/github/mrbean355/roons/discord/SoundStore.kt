@@ -23,7 +23,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -39,7 +38,7 @@ private const val SOUNDS_DIR = "sounds"
 private const val TEMP_SOUNDS_DIR = "sounds_temp"
 
 @Component
-class SoundStore @Autowired constructor(
+class SoundStore(
     private val playSounds: PlaySounds,
     private val telegramNotifier: TelegramNotifier,
     private val logger: Logger

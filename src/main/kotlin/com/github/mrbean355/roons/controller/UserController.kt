@@ -21,7 +21,6 @@ import com.github.mrbean355.roons.CreateIdResponse
 import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.updateLastSeen
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -33,7 +32,7 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/")
-class UserController @Autowired constructor(
+class UserController(
     private val appUserRepository: AppUserRepository,
     private val analyticsPropertyRepository: AnalyticsPropertyRepository
 ) {
