@@ -18,6 +18,8 @@ package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.component.DISCORD_TOKEN
+import com.github.mrbean355.roons.discord.commands.BotCommand
+import com.github.mrbean355.roons.discord.commands.queueEphemeralReply
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
@@ -42,15 +44,12 @@ import net.dv8tion.jda.api.JDABuilder
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.Permission.MESSAGE_READ
 import net.dv8tion.jda.api.Permission.MESSAGE_WRITE
-import net.dv8tion.jda.api.Permission.VOICE_CONNECT
-import net.dv8tion.jda.api.Permission.VOICE_SPEAK
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.MessageChannel
 import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.entities.User
 import net.dv8tion.jda.api.events.ReadyEvent
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
@@ -58,20 +57,20 @@ import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
+import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
+import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-
-private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds/wiki/Discord-Bot"
 
 @Component
 class DiscordBot @Autowired constructor(
+    private val commands: List<BotCommand>,
     private val discordBotUserRepository: DiscordBotUserRepository,
     private val discordBotSettingsRepository: DiscordBotSettingsRepository,
     private val metadataRepository: MetadataRepository,
@@ -94,6 +93,11 @@ class DiscordBot @Autowired constructor(
     }
 
     override fun onReady(event: ReadyEvent) = runBlocking(IO) {
+        // Register slash commands:
+        bot.updateCommands()
+            .addCommands(commands.map { CommandData(it.name, it.description).apply(it::build) })
+            .queue()
+
         // Show startup message if there is one:
         val message = metadataRepository.takeStartupMessage()
             ?.replace("\\n", "\n")
@@ -168,18 +172,25 @@ class DiscordBot @Autowired constructor(
             }
             val message = event.message.contentRaw.trim()
             if (message.startsWith("!volume")) {
-                volume(message, event)
+                event.handleDeprecatedCommand("/volume")
                 return@launch
             }
             when (message) {
-                "!help" -> help(event)
-                "!roons" -> join(event)
-                "!seeya" -> leave(event)
-                "!magic" -> magic(event)
-                "!follow" -> follow(event)
-                "!unfollow" -> unfollow(event)
+                "!help" -> event.handleDeprecatedCommand("/help")
+                "!roons" -> event.handleDeprecatedCommand("/join")
+                "!seeya" -> event.handleDeprecatedCommand("/leave")
+                "!magic" -> event.handleDeprecatedCommand("/magic")
+                "!follow" -> event.handleDeprecatedCommand("/follow")
+                "!unfollow" -> event.handleDeprecatedCommand("/unfollow")
             }
         }
+    }
+
+    private fun MessageReceivedEvent.handleDeprecatedCommand(command: String) {
+        textChannel.typeMessage(
+            "⚠️ My commands have been upgraded to slash commands. Please use `$command` instead.\n" +
+                    "*Note: it may take up to an hour for the commands to appear in your server.*"
+        )
     }
 
     override fun onGuildJoin(event: GuildJoinEvent) {
@@ -191,10 +202,10 @@ class DiscordBot @Autowired constructor(
                 """
                 **ALLO, ${guild.name}!** :wave:
                 
-                Type `!roons` for me to join your current voice channel.
-                Type `!seeya` when you want me to leave the voice channel.
-                Type `!follow` for me to follow you when you join & leave voice channels.
-                Type `!help` for more commands.
+                Type `/join` for me to join your current voice channel.
+                Type `/leave` when you want me to leave the voice channel.
+                Type `/follow` for me to follow you when you join & leave voice channels.
+                Type `/help` for more commands.
                 """.trimIndent()
             )
         }
@@ -233,141 +244,13 @@ class DiscordBot @Autowired constructor(
         }
     }
 
-    private fun volume(message: String, event: MessageReceivedEvent) {
-        val parts = message.split(' ').filter { it.isNotBlank() }
-        // Get the volume:
-        if (parts.size == 1) {
-            val volume = getGuildAudioPlayer(event.guild).getMasterVolume()
-            event.channel.typeMessage("My volume is at `${volume}%` :loud_sound:")
+    override fun onSlashCommand(event: SlashCommandEvent) {
+        if (event.guild == null) {
+            event.queueEphemeralReply("Please use that command in a server's text channel.")
             return
         }
-        // Set the volume:
-        if (parts.size == 2) {
-            parts[1].toIntOrNull()?.coerceVolume()?.let { volume ->
-                getGuildAudioPlayer(event.guild).setMasterVolume(volume)
-                event.channel.typeMessage("My volume has been set to `${volume}%` :ok_hand:")
-                return
-            }
-        }
-        // Invalid command:
-        event.channel.typeMessage(
-            """
-            I'm not sure what you meant :disappointed:
-            Type `!volume` to check the volume level.
-            Type `!volume 50` to set the volume to 50%.
-            """.trimIndent()
-        )
-    }
-
-    private fun help(event: MessageReceivedEvent) {
-        event.channel.typeMessage(
-            """
-            **My available commands**
-            
-            - `!help` :arrow_right: send this message
-            - `!roons` :arrow_right: join your current voice channel
-            - `!seeya` :arrow_right: leave the current voice channel
-            - `!magic` :arrow_right: send a private message with your magic number
-            - `!follow` :arrow_right: follow you when you join & leave voice channels
-            - `!unfollow` :arrow_right: stop following you
-            - `!volume` :arrow_right: show the current volume
-            - `!volume x` :arrow_right: set the current volume to x% (example: `!volume 50`)
-            
-            For more info or to log a bug, please visit: $HELP_URL
-            """.trimIndent()
-        )
-    }
-
-    private fun join(event: MessageReceivedEvent) {
-        val channel = event.member?.voiceState?.channel
-        if (channel == null) {
-            event.textChannel.typeMessage("Please join a voice channel first, then type the command again.")
-            return
-        }
-        if (event.guild.isConnected()) {
-            val currentChannel = event.guild.audioManager.connectedChannel ?: return
-            if (currentChannel.idLong == channel.idLong) {
-                event.textChannel.typeMessage("I'm already connected to `${currentChannel.name}`.")
-                return
-            }
-        }
-        val self = event.guild.selfMember
-        if (!self.hasPermission(channel, VOICE_CONNECT)) {
-            event.textChannel.typeMessage("I don't have permission to connect to `${channel.name}`.")
-        } else if (!self.hasPermission(channel, VOICE_SPEAK)) {
-            event.textChannel.typeMessage("I don't have permission to speak in `${channel.name}`.")
-        } else {
-            runCatching { event.guild.audioManager.openAudioConnection(channel) }
-                .onSuccess { event.textChannel.typeMessage("I've connected to `${channel.name}`.") }
-                .onFailure { event.textChannel.typeMessage("I can't connect to `${channel.name}` at the moment.") }
-        }
-    }
-
-    private fun leave(event: MessageReceivedEvent) {
-        val audioManager = event.guild.audioManager
-        if (event.guild.isConnected()) {
-            val channelName = audioManager.connectedChannel?.name
-            event.guild.audioManager.closeAudioConnection()
-            event.textChannel.typeMessage("I've disconnected from `$channelName`.")
-        } else {
-            event.textChannel.typeMessage("I'm not connected to a voice channel.")
-        }
-    }
-
-    private fun magic(event: MessageReceivedEvent) {
-        val discordBotUser = findOrCreateUser(event.author, event.guild)
-        event.author.openPrivateChannel().queue {
-            it.typeMessage(
-                """
-                Here's your magic number for **${event.guild.name}**:
-                :point_right: `${discordBotUser.token}` :point_left:
-                *Don't share this with anyone!*
-                """.trimIndent()
-            )
-        }
-        event.channel.typeMessage("Sent you a private message, ${event.author.asMention} :thumbsup:")
-    }
-
-    private fun follow(event: MessageReceivedEvent) {
-        val settings = discordBotSettingsRepository.loadSettings(event.guild.id)
-        val followedUser = settings.followedUser
-        if (followedUser == event.author.id) {
-            event.textChannel.typeMessage("I'm already following ${event.author.asMention} :shrug:")
-            return
-        }
-        discordBotSettingsRepository.save(settings.copy(followedUser = event.author.id))
-        event.member?.voiceState?.channel?.let {
-            event.guild.audioManager.openAudioConnection(it)
-        }
-        val insteadOf = if (followedUser != null) {
-            val previousUser = bot.getUserById(followedUser)
-            "instead of ${previousUser?.asMention ?: "unknown"} "
-        } else ""
-        event.textChannel.typeMessage(
-            """
-            I'm now following ${event.author.asMention} ${insteadOf}:ok_hand:
-            Type `!unfollow` and I'll stop.
-            """.trimIndent()
-        )
-    }
-
-    private fun unfollow(event: MessageReceivedEvent) {
-        val settings = discordBotSettingsRepository.loadSettings(event.guild.id)
-        val followedUser = settings.followedUser
-        if (followedUser == null) {
-            event.textChannel.typeMessage("I'm not following anyone :shrug:")
-            return
-        }
-        discordBotSettingsRepository.save(settings.copy(followedUser = null))
-        val user = bot.getUserById(followedUser) ?: return
-        event.textChannel.typeMessage("I've stopped following ${user.asMention} :ok_hand:")
-    }
-
-    private fun findOrCreateUser(user: User, guild: Guild): DiscordBotUser {
-        val userId = user.id
-        val guildId = guild.id
-        return discordBotUserRepository.findOneByDiscordUserIdAndGuildId(userId, guildId)
-            ?: discordBotUserRepository.save(DiscordBotUser(0, userId, guildId, UUID.randomUUID().toString()))
+        commands.find { it.name == event.name }
+            ?.process(event)
     }
 
     /** @return a guild-specific [GuildMusicManager]. */
