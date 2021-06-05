@@ -179,7 +179,7 @@ class DiscordBot @Autowired constructor(
                 "!help" -> event.handleDeprecatedCommand("/help")
                 "!roons" -> event.handleDeprecatedCommand("/join")
                 "!seeya" -> event.handleDeprecatedCommand("/leave")
-                "!magic" -> event.handleDeprecatedCommand("/magic")
+                "!magic" -> event.handleDeprecatedCommand("/magicnumber")
                 "!follow" -> event.handleDeprecatedCommand("/follow")
                 "!unfollow" -> event.handleDeprecatedCommand("/unfollow")
             }
