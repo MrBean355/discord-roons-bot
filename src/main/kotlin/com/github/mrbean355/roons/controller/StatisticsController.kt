@@ -86,7 +86,6 @@ class StatisticsController(
                 DiscordServerDto(
                     it.name,
                     it.memberCount,
-                    it.region.getName(),
                     it.audioManager.connectedChannel?.name
                 )
             }

@@ -139,7 +139,7 @@ class DiscordEventHandler(
     override fun onGuildJoin(event: GuildJoinEvent) {
         botScope.launch {
             val guild = event.guild
-            telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.region}, ${guild.memberCount} members")
+            telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.memberCount} members")
 
             guild.findWelcomeChannel()?.sendMessage(
                 """

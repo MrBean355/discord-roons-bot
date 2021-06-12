@@ -29,7 +29,6 @@ import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import net.dv8tion.jda.api.Region
 import net.dv8tion.jda.api.entities.Guild
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
@@ -142,10 +141,10 @@ internal class StatisticsControllerTest {
     @Test
     internal fun testGetDiscordServers_CorrectToken_ReturnsGuildList() {
         every { discordBot.getGuilds() } returns listOf(
-            mockGuild("Mr Bean Dota", 284, Region.SOUTH_AFRICA, "Squad"),
-            mockGuild("The Krappa Kleb", 74, Region.SINGAPORE, "General"),
-            mockGuild("Bruh", 10, Region.US_EAST),
-            mockGuild("Dungeon", 25, Region.EUROPE)
+            mockGuild("Mr Bean Dota", 284, "Squad"),
+            mockGuild("The Krappa Kleb", 74, "General"),
+            mockGuild("Bruh", 10),
+            mockGuild("Dungeon", 25)
         )
 
         val result = controller.getDiscordServers("12345")
@@ -153,21 +152,19 @@ internal class StatisticsControllerTest {
 
         assertSame(HttpStatus.OK, result.statusCode)
         assertEquals(4, body.size)
-        assertEquals(DiscordServerDto("Mr Bean Dota", 284, Region.SOUTH_AFRICA.getName(), "Squad"), body[0])
-        assertEquals(DiscordServerDto("The Krappa Kleb", 74, Region.SINGAPORE.getName(), "General"), body[1])
-        assertEquals(DiscordServerDto("Bruh", 10, Region.US_EAST.getName(), null), body[2])
-        assertEquals(DiscordServerDto("Dungeon", 25, Region.EUROPE.getName(), null), body[3])
+        assertEquals(DiscordServerDto("Mr Bean Dota", 284, "Squad"), body[0])
+        assertEquals(DiscordServerDto("The Krappa Kleb", 74, "General"), body[1])
+        assertEquals(DiscordServerDto("Bruh", 10, null), body[2])
+        assertEquals(DiscordServerDto("Dungeon", 25, null), body[3])
     }
 
     private fun mockGuild(
         guildName: String,
         guildMembers: Int,
-        guildRegion: Region,
         guildVoiceChannel: String? = null
     ): Guild = mockk {
         every { name } returns guildName
         every { memberCount } returns guildMembers
-        every { region } returns guildRegion
         every { audioManager } returns mockk {
             if (guildVoiceChannel != null) {
                 every { connectedChannel } returns mockk {
