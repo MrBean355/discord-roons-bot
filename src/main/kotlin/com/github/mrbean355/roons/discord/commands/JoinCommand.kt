@@ -17,38 +17,39 @@
 package com.github.mrbean355.roons.discord.commands
 
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
+import net.dv8tion.jda.api.entities.Member
 import org.springframework.stereotype.Component
 
 @Component
-class JoinCommand : BotCommand {
+class JoinCommand : BasicCommand() {
 
+    override val legacyName get() = "roons"
     override val name get() = "join"
     override val description get() = "Join your current voice channel."
 
-    override fun process(event: SlashCommandEvent) {
-        val guild = event.guild ?: return
-        val channel = event.member?.voiceState?.channel
+    override fun handleCommand(member: Member, reply: CommandReply) {
+        val channel = member.voiceState?.channel
         if (channel == null) {
-            event.queueEphemeralReply("You aren't in a voice channel.")
+            reply("You aren't in a voice channel.")
             return
         }
-        if (guild.audioManager.isConnected) {
-            val currentChannel = guild.audioManager.connectedChannel ?: return
-            if (currentChannel.idLong == channel.idLong) {
-                event.queueEphemeralReply("I'm already connected to `${currentChannel.name}`.")
+        if (member.guild.audioManager.isConnected) {
+            val currentChannel = member.guild.audioManager.connectedChannel
+            if (currentChannel?.idLong == channel.idLong) {
+                reply("I'm already connected to `${currentChannel.name}`.")
                 return
             }
         }
-        val self = guild.selfMember
-        if (!self.hasPermission(channel, Permission.VOICE_CONNECT)) {
-            event.queueEphemeralReply("I don't have permission to connect to `${channel.name}`.")
-        } else if (!self.hasPermission(channel, Permission.VOICE_SPEAK)) {
-            event.queueEphemeralReply("I don't have permission to speak in `${channel.name}`.")
-        } else {
-            runCatching { guild.audioManager.openAudioConnection(channel) }
-                .onSuccess { event.queueEphemeralReply("I've connected to `${channel.name}`!") }
-                .onFailure { event.queueEphemeralReply("I can't connect to `${channel.name}` at the moment.") }
-        }
+        val self = member.guild.selfMember
+        reply(
+            if (!self.hasPermission(channel, Permission.VOICE_CONNECT)) {
+                "I don't have permission to connect to `${channel.name}`."
+            } else if (!self.hasPermission(channel, Permission.VOICE_SPEAK)) {
+                "I don't have permission to speak in `${channel.name}`."
+            } else {
+                member.guild.audioManager.openAudioConnection(channel)
+                "I've connected to `${channel.name}`!"
+            }
+        )
     }
 }

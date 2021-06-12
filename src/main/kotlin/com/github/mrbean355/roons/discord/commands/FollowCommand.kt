@@ -18,40 +18,35 @@ package com.github.mrbean355.roons.discord.commands
 
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.loadSettings
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
+import net.dv8tion.jda.api.entities.Member
 import org.springframework.stereotype.Component
 
 @Component
 class FollowCommand(
     private val discordBotSettingsRepository: DiscordBotSettingsRepository
-) : BotCommand {
+) : BasicCommand() {
 
+    override val legacyName get() = "follow"
     override val name get() = "follow"
     override val description get() = "Join & leave the same voice channels (in this server) as you."
 
-    override fun process(event: SlashCommandEvent) {
-        val guild = event.guild ?: return
-        val member = event.member ?: return
-        val settings = discordBotSettingsRepository.loadSettings(guild.id)
+    override fun handleCommand(member: Member, reply: CommandReply) {
+        val settings = discordBotSettingsRepository.loadSettings(member.guild.id)
         val followedUser = settings.followedUser
 
         if (followedUser == member.id) {
-            event.queueEphemeralReply("I'm already following ${member.asMention} :shrug:")
+            reply("I'm already following ${member.asMention} :shrug:")
             return
         }
         discordBotSettingsRepository.save(settings.copy(followedUser = member.id))
-        event.member?.voiceState?.channel?.let {
-            guild.audioManager.openAudioConnection(it)
+        member.voiceState?.channel?.let {
+            member.guild.audioManager.openAudioConnection(it)
         }
         val insteadOf = if (followedUser != null) {
-            val previousUser = event.jda.getUserById(followedUser)
+            val previousUser = member.guild.jda.getUserById(followedUser)
             "instead of ${previousUser?.asMention ?: "unknown"} "
         } else ""
-        event.queueEphemeralReply(
-            """
-            I'm now following ${member.asMention} ${insteadOf}:ok_hand:
-            Type `/unfollow` and I'll stop.
-            """.trimIndent()
-        )
+
+        reply("I'm now following ${member.asMention} ${insteadOf}:ok_hand:\nType `/unfollow` and I'll stop.")
     }
 }

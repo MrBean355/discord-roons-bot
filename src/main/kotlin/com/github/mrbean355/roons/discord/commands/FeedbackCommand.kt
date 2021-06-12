@@ -17,7 +17,6 @@
 package com.github.mrbean355.roons.discord.commands
 
 import com.github.mrbean355.roons.telegram.TelegramNotifier
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import org.springframework.stereotype.Component
@@ -29,19 +28,27 @@ class FeedbackCommand(
     private val telegramNotifier: TelegramNotifier
 ) : BotCommand {
 
+    override val legacyName get() = "feedback"
     override val name get() = "feedback"
     override val description get() = "Provide the developer with your feedback."
 
-    override fun build(commandData: CommandData) = commandData
+    override fun buildSlashCommand(commandData: CommandData) = commandData
         .addOption(OptionType.STRING, OPTION_COMMENTS, "Your thoughts on the Admiral Bulldog sound pack", true)
 
-    override fun process(event: SlashCommandEvent) {
-        telegramNotifier.sendPrivateMessage(
-            """
-            <b>Feedback received</b>
-            Comments: ${event.getOption(OPTION_COMMENTS)?.asString}
-            """.trimIndent()
-        )
-        event.queueEphemeralReply("Thank you.")
+    override fun handleMessageCommand(context: MessageCommandContext) {
+        if (context.arguments.isNotEmpty()) {
+            val comments = context.arguments.joinToString(separator = " ")
+            context.reply(feedback(comments))
+        }
+    }
+
+    override fun handleSlashCommand(context: SlashCommandContext) {
+        val comments = context.getOption(OPTION_COMMENTS)?.asString.orEmpty()
+        context.reply(feedback(comments))
+    }
+
+    private fun feedback(comments: String): String {
+        telegramNotifier.sendPrivateMessage("<b>Feedback received</b>\nComments: $comments")
+        return "Thank you."
     }
 }
