@@ -17,7 +17,8 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.discord.commands.BotCommand
-import com.github.mrbean355.roons.discord.commands.queueEphemeralReply
+import com.github.mrbean355.roons.discord.commands.MessageCommandContext
+import com.github.mrbean355.roons.discord.commands.SlashCommandContext
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
@@ -73,13 +74,13 @@ class DiscordEventHandler(
             logger.info("Testing slash commands")
             event.jda.guilds.forEach { guild ->
                 guild.updateCommands()
-                    .addCommands(commands.map { CommandData(it.name, it.description).apply(it::build) })
+                    .addCommands(commands.map { CommandData(it.name, it.description).apply(it::buildSlashCommand) })
                     .queue()
             }
         } else if (metadataRepository.takeUpdateSlashCommandsFlag()) {
             logger.info("Updating slash commands")
             event.jda.updateCommands()
-                .addCommands(commands.map { CommandData(it.name, it.description).apply(it::build) })
+                .addCommands(commands.map { CommandData(it.name, it.description).apply(it::buildSlashCommand) })
                 .queue()
         }
 
@@ -124,32 +125,21 @@ class DiscordEventHandler(
                 return@launch
             }
             val message = event.message.contentRaw.trim()
-            if (message.startsWith("!volume")) {
-                event.handleDeprecatedCommand("/volume")
+            if (!message.startsWith('!')) {
                 return@launch
             }
-            when (message) {
-                "!help" -> event.handleDeprecatedCommand("/help")
-                "!roons" -> event.handleDeprecatedCommand("/join")
-                "!seeya" -> event.handleDeprecatedCommand("/leave")
-                "!magic" -> event.handleDeprecatedCommand("/magicnumber")
-                "!follow" -> event.handleDeprecatedCommand("/follow")
-                "!unfollow" -> event.handleDeprecatedCommand("/unfollow")
-            }
-        }
-    }
+            val args = message.drop(1).split(' ').filter { it.isNotBlank() }
+            val name = args.first()
 
-    private fun MessageReceivedEvent.handleDeprecatedCommand(command: String) {
-        textChannel.sendMessage(
-            "⚠️ My commands have been upgraded to slash commands. Please use `$command` instead.\n" +
-                    "*Note: it may take up to an hour for the commands to appear in your server.*"
-        ).queue()
+            commands.find { it.legacyName == name }
+                ?.handleMessageCommand(MessageCommandContext(event))
+        }
     }
 
     override fun onGuildJoin(event: GuildJoinEvent) {
         botScope.launch {
             val guild = event.guild
-            telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.region}, ${guild.memberCount} members")
+            telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.memberCount} members")
 
             guild.findWelcomeChannel()?.sendMessage(
                 """
@@ -200,11 +190,11 @@ class DiscordEventHandler(
     override fun onSlashCommand(event: SlashCommandEvent) {
         botScope.launch {
             if (event.guild == null) {
-                event.queueEphemeralReply("Please use that command in a server's text channel.")
+                event.reply("Please use that command in a server's text channel.").setEphemeral(true).queue()
                 return@launch
             }
             commands.find { it.name == event.name }
-                ?.process(event)
+                ?.handleSlashCommand(SlashCommandContext(event))
         }
     }
 

@@ -23,13 +23,13 @@ plugins {
     id("org.jetbrains.kotlin.plugin.noarg") version "1.5.10"
     id("org.jetbrains.kotlin.plugin.spring") version "1.5.10"
     id("org.jetbrains.kotlin.plugin.jpa") version "1.5.10"
-    id("org.springframework.boot") version "2.5.0"
-    id("org.sonarqube") version "3.2.0"
+    id("org.springframework.boot") version "2.5.1"
+    id("org.sonarqube") version "3.3"
     jacoco
 }
 
 group = "com.github.mrbean355"
-version = "1.14.0"
+version = "1.15.0"
 
 repositories {
     mavenCentral()
@@ -48,6 +48,10 @@ tasks.withType<KotlinCompile> {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+jacoco {
+    toolVersion = "0.8.7"
 }
 
 tasks.withType<JacocoReport> {
@@ -74,13 +78,13 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.0")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.0")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.1")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.1")
     implementation("mysql:mysql-connector-java:8.0.25")
     implementation("com.google.code.gson:gson:2.8.7")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
-    implementation("net.dv8tion:JDA:4.2.1_269")
+    implementation("net.dv8tion:JDA:4.3.0_277")
     implementation("com.sedmelluq:lavaplayer:1.3.77")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")

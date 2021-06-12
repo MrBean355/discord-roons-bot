@@ -16,30 +16,41 @@
 
 package com.github.mrbean355.roons.discord.commands
 
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
-import net.dv8tion.jda.api.interactions.Interaction
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
-import net.dv8tion.jda.api.requests.restaction.interactions.ReplyAction
 
-/**
- * A slash command that users can type to interact with the bot.
- */
+/** A command that users can type in a guild channel to interact with the bot. */
 sealed interface BotCommand {
+
+    /** Name used for message commands (prefixed with '!'). */
+    val legacyName: String
+
+    /** Name used for slash commands. */
     val name: String
+
+    /** Description used for slash commands. */
     val description: String
 
     /** Optionally build upon the [CommandData] object. */
-    fun build(commandData: CommandData): CommandData = commandData
+    fun buildSlashCommand(commandData: CommandData): CommandData = commandData
 
-    /** Handle the command when it is received. */
-    fun process(event: SlashCommandEvent)
+    /** Handle the command received via normal message (e.g. !command). */
+    fun handleMessageCommand(context: MessageCommandContext)
+
+    /** Handle the received slash command (e.g. /command). */
+    fun handleSlashCommand(context: SlashCommandContext)
 
 }
 
-@Suppress("NOTHING_TO_INLINE")
-inline fun Interaction.ephemeralReply(content: String): ReplyAction =
-    reply(content).setEphemeral(true)
+/** Simple command which doesn't need additional command context. */
+abstract class BasicCommand : BotCommand {
 
-@Suppress("NOTHING_TO_INLINE")
-inline fun Interaction.queueEphemeralReply(content: String): Unit =
-    ephemeralReply(content).queue()
+    /** Handle the received command. Could be a message or slash command. */
+    abstract fun handleCommand(member: Member, reply: CommandReply)
+
+    final override fun handleMessageCommand(context: MessageCommandContext) =
+        handleCommand(context.member, context.reply)
+
+    final override fun handleSlashCommand(context: SlashCommandContext) =
+        handleCommand(context.member, context.reply)
+}

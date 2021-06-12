@@ -19,7 +19,7 @@ package com.github.mrbean355.roons.discord.commands
 import com.github.mrbean355.roons.discord.coerceVolume
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.loadSettings
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import org.springframework.stereotype.Component
@@ -31,22 +31,45 @@ class VolumeCommand(
     private val discordBotSettingsRepository: DiscordBotSettingsRepository
 ) : BotCommand {
 
+    override val legacyName get() = "volume"
     override val name get() = "volume"
     override val description get() = "Get or set the bot's volume when playing sounds in voice channels."
 
-    override fun build(commandData: CommandData) =
-        commandData.addOption(OptionType.INTEGER, OPTION_SET_VOLUME, "Set a new volume level.")
+    override fun buildSlashCommand(commandData: CommandData) = commandData
+        .addOption(OptionType.INTEGER, OPTION_SET_VOLUME, "Set a new volume level.")
 
-    override fun process(event: SlashCommandEvent) {
-        val guild = event.guild ?: return
-        val settings = discordBotSettingsRepository.loadSettings(guild.id)
-        val newVolume = event.getOption(OPTION_SET_VOLUME)?.asLong?.toInt()?.coerceVolume()
+    override fun handleMessageCommand(context: MessageCommandContext) {
+        val newVolumeArg = context.arguments.firstOrNull()
+        if (newVolumeArg != null) {
+            val newVolume = newVolumeArg.toIntOrNull()
+            if (newVolume != null) {
+                context.reply(setVolume(context.member, newVolume))
+            } else {
+                context.reply("I'm not sure what you mean :disappointed:\nExample usage: `!volume 50`")
+            }
+        } else {
+            context.reply(getVolume(context.member))
+        }
+    }
+
+    override fun handleSlashCommand(context: SlashCommandContext) {
+        val newVolume = context.getOption(OPTION_SET_VOLUME)?.asLong?.toInt()?.coerceVolume()
 
         if (newVolume == null) {
-            event.queueEphemeralReply("My volume is at `${settings.volume}%` :loud_sound:")
+            context.reply(getVolume(context.member))
         } else {
-            discordBotSettingsRepository.save(settings.copy(volume = newVolume))
-            event.queueEphemeralReply("My volume has been set to `${newVolume}%` :ok_hand:")
+            context.reply(setVolume(context.member, newVolume))
         }
+    }
+
+    private fun getVolume(member: Member): String {
+        val settings = discordBotSettingsRepository.loadSettings(member.guild.id)
+        return "My volume is at `${settings.volume}%` :loud_sound:"
+    }
+
+    private fun setVolume(member: Member, newVolume: Int): String {
+        val settings = discordBotSettingsRepository.loadSettings(member.guild.id)
+        discordBotSettingsRepository.save(settings.copy(volume = newVolume))
+        return "My volume has been set to `${newVolume}%` :ok_hand:"
     }
 }

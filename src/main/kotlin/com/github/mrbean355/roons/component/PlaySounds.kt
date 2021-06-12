@@ -83,8 +83,7 @@ class PlaySounds(
         soundBiteConverter.convert(File(filePath))
     }
 
-    data class RemoteSoundFile(val name: String, val url: String) {
-        val fileName = "$name.mp3"
-    }
+    data class RemoteSoundFile(val name: String, val url: String)
+
 }
 

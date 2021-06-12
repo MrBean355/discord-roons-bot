@@ -18,7 +18,7 @@ package com.github.mrbean355.roons.discord.commands
 
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import org.springframework.stereotype.Component
@@ -32,39 +32,53 @@ class MagicNumberCommand(
     private val discordBotUserRepository: DiscordBotUserRepository
 ) : BotCommand {
 
+    override val legacyName get() = "magic"
     override val name get() = "magicnumber"
     override val description get() = "Get or recreate your \"magic number\" for communicating with the bot."
 
-    override fun build(commandData: CommandData) = commandData.addSubcommands(
-        SubcommandData(COMMAND_GET, "Get your current magic number."),
-        SubcommandData(COMMAND_NEW, "Create a new magic number in case your previous one was leaked.")
-    )
+    override fun buildSlashCommand(commandData: CommandData) = commandData
+        .addSubcommands(
+            SubcommandData(COMMAND_GET, "Get your current magic number."),
+            SubcommandData(COMMAND_NEW, "Create a new magic number in case your previous one was leaked.")
+        )
 
-    override fun process(event: SlashCommandEvent) {
-        val userId = event.member?.id ?: return
-        val guildId = event.guild?.id ?: return
-
-        val botUser = discordBotUserRepository.findOneByDiscordUserIdAndGuildId(userId, guildId)
-            ?: discordBotUserRepository.save(DiscordBotUser(0, userId, guildId, MagicNumber()))
-
-        when (event.subcommandName) {
-            COMMAND_GET -> {
-                event.queueEphemeralReply(
-                    "Here's your magic number:\n" +
-                            "```${botUser.token}```\n" +
-                            "Please keep it secret! Anyone who has this magic number will be able to play sounds through the bot in your server."
-                )
-            }
-            COMMAND_NEW -> {
-                val newToken = MagicNumber()
-                discordBotUserRepository.save(botUser.copy(token = newToken))
-                event.queueEphemeralReply(
-                    "Here's your **new** magic number:\n" +
-                            "```$newToken```\n" +
-                            "Please keep it secret! Anyone who has this magic number will be able to play sounds through the bot in your server."
-                )
-            }
+    override fun handleMessageCommand(context: MessageCommandContext) {
+        val message = if (context.arguments.firstOrNull() == COMMAND_NEW) {
+            createMagicNumber(context.member)
+        } else {
+            getMagicNumber(context.member)
         }
+        context.reply(message, sensitive = true)
+    }
+
+    override fun handleSlashCommand(context: SlashCommandContext) {
+        val message = if (context.subcommandName == COMMAND_NEW) {
+            createMagicNumber(context.member)
+        } else {
+            getMagicNumber(context.member)
+        }
+        context.reply(message, sensitive = true)
+    }
+
+    private fun getMagicNumber(member: Member): String {
+        val botUser = discordBotUserRepository.findOneByDiscordUserIdAndGuildId(member.id, member.guild.id)
+            ?: discordBotUserRepository.save(DiscordBotUser(0, member.id, member.guild.id, MagicNumber()))
+
+        return "Here's your magic number:\n" +
+                "```${botUser.token}```\n" +
+                "Please keep it secret! Anyone who has this magic number will be able to play sounds through the bot in your server."
+    }
+
+    private fun createMagicNumber(member: Member): String {
+        val botUser = discordBotUserRepository.findOneByDiscordUserIdAndGuildId(member.id, member.guild.id)
+            ?: discordBotUserRepository.save(DiscordBotUser(0, member.id, member.guild.id, MagicNumber()))
+
+        val newToken = MagicNumber()
+        discordBotUserRepository.save(botUser.copy(token = newToken))
+
+        return "Here's your **new** magic number:\n" +
+                "```$newToken```\n" +
+                "Please keep it secret! Anyone who has this magic number will be able to play sounds through the bot in your server."
     }
 
     @Suppress("FunctionName")

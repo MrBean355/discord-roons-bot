@@ -63,7 +63,6 @@ data class FeedbackRequest(
 data class DiscordServerDto(
     val name: String,
     val members: Int,
-    val region: String,
     val voiceChannel: String?
 )
 

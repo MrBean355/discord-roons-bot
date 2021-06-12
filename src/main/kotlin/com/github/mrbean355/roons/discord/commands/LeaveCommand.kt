@@ -16,24 +16,24 @@
 
 package com.github.mrbean355.roons.discord.commands
 
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
+import net.dv8tion.jda.api.entities.Member
 import org.springframework.stereotype.Component
 
 @Component
-class LeaveCommand : BotCommand {
+class LeaveCommand : BasicCommand() {
 
+    override val legacyName get() = "seeya"
     override val name get() = "leave"
     override val description get() = "Leave the current voice channel."
 
-    override fun process(event: SlashCommandEvent) {
-        val guild = event.guild ?: return
-        val audioManager = guild.audioManager
-        if (guild.audioManager.isConnected) {
+    override fun handleCommand(member: Member, reply: CommandReply) {
+        val audioManager = member.guild.audioManager
+        if (member.guild.audioManager.isConnected) {
             val channelName = audioManager.connectedChannel?.name
-            guild.audioManager.closeAudioConnection()
-            event.queueEphemeralReply("I've disconnected from `$channelName`.")
+            member.guild.audioManager.closeAudioConnection()
+            reply("I've disconnected from `$channelName`.")
         } else {
-            event.queueEphemeralReply("I'm not connected to a voice channel.")
+            reply("I'm not connected to a voice channel.")
         }
     }
 }
