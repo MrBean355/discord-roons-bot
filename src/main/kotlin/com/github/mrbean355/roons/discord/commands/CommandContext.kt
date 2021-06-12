@@ -64,11 +64,14 @@ class CommandReply(private val event: Event) {
 
     operator fun invoke(text: String, sensitive: Boolean = false) {
         when (event) {
-            is MessageReceivedEvent -> if (sensitive) event.sendPrivateMessage(text) else event.typeReply(text)
+            is MessageReceivedEvent -> if (sensitive) event.sendPrivateMessage(text) else event.typeReply(decorate(text))
             is SlashCommandEvent -> event.queueEphemeralReply(text)
             else -> error("Unsupported event type: ${event::class}")
         }
     }
+
+    private fun decorate(text: String) = "$text\n*⭐ Try out the fancy slash commands! Type `/` to see what's available.*"
+
 }
 
 private fun MessageReceivedEvent.typeReply(text: String): Unit =
