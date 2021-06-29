@@ -85,7 +85,7 @@ dependencies {
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
     implementation("net.dv8tion:JDA:4.3.0_277")
-    implementation("com.sedmelluq:lavaplayer:1.3.77")
+    implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.telegram:telegrambots:5.2.0")
