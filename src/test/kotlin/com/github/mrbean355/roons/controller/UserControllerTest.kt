@@ -88,7 +88,7 @@ internal class UserControllerTest {
         val slot = slot<AppUser>()
         verify { appUserRepository.save(capture(slot)) }
         assertSame(HttpStatus.OK, result.statusCode)
-        assertEquals(slot.captured.generatedId, result.body.userId)
+        assertEquals(slot.captured.generatedId, result.body?.userId)
     }
 
     @Test

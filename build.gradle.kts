@@ -18,12 +18,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.sonarqube.gradle.SonarQubeTask
 
 plugins {
-    kotlin("jvm") version "1.5.10"
-    id("org.jetbrains.kotlin.plugin.allopen") version "1.5.10"
-    id("org.jetbrains.kotlin.plugin.noarg") version "1.5.10"
-    id("org.jetbrains.kotlin.plugin.spring") version "1.5.10"
-    id("org.jetbrains.kotlin.plugin.jpa") version "1.5.10"
-    id("org.springframework.boot") version "2.5.1"
+    kotlin("jvm") version "1.5.31"
+    id("org.jetbrains.kotlin.plugin.allopen") version "1.5.31"
+    id("org.jetbrains.kotlin.plugin.noarg") version "1.5.31"
+    id("org.jetbrains.kotlin.plugin.spring") version "1.5.31"
+    id("org.jetbrains.kotlin.plugin.jpa") version "1.5.31"
+    id("org.springframework.boot") version "2.5.5"
     id("org.sonarqube") version "3.3"
     jacoco
 }
@@ -76,23 +76,23 @@ sonarqube {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.1")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.1")
-    implementation("mysql:mysql-connector-java:8.0.25")
-    implementation("com.google.code.gson:gson:2.8.7")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.5")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.5")
+    implementation("mysql:mysql-connector-java:8.0.26")
+    implementation("com.google.code.gson:gson:2.8.8")
 
-    runtimeOnly("ch.qos.logback:logback-classic:1.2.3")
-    implementation("net.dv8tion:JDA:4.3.0_277")
-    implementation("com.sedmelluq:lavaplayer:1.3.77")
+    runtimeOnly("ch.qos.logback:logback-classic:1.2.6")
+    implementation("net.dv8tion:JDA:4.3.0_331")
+    implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots:5.2.0")
-    implementation("org.telegram:telegrambots-spring-boot-starter:5.2.0")
+    implementation("org.telegram:telegrambots:5.3.0")
+    implementation("org.telegram:telegrambots-spring-boot-starter:5.3.0")
 
-    testImplementation(platform("org.junit:junit-bom:5.7.2"))
+    testImplementation(platform("org.junit:junit-bom:5.8.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.11.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.0")
+    testImplementation("io.mockk:mockk:1.12.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.2")
 }
