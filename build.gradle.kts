@@ -58,7 +58,7 @@ tasks.withType<JacocoReport> {
     dependsOn(tasks.test)
     sourceSets(sourceSets.main.get())
     reports {
-        xml.isEnabled = true
+        xml.required.set(true)
     }
 }
 
