@@ -100,18 +100,12 @@ class SoundStore(
             it.mkdir()
         }
 
-        try {
-            coroutineScope {
-                playSounds.listRemoteFiles().forEach { file ->
-                    launch {
-                        playSounds.downloadFile(file, TEMP_SOUNDS_DIR)
-                    }
+        coroutineScope {
+            tryListRemoteFiles().forEach { file ->
+                launch {
+                    tryDownloadFile(file)
                 }
             }
-        } catch (t: Throwable) {
-            logger.error("Error downloading sound bites", t)
-            telegramNotifier.sendPrivateMessage(t.message.orEmpty())
-            throw t
         }
 
         lock.write {
@@ -122,6 +116,26 @@ class SoundStore(
                 .orEmpty()
                 .associateWith { it.checksum() }
                 .mapKeys { it.key.name }
+        }
+    }
+
+    private fun tryListRemoteFiles(): List<PlaySounds.RemoteSoundFile> {
+        return try {
+            playSounds.listRemoteFiles()
+        } catch (t: Throwable) {
+            logger.error("Error listing sound bites", t)
+            telegramNotifier.sendPrivateMessage("⚠️ Error listing sound bites: ${t.message}")
+            throw t
+        }
+    }
+
+    private fun tryDownloadFile(file: PlaySounds.RemoteSoundFile) {
+        try {
+            playSounds.downloadFile(file, TEMP_SOUNDS_DIR)
+        } catch (t: Throwable) {
+            logger.error("Error downloading $file", t)
+            telegramNotifier.sendPrivateMessage("⚠️ Error downloading ${file.name} (${file.url}): ${t.message}")
+            throw t
         }
     }
 
