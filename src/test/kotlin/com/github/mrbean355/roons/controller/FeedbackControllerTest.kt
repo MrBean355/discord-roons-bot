@@ -63,7 +63,7 @@ internal class FeedbackControllerTest {
         verify {
             telegramNotifier.sendPrivateMessage(
                 """
-                <b>Feedback received</b>
+                📋 <b>Feedback received</b>
                 Rating: 5
                 Comments: Best app ever POGGIES!
                 """.trimIndent()

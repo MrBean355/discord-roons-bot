@@ -48,7 +48,7 @@ class FeedbackCommand(
     }
 
     private fun feedback(comments: String): String {
-        telegramNotifier.sendPrivateMessage("<b>Feedback received</b>\nComments: $comments")
+        telegramNotifier.sendPrivateMessage("📋 <b>Feedback received</b>\nComments: $comments")
         return "Thank you."
     }
 }
