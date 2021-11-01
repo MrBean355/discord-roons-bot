@@ -23,7 +23,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.noarg") version "1.5.31"
     id("org.jetbrains.kotlin.plugin.spring") version "1.5.31"
     id("org.jetbrains.kotlin.plugin.jpa") version "1.5.31"
-    id("org.springframework.boot") version "2.5.5"
+    id("org.springframework.boot") version "2.5.6"
     id("org.sonarqube") version "3.3"
     jacoco
 }
@@ -78,13 +78,13 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.5")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.5")
-    implementation("mysql:mysql-connector-java:8.0.26")
-    implementation("com.google.code.gson:gson:2.8.8")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.6")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.6")
+    implementation("mysql:mysql-connector-java:8.0.27")
+    implementation("com.google.code.gson:gson:2.8.9")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.6")
-    implementation("net.dv8tion:JDA:4.3.0_331")
+    implementation("net.dv8tion:JDA:4.3.0_277")
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
