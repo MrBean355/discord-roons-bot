@@ -81,7 +81,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.5")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.5")
     implementation("mysql:mysql-connector-java:8.0.26")
-    implementation("com.google.code.gson:gson:2.8.8")
+    implementation("com.google.code.gson:gson:2.8.9")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.6")
     implementation("net.dv8tion:JDA:4.3.0_331")
