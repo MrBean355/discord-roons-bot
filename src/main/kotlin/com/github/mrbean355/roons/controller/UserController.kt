@@ -18,7 +18,6 @@ package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.CreateIdResponse
-import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.http.HttpStatus
@@ -33,8 +32,7 @@ import java.util.UUID
 @RestController
 @RequestMapping("/")
 class UserController(
-    private val appUserRepository: AppUserRepository,
-    private val analyticsPropertyRepository: AnalyticsPropertyRepository
+    private val appUserRepository: AppUserRepository
 ) {
     @PostMapping("createId")
     fun createId(): ResponseEntity<CreateIdResponse> {
@@ -53,25 +51,5 @@ class UserController(
     @PostMapping("heartbeat")
     fun heartbeat(@RequestParam("userId") userId: String) {
         appUserRepository.updateLastSeen(userId)
-    }
-
-    @PostMapping("findPeers")
-    fun findPeers(@RequestParam("userId") userId: String): ResponseEntity<List<String>> {
-        val user = appUserRepository.findByGeneratedId(userId)
-            ?: return ResponseEntity.notFound().build()
-
-        val matchId = analyticsPropertyRepository.findByUserAndProperty(user, "dota.matchId")?.value
-            ?: return ResponseEntity.notFound().build()
-
-        if (matchId.isBlank()) {
-            return ResponseEntity.ok(emptyList())
-        }
-
-        val users = analyticsPropertyRepository.findByPropertyAndValue("dota.matchId", matchId)
-            .map { it.user }
-
-        return ResponseEntity.ok(users.mapNotNull {
-            analyticsPropertyRepository.findByUserAndProperty(it, "dota.heroName")?.value
-        })
     }
 }
