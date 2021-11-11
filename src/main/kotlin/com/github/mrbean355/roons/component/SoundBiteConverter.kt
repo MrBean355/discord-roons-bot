@@ -19,6 +19,7 @@ package com.github.mrbean355.roons.component
 import org.slf4j.Logger
 import org.springframework.stereotype.Component
 import java.io.File
+import kotlin.math.roundToInt
 
 private const val UNIX_EXECUTABLE = "ffmpeg"
 private const val WINDOWS_EXECUTABLE = "ffmpeg.exe"
@@ -41,7 +42,7 @@ class SoundBiteConverter(private val logger: Logger) {
         ensureInstalled()
     }
 
-    fun convert(victim: File) {
+    fun convert(victim: File, volume: Int) {
         if (!ensureInstalled()) {
             logger.warn("Skipping MP3 conversion; FFMPEG not copied")
             return
@@ -51,7 +52,7 @@ class SoundBiteConverter(private val logger: Logger) {
         val convertedName = victim.nameWithoutExtension + ".mp3"
         val tempOutputName = "tmp_$convertedName"
         val tempOutputFile = File(parentDir, tempOutputName)
-        val exitCode = SystemCommands.execute(ffmpegPath, "-i", victimPath, tempOutputFile.absolutePath)
+        val exitCode = SystemCommands.execute(ffmpegPath, "-i", victimPath, tempOutputFile.absolutePath, "-vol", volume.transformVolume())
         if (exitCode != 0) {
             logger.error("Failed to convert $victim, exited with: $exitCode")
             if (tempOutputFile.exists()) {
@@ -102,5 +103,11 @@ class SoundBiteConverter(private val logger: Logger) {
         logger.info("Copied $exe to $ffmpegPath")
         val exitCode = SystemCommands.execute("/bin/chmod", "755", ffmpegPath)
         return exitCode == 0
+    }
+
+    private fun Int.transformVolume(): String {
+        // PlaySounds page has a max volume of 100.
+        // FFMPEG uses 256 for the 'normal' volume.
+        return times(2.56).roundToInt().toString()
     }
 }
