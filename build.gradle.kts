@@ -83,7 +83,7 @@ dependencies {
     implementation("mysql:mysql-connector-java:8.0.27")
     implementation("com.google.code.gson:gson:2.8.9")
 
-    runtimeOnly("ch.qos.logback:logback-classic:1.2.6")
+    runtimeOnly("ch.qos.logback:logback-classic:1.2.7")
     implementation("net.dv8tion:JDA:4.3.0_277")
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
