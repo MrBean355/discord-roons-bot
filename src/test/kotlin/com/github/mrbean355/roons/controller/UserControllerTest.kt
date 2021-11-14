@@ -16,10 +16,8 @@
 
 package com.github.mrbean355.roons.controller
 
-import com.github.mrbean355.roons.AnalyticsProperty
 import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.assertTimeIsRoughlyNow
-import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.updateLastSeen
 import io.mockk.every
@@ -33,7 +31,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -44,15 +41,12 @@ import java.util.UUID
 internal class UserControllerTest {
     @MockK
     private lateinit var appUserRepository: AppUserRepository
-
-    @MockK
-    private lateinit var analyticsPropertyRepository: AnalyticsPropertyRepository
     private lateinit var controller: UserController
 
     @BeforeEach
     internal fun setUp() {
         every { appUserRepository.save(any()) } returns mockk()
-        controller = UserController(appUserRepository, analyticsPropertyRepository)
+        controller = UserController(appUserRepository)
     }
 
     @Test
@@ -88,7 +82,7 @@ internal class UserControllerTest {
         val slot = slot<AppUser>()
         verify { appUserRepository.save(capture(slot)) }
         assertSame(HttpStatus.OK, result.statusCode)
-        assertEquals(slot.captured.generatedId, result.body.userId)
+        assertEquals(slot.captured.generatedId, result.body?.userId)
     }
 
     @Test
@@ -99,62 +93,5 @@ internal class UserControllerTest {
         controller.heartbeat("user-id")
 
         verify { appUserRepository.updateLastSeen("user-id") }
-    }
-
-    @Test
-    internal fun testFindPeers_UserNotFound_ReturnsNotFoundResponse() {
-        every { appUserRepository.findByGeneratedId("12345") } returns null
-
-        val result = controller.findPeers("12345")
-
-        assertSame(HttpStatus.NOT_FOUND, result.statusCode)
-    }
-
-    @Test
-    internal fun testFindPeers_MatchIdNotFound_ReturnsNotFoundResponse() {
-        val appUser = mockk<AppUser>()
-        every { appUserRepository.findByGeneratedId("12345") } returns appUser
-        every { analyticsPropertyRepository.findByUserAndProperty(appUser, "dota.matchId") } returns null
-
-        val result = controller.findPeers("12345")
-
-        assertSame(HttpStatus.NOT_FOUND, result.statusCode)
-    }
-
-    @Test
-    internal fun testFindPeers_BlankMatchId_ReturnsOkResponseWithEmptyList() {
-        val appUser = mockk<AppUser>()
-        every { appUserRepository.findByGeneratedId("12345") } returns appUser
-        every { analyticsPropertyRepository.findByUserAndProperty(appUser, "dota.matchId") } returns AnalyticsProperty(1, appUser, "dota.matchId", "")
-
-        val result = controller.findPeers("12345")
-
-        assertSame(HttpStatus.OK, result.statusCode)
-        assertTrue(result.body!!.isEmpty())
-    }
-
-    @Test
-    internal fun testFindPeers_NonBlankMatchId_ReturnsHeroNamesOfPeers(
-        @MockK user1: AppUser,
-        @MockK user2: AppUser,
-        @MockK user3: AppUser,
-    ) {
-        val appUser = mockk<AppUser>()
-        every { appUserRepository.findByGeneratedId("12345") } returns appUser
-        every { analyticsPropertyRepository.findByUserAndProperty(appUser, "dota.matchId") } returns AnalyticsProperty(1, appUser, "dota.matchId", "54321")
-        every { analyticsPropertyRepository.findByPropertyAndValue("dota.matchId", "54321") } returns listOf(
-            mockk { every { user } returns user1 },
-            mockk { every { user } returns user2 },
-            mockk { every { user } returns user3 }
-        )
-        every { analyticsPropertyRepository.findByUserAndProperty(user1, "dota.heroName") } returns mockk { every { value } returns "phoenix" }
-        every { analyticsPropertyRepository.findByUserAndProperty(user2, "dota.heroName") } returns mockk { every { value } returns "brewmaster" }
-        every { analyticsPropertyRepository.findByUserAndProperty(user3, "dota.heroName") } returns mockk { every { value } returns "oracle" }
-
-        val result = controller.findPeers("12345")
-
-        assertSame(HttpStatus.OK, result.statusCode)
-        assertEquals(3, result.body.orEmpty().size)
-        assertEquals(listOf("phoenix", "brewmaster", "oracle"), result.body)
     }
 }

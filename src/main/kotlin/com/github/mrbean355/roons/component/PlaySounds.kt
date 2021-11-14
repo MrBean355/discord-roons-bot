@@ -59,7 +59,8 @@ class PlaySounds(
             val content = block.trim().substringBefore("</div>")
             RemoteSoundFile(
                 name = content.split("data-name=\"")[1].substringBefore('\"'),
-                url = content.split("data-link=\"")[1].substringBefore('\"')
+                url = content.split("data-link=\"")[1].substringBefore('\"'),
+                volume = content.split("data-volume=\"")[1].substringBefore('\"').toInt(),
             )
         }
     }
@@ -80,10 +81,13 @@ class PlaySounds(
             }
         }
 
-        soundBiteConverter.convert(File(filePath))
+        soundBiteConverter.convert(File(filePath), file.volume)
     }
 
-    data class RemoteSoundFile(val name: String, val url: String)
-
+    data class RemoteSoundFile(
+        val name: String,
+        val url: String,
+        val volume: Int
+    )
 }
 

@@ -39,7 +39,7 @@ class FeedbackController(
 
         telegramNotifier.sendPrivateMessage(
             """
-            <b>Feedback received</b>
+            📋 <b>Feedback received</b>
             Rating: ${request.rating}
             Comments: ${request.comments}
             """.trimIndent()

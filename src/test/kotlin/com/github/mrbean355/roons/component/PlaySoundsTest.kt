@@ -24,6 +24,7 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -117,9 +118,9 @@ internal class PlaySoundsTest {
 
     @Test
     internal fun testDownloadFile_CallsRestTemplate() {
-        justRun { soundBiteConverter.convert(any()) }
+        justRun { soundBiteConverter.convert(any(), any()) }
 
-        playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3"), destination.absolutePath)
+        playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50), destination.absolutePath)
 
         verify { downloadRestTemplate.getForEntity<ByteArray>("https://roons.mp3") }
     }
@@ -132,7 +133,7 @@ internal class PlaySoundsTest {
         }
 
         assertThrows<RuntimeException> {
-            playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3"), destination.absolutePath)
+            playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50), destination.absolutePath)
         }
     }
 
@@ -144,7 +145,22 @@ internal class PlaySoundsTest {
         }
 
         assertThrows<RuntimeException> {
-            playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3"), destination.absolutePath)
+            playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50), destination.absolutePath)
         }
+    }
+
+    @Test
+    internal fun testDownloadFile_SuccessfulResponseWithNonNullBody_ConvertsFile() {
+        every { downloadRestTemplate.getForEntity<ByteArray>("https://roons.mp3") } returns mockk {
+            every { statusCode } returns HttpStatus.OK
+            every { body } returns File("src/test/resources/roons.mp3").readBytes()
+        }
+        justRun { soundBiteConverter.convert(any(), any()) }
+
+        playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50), destination.absolutePath)
+
+        val slot = slot<File>()
+        verify { soundBiteConverter.convert(capture(slot), 50) }
+        assertEquals(File(destination, "roons").absolutePath, slot.captured.path)
     }
 }
