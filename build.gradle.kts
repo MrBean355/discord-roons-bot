@@ -89,7 +89,7 @@ dependencies {
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.telegram:telegrambots:5.3.0")
-    implementation("org.telegram:telegrambots-spring-boot-starter:5.3.0")
+    implementation("org.telegram:telegrambots-spring-boot-starter:5.4.0.1")
 
     testImplementation(platform("org.junit:junit-bom:5.8.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
