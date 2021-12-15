@@ -20,7 +20,7 @@ import org.sonarqube.gradle.SonarQubeTask
 plugins {
     kotlin("jvm") version "1.5.31"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.5.31"
-    id("org.jetbrains.kotlin.plugin.noarg") version "1.5.31"
+    id("org.jetbrains.kotlin.plugin.noarg") version "1.6.10"
     id("org.jetbrains.kotlin.plugin.spring") version "1.5.31"
     id("org.jetbrains.kotlin.plugin.jpa") version "1.5.31"
     id("org.springframework.boot") version "2.5.6"
