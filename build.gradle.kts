@@ -78,7 +78,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.6")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.6.2")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.6")
     implementation("mysql:mysql-connector-java:8.0.27")
     implementation("com.google.code.gson:gson:2.8.9")
@@ -88,7 +88,7 @@ dependencies {
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots:5.3.0")
+    implementation("org.telegram:telegrambots:5.6.0")
     implementation("org.telegram:telegrambots-spring-boot-starter:5.3.0")
 
     testImplementation(platform("org.junit:junit-bom:5.8.1"))
