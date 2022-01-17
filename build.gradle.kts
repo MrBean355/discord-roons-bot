@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.sonarqube.gradle.SonarQubeTask
 
 plugins {
-    kotlin("jvm") version "1.5.31"
+    kotlin("jvm") version "1.6.10"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.5.31"
     id("org.jetbrains.kotlin.plugin.noarg") version "1.5.31"
     id("org.jetbrains.kotlin.plugin.spring") version "1.5.31"
@@ -79,11 +79,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
 
     implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.6")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.6")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.6.2")
     implementation("mysql:mysql-connector-java:8.0.27")
     implementation("com.google.code.gson:gson:2.8.9")
 
-    runtimeOnly("ch.qos.logback:logback-classic:1.2.6")
+    runtimeOnly("ch.qos.logback:logback-classic:1.2.10")
     implementation("net.dv8tion:JDA:4.3.0_277")
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
@@ -93,6 +93,6 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.8.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.12.0")
+    testImplementation("io.mockk:mockk:1.12.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.2")
 }
