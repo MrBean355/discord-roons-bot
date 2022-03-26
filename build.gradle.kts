@@ -91,7 +91,7 @@ dependencies {
     implementation("org.telegram:telegrambots:5.7.1")
     implementation("org.telegram:telegrambots-spring-boot-starter:5.7.1")
 
-    testImplementation(platform("org.junit:junit-bom:5.8.1"))
+    testImplementation(platform("org.junit:junit-bom:5.8.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.mockk:mockk:1.12.3")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0")
