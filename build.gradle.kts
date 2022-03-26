@@ -79,7 +79,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
 
     implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.6")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.6")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.6.5")
     implementation("mysql:mysql-connector-java:8.0.27")
     implementation("com.google.code.gson:gson:2.8.9")
 
