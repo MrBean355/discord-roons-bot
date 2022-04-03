@@ -23,7 +23,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.noarg") version "1.6.10"
     id("org.jetbrains.kotlin.plugin.spring") version "1.6.10"
     id("org.jetbrains.kotlin.plugin.jpa") version "1.6.10"
-    id("org.springframework.boot") version "2.6.5"
+    id("org.springframework.boot") version "2.6.6"
     id("org.sonarqube") version "3.3"
     jacoco
 }
