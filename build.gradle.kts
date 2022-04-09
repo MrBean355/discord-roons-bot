@@ -76,7 +76,7 @@ sonarqube {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1")
 
     implementation("org.springframework.boot:spring-boot-starter-data-rest:2.6.6")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.6.6")
