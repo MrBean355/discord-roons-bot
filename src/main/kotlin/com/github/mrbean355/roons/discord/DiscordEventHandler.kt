@@ -17,7 +17,6 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.discord.commands.BotCommand
-import com.github.mrbean355.roons.discord.commands.MessageCommandContext
 import com.github.mrbean355.roons.discord.commands.SlashCommandContext
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
@@ -32,7 +31,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.TextChannel
@@ -44,7 +42,6 @@ import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.build.CommandData
@@ -117,23 +114,6 @@ class DiscordEventHandler(
         }
 
         telegramNotifier.sendPrivateMessage("⚙️ <b>Started up</b>:\nReconnected to <b>${reconnects.get()}</b> voice channels.")
-    }
-
-    override fun onMessageReceived(event: MessageReceivedEvent) {
-        botScope.launch {
-            if (event.author.isBot || !event.isFromType(ChannelType.TEXT)) {
-                return@launch
-            }
-            val message = event.message.contentRaw.trim()
-            if (!message.startsWith('!')) {
-                return@launch
-            }
-            val args = message.drop(1).split(' ').filter { it.isNotBlank() }
-            val name = args.first()
-
-            commands.find { it.legacyName == name }
-                ?.handleMessageCommand(MessageCommandContext(event))
-        }
     }
 
     override fun onGuildJoin(event: GuildJoinEvent) {

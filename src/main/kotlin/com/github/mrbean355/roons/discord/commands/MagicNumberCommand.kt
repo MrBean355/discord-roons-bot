@@ -32,7 +32,6 @@ class MagicNumberCommand(
     private val discordBotUserRepository: DiscordBotUserRepository
 ) : BotCommand {
 
-    override val legacyName get() = "magic"
     override val name get() = "magicnumber"
     override val description get() = "Get or recreate your \"magic number\" for communicating with the bot."
 
@@ -41,15 +40,6 @@ class MagicNumberCommand(
             SubcommandData(COMMAND_GET, "Get your current magic number."),
             SubcommandData(COMMAND_NEW, "Create a new magic number in case your previous one was leaked.")
         )
-
-    override fun handleMessageCommand(context: MessageCommandContext) {
-        val message = if (context.arguments.firstOrNull() == COMMAND_NEW) {
-            createMagicNumber(context.member)
-        } else {
-            getMagicNumber(context.member)
-        }
-        context.reply(message, sensitive = true)
-    }
 
     override fun handleSlashCommand(context: SlashCommandContext) {
         val message = if (context.subcommandName == COMMAND_NEW) {

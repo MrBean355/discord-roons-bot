@@ -26,7 +26,6 @@ class FollowCommand(
     private val discordBotSettingsRepository: DiscordBotSettingsRepository
 ) : BasicCommand() {
 
-    override val legacyName get() = "follow"
     override val name get() = "follow"
     override val description get() = "Join & leave the same voice channels (in this server) as you."
 

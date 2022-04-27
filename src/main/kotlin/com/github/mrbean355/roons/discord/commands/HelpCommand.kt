@@ -27,7 +27,6 @@ private const val MESSAGE = "The bot uses Discord's awesome \"slash commands\" f
 @Component
 class HelpCommand : BasicCommand() {
 
-    override val legacyName get() = "help"
     override val name get() = "help"
     override val description get() = "Get some help with using the bot."
 

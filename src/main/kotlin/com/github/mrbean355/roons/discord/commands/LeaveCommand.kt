@@ -22,7 +22,6 @@ import org.springframework.stereotype.Component
 @Component
 class LeaveCommand : BasicCommand() {
 
-    override val legacyName get() = "seeya"
     override val name get() = "leave"
     override val description get() = "Leave the current voice channel."
 

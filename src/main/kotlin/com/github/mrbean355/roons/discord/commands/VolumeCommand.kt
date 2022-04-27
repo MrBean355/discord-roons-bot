@@ -31,26 +31,11 @@ class VolumeCommand(
     private val discordBotSettingsRepository: DiscordBotSettingsRepository
 ) : BotCommand {
 
-    override val legacyName get() = "volume"
     override val name get() = "volume"
     override val description get() = "Get or set the bot's volume when playing sounds in voice channels."
 
     override fun buildSlashCommand(commandData: CommandData) = commandData
         .addOption(OptionType.INTEGER, OPTION_SET_VOLUME, "Set a new volume level.")
-
-    override fun handleMessageCommand(context: MessageCommandContext) {
-        val newVolumeArg = context.arguments.firstOrNull()
-        if (newVolumeArg != null) {
-            val newVolume = newVolumeArg.toIntOrNull()
-            if (newVolume != null) {
-                context.reply(setVolume(context.member, newVolume))
-            } else {
-                context.reply("I'm not sure what you mean :disappointed:\nExample usage: `!volume 50`")
-            }
-        } else {
-            context.reply(getVolume(context.member))
-        }
-    }
 
     override fun handleSlashCommand(context: SlashCommandContext) {
         val newVolume = context.getOption(OPTION_SET_VOLUME)?.asLong?.toInt()?.coerceVolume()

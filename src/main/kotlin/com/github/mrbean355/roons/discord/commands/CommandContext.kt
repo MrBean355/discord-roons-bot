@@ -17,39 +17,17 @@
 package com.github.mrbean355.roons.discord.commands
 
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.events.Event
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.interactions.Interaction
 import net.dv8tion.jda.api.interactions.commands.OptionMapping
 
-sealed class CommandContext<E : Event>(protected val event: E) {
+/** Context of a slash command. */
+class SlashCommandContext(
+    private val event: SlashCommandEvent
+) {
 
-    /** Member that initiated the command. */
-    abstract val member: Member
+    val member: Member get() = event.member!!
 
     val reply = CommandReply(event)
-}
-
-/** Context of a message command (starts with '!'). */
-class MessageCommandContext(event: MessageReceivedEvent) : CommandContext<MessageReceivedEvent>(event) {
-
-    override val member: Member get() = event.member!!
-
-    /** Command arguments (excluding the command name). */
-    val arguments: List<String> by lazy {
-        event.message.contentRaw.trim()
-            .drop(1) // '!' prefix
-            .split(' ')
-            .filter { it.isNotBlank() }
-            .drop(1) // command name
-    }
-}
-
-/** Context of a slash command. */
-class SlashCommandContext(event: SlashCommandEvent) : CommandContext<SlashCommandEvent>(event) {
-
-    override val member: Member get() = event.member!!
 
     /** Name of the sub-command if applicable. */
     val subcommandName: String? get() = event.subcommandName
@@ -59,32 +37,12 @@ class SlashCommandContext(event: SlashCommandEvent) : CommandContext<SlashComman
 
 }
 
-/** Sends the applicable reply to a message or slash command. */
-class CommandReply(private val event: Event) {
+/** Sends a reply to the slash command. */
+class CommandReply(
+    private val event: SlashCommandEvent
+) {
 
     operator fun invoke(text: String, sensitive: Boolean = false) {
-        when (event) {
-            is MessageReceivedEvent -> if (sensitive) event.sendPrivateMessage(text) else event.typeReply(decorate(text))
-            is SlashCommandEvent -> event.queueEphemeralReply(text)
-            else -> error("Unsupported event type: ${event::class}")
-        }
+        event.reply(text).setEphemeral(sensitive).queue()
     }
-
-    private fun decorate(text: String) = "$text\n*⭐ Try out the fancy slash commands! Type `/` to see what's available.*"
-
 }
-
-private fun MessageReceivedEvent.typeReply(text: String): Unit =
-    channel.sendTyping().queue {
-        channel.sendMessage(text).queue()
-    }
-
-private fun MessageReceivedEvent.sendPrivateMessage(text: String): Unit =
-    author.openPrivateChannel().queue {
-        it.sendMessage(text).queue {
-            message.addReaction("✅").queue()
-        }
-    }
-
-private fun Interaction.queueEphemeralReply(content: String): Unit =
-    reply(content).setEphemeral(true).queue()

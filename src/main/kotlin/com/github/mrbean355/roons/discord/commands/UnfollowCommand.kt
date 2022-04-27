@@ -26,7 +26,6 @@ class UnfollowCommand(
     private val discordBotSettingsRepository: DiscordBotSettingsRepository
 ) : BasicCommand() {
 
-    override val legacyName get() = "unfollow"
     override val name get() = "unfollow"
     override val description get() = "Stop following you when you join & leave voice channels."
 

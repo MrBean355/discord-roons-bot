@@ -23,7 +23,6 @@ import org.springframework.stereotype.Component
 @Component
 class JoinCommand : BasicCommand() {
 
-    override val legacyName get() = "roons"
     override val name get() = "join"
     override val description get() = "Join your current voice channel."
 

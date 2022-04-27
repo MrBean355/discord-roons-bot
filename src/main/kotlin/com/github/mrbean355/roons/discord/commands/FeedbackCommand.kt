@@ -28,19 +28,11 @@ class FeedbackCommand(
     private val telegramNotifier: TelegramNotifier
 ) : BotCommand {
 
-    override val legacyName get() = "feedback"
     override val name get() = "feedback"
     override val description get() = "Provide the developer with your feedback."
 
     override fun buildSlashCommand(commandData: CommandData) = commandData
         .addOption(OptionType.STRING, OPTION_COMMENTS, "Your thoughts on the Admiral Bulldog sound pack", true)
-
-    override fun handleMessageCommand(context: MessageCommandContext) {
-        if (context.arguments.isNotEmpty()) {
-            val comments = context.arguments.joinToString(separator = " ")
-            context.reply(feedback(comments))
-        }
-    }
 
     override fun handleSlashCommand(context: SlashCommandContext) {
         val comments = context.getOption(OPTION_COMMENTS)?.asString.orEmpty()
