@@ -17,7 +17,7 @@
 package com.github.mrbean355.roons.repository
 
 import com.github.mrbean355.roons.DiscordBotSettings
-import com.github.mrbean355.roons.discord.DEFAULT_VOLUME
+import com.github.mrbean355.roons.discord.audio.DEFAULT_VOLUME
 import org.springframework.data.repository.CrudRepository
 import javax.transaction.Transactional
 

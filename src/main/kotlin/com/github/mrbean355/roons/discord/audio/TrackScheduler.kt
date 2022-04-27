@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.github.mrbean355.roons.discord
+package com.github.mrbean355.roons.discord.audio
 
 import com.github.natanbc.lavadsp.timescale.TimescalePcmAudioFilter
 import com.google.common.annotations.VisibleForTesting

@@ -16,7 +16,7 @@
 
 package com.github.mrbean355.roons.discord.commands
 
-import com.github.mrbean355.roons.discord.coerceVolume
+import com.github.mrbean355.roons.discord.audio.coerceVolume
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.loadSettings
 import net.dv8tion.jda.api.entities.Member

@@ -17,6 +17,7 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
+import com.github.mrbean355.roons.discord.audio.GuildMusicManager
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.loadSettings
 import com.github.mrbean355.roons.telegram.TelegramNotifier

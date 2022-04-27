@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.github.mrbean355.roons.discord
+package com.github.mrbean355.roons.discord.audio
 
 import com.google.common.annotations.VisibleForTesting
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
