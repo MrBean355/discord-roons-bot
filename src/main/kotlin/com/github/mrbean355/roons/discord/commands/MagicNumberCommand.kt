@@ -19,7 +19,8 @@ package com.github.mrbean355.roons.discord.commands
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
 import org.springframework.stereotype.Component
 import java.util.UUID
@@ -35,19 +36,20 @@ class MagicNumberCommand(
     override val name get() = "magicnumber"
     override val description get() = "Get or recreate your \"magic number\" for communicating with the bot."
 
-    override fun buildSlashCommand(commandData: CommandData) = commandData
+    override fun buildCommand(commandData: SlashCommandData) = commandData
         .addSubcommands(
             SubcommandData(COMMAND_GET, "Get your current magic number."),
             SubcommandData(COMMAND_NEW, "Create a new magic number in case your previous one was leaked.")
         )
 
-    override fun handleSlashCommand(context: SlashCommandContext) {
-        val message = if (context.subcommandName == COMMAND_NEW) {
-            createMagicNumber(context.member)
+    override fun handleCommand(event: SlashCommandInteractionEvent) {
+        val member = event.member ?: return
+        val message = if (event.subcommandName == COMMAND_NEW) {
+            createMagicNumber(member)
         } else {
-            getMagicNumber(context.member)
+            getMagicNumber(member)
         }
-        context.reply(message, sensitive = true)
+        event.reply(message).setEphemeral(true).queue()
     }
 
     private fun getMagicNumber(member: Member): String {

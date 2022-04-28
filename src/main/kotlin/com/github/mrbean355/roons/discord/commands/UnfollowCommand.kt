@@ -18,26 +18,28 @@ package com.github.mrbean355.roons.discord.commands
 
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.loadSettings
-import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import org.springframework.stereotype.Component
 
 @Component
 class UnfollowCommand(
     private val discordBotSettingsRepository: DiscordBotSettingsRepository
-) : BasicCommand() {
+) : BotCommand {
 
     override val name get() = "unfollow"
     override val description get() = "Stop following you when you join & leave voice channels."
 
-    override fun handleCommand(member: Member, reply: CommandReply) {
+    override fun handleCommand(event: SlashCommandInteractionEvent) {
+        val member = event.member ?: return
         val settings = discordBotSettingsRepository.loadSettings(member.guild.id)
         val followedUser = settings.followedUser
+
         if (followedUser != null) {
             discordBotSettingsRepository.save(settings.copy(followedUser = null))
             val user = member.jda.getUserById(followedUser)?.asMention ?: "someone"
-            reply("I've stopped following $user :ok_hand:")
+            event.reply("I've stopped following $user :ok_hand:").queue()
         } else {
-            reply("I'm not following anyone :shrug:")
+            event.reply("I'm not following anyone :shrug:").setEphemeral(true).queue()
         }
     }
 }

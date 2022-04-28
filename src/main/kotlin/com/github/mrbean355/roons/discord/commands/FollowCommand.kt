@@ -18,34 +18,38 @@ package com.github.mrbean355.roons.discord.commands
 
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.loadSettings
-import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import org.springframework.stereotype.Component
 
 @Component
 class FollowCommand(
     private val discordBotSettingsRepository: DiscordBotSettingsRepository
-) : BasicCommand() {
+) : BotCommand {
 
     override val name get() = "follow"
     override val description get() = "Join & leave the same voice channels (in this server) as you."
 
-    override fun handleCommand(member: Member, reply: CommandReply) {
+    override fun handleCommand(event: SlashCommandInteractionEvent) {
+        val member = event.member ?: return
         val settings = discordBotSettingsRepository.loadSettings(member.guild.id)
         val followedUser = settings.followedUser
 
         if (followedUser == member.id) {
-            reply("I'm already following ${member.asMention} :shrug:")
+            event.reply("I'm already following ${member.asMention} :shrug:").setEphemeral(true).queue()
             return
         }
+
         discordBotSettingsRepository.save(settings.copy(followedUser = member.id))
+
         member.voiceState?.channel?.let {
             member.guild.audioManager.openAudioConnection(it)
         }
+
         val insteadOf = if (followedUser != null) {
             val previousUser = member.guild.jda.getUserById(followedUser)
             "instead of ${previousUser?.asMention ?: "unknown"} "
         } else ""
 
-        reply("I'm now following ${member.asMention} ${insteadOf}:ok_hand:\nType `/unfollow` and I'll stop.")
+        event.reply("I'm now following ${member.asMention} ${insteadOf}:ok_hand:\nType `/unfollow` and I'll stop.").queue()
     }
 }

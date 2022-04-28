@@ -17,7 +17,6 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.discord.commands.BotCommand
-import com.github.mrbean355.roons.discord.commands.SlashCommandContext
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
@@ -31,7 +30,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.BaseGuildMessageChannel
+import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.ReadyEvent
@@ -41,10 +43,10 @@ import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
-import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.interactions.commands.build.Commands
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -71,13 +73,13 @@ class DiscordEventHandler(
             logger.info("Testing slash commands")
             event.jda.guilds.forEach { guild ->
                 guild.updateCommands()
-                    .addCommands(commands.map { CommandData(it.name, it.description).apply(it::buildSlashCommand) })
+                    .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
                     .queue()
             }
         } else if (metadataRepository.takeUpdateSlashCommandsFlag()) {
             logger.info("Updating slash commands")
             event.jda.updateCommands()
-                .addCommands(commands.map { CommandData(it.name, it.description).apply(it::buildSlashCommand) })
+                .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
                 .queue()
         }
 
@@ -159,27 +161,27 @@ class DiscordEventHandler(
         }
     }
 
-    override fun onPrivateMessageReceived(event: PrivateMessageReceivedEvent) {
+    override fun onMessageReceived(event: MessageReceivedEvent) {
         botScope.launch {
-            if (!event.author.isBot) {
-                event.message.channel.sendMessage(":no_entry: Please send me commands through a text channel in your server.").queue()
+            if (event.isFromType(ChannelType.PRIVATE) && !event.author.isBot) {
+                event.privateChannel.sendMessage(":no_entry: Please send me commands through a text channel in your server.").queue()
             }
         }
     }
 
-    override fun onSlashCommand(event: SlashCommandEvent) {
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
         botScope.launch {
             if (event.guild == null) {
                 event.reply("Please use that command in a server's text channel.").setEphemeral(true).queue()
                 return@launch
             }
             commands.find { it.name == event.name }
-                ?.handleSlashCommand(SlashCommandContext(event))
+                ?.handleCommand(event)
         }
     }
 
     /** @return the first (if any) [TextChannel] which the bot can read & write to. */
-    private fun Guild.findWelcomeChannel(): TextChannel? {
+    private fun Guild.findWelcomeChannel(): BaseGuildMessageChannel? {
         val self = selfMember
         val defaultChannel = defaultChannel
         if (defaultChannel != null) {
@@ -193,7 +195,7 @@ class DiscordEventHandler(
     }
 
     /** @return `true` if this [Member] can read & write to the [channel]. */
-    private fun Member.canReadAndWrite(channel: TextChannel): Boolean {
-        return hasPermission(channel, Permission.MESSAGE_READ, Permission.MESSAGE_WRITE)
+    private fun Member.canReadAndWrite(channel: GuildChannel): Boolean {
+        return hasPermission(channel, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND)
     }
 }

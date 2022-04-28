@@ -16,7 +16,7 @@
 
 package com.github.mrbean355.roons.discord.commands
 
-import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import org.springframework.stereotype.Component
 
 private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds/wiki/Discord-Bot"
@@ -25,11 +25,12 @@ private const val MESSAGE = "The bot uses Discord's awesome \"slash commands\" f
         "For more info or to log a bug, please visit: $HELP_URL"
 
 @Component
-class HelpCommand : BasicCommand() {
+class HelpCommand : BotCommand {
 
     override val name get() = "help"
     override val description get() = "Get some help with using the bot."
 
-    override fun handleCommand(member: Member, reply: CommandReply) = reply(MESSAGE)
-
+    override fun handleCommand(event: SlashCommandInteractionEvent) {
+        event.reply(MESSAGE).setEphemeral(true).queue()
+    }
 }

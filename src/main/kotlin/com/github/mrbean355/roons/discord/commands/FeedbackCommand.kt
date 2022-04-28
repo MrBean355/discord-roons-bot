@@ -17,8 +17,9 @@
 package com.github.mrbean355.roons.discord.commands
 
 import com.github.mrbean355.roons.telegram.TelegramNotifier
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 
 private const val OPTION_COMMENTS = "comments"
@@ -31,12 +32,12 @@ class FeedbackCommand(
     override val name get() = "feedback"
     override val description get() = "Provide the developer with your feedback."
 
-    override fun buildSlashCommand(commandData: CommandData) = commandData
+    override fun buildCommand(commandData: SlashCommandData) = commandData
         .addOption(OptionType.STRING, OPTION_COMMENTS, "Your thoughts on the Admiral Bulldog sound pack", true)
 
-    override fun handleSlashCommand(context: SlashCommandContext) {
-        val comments = context.getOption(OPTION_COMMENTS)?.asString.orEmpty()
-        context.reply(feedback(comments))
+    override fun handleCommand(event: SlashCommandInteractionEvent) {
+        val comments = event.getOption(OPTION_COMMENTS)?.asString.orEmpty()
+        event.reply(feedback(comments)).setEphemeral(true).queue()
     }
 
     private fun feedback(comments: String): String {

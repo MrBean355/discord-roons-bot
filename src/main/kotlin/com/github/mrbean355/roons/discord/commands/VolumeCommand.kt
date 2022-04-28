@@ -20,8 +20,9 @@ import com.github.mrbean355.roons.discord.audio.coerceVolume
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.loadSettings
 import net.dv8tion.jda.api.entities.Member
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 
 private const val OPTION_SET_VOLUME = "new-volume"
@@ -34,16 +35,17 @@ class VolumeCommand(
     override val name get() = "volume"
     override val description get() = "Get or set the bot's volume when playing sounds in voice channels."
 
-    override fun buildSlashCommand(commandData: CommandData) = commandData
+    override fun buildCommand(commandData: SlashCommandData) = commandData
         .addOption(OptionType.INTEGER, OPTION_SET_VOLUME, "Set a new volume level.")
 
-    override fun handleSlashCommand(context: SlashCommandContext) {
-        val newVolume = context.getOption(OPTION_SET_VOLUME)?.asLong?.toInt()?.coerceVolume()
+    override fun handleCommand(event: SlashCommandInteractionEvent) {
+        val member = event.member ?: return
+        val newVolume = event.getOption(OPTION_SET_VOLUME)?.asLong?.toInt()?.coerceVolume()
 
         if (newVolume == null) {
-            context.reply(getVolume(context.member))
+            event.reply(getVolume(member)).setEphemeral(true).queue()
         } else {
-            context.reply(setVolume(context.member, newVolume))
+            event.reply(setVolume(member, newVolume)).queue()
         }
     }
 
