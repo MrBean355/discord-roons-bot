@@ -19,10 +19,9 @@ package com.github.mrbean355.roons.discord.commands
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import org.springframework.stereotype.Component
 
-private const val HELP_URL = "https://github.com/MrBean355/admiralbulldog-sounds/wiki/Discord-Bot"
-private const val MESSAGE = "The bot uses Discord's awesome \"slash commands\" feature.\n" +
+private const val MESSAGE = "Interact with the bot using Discord's slash commands.\n" +
         "Just type slash (`/`) in a text channel and a list of available commands will pop up!\n" +
-        "For more info or to log a bug, please visit: $HELP_URL"
+        "For more info or to log a bug, please visit: https://github.com/MrBean355/admiralbulldog-sounds/wiki/Discord-Bot"
 
 @Component
 class HelpCommand : BotCommand {

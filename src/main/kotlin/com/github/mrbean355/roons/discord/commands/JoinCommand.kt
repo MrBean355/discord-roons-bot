@@ -24,14 +24,14 @@ import org.springframework.stereotype.Component
 class JoinCommand : BotCommand {
 
     override val name get() = "join"
-    override val description get() = "Join your current voice channel."
+    override val description get() = "Join the voice channel that you're in."
 
     override fun handleCommand(event: SlashCommandInteractionEvent) {
         val member = event.member ?: return
         val channel = member.voiceState?.channel
 
         if (channel == null) {
-            event.reply("You aren't in a voice channel.").setEphemeral(true).queue()
+            event.reply("Please join a voice channel first.").setEphemeral(true).queue()
             return
         }
 
@@ -53,7 +53,7 @@ class JoinCommand : BotCommand {
             }
             else -> {
                 member.guild.audioManager.openAudioConnection(channel)
-                event.reply("I've connected to `${channel.name}`!").queue()
+                event.reply("I'm connecting to `${channel.name}`.").queue()
             }
         }
     }

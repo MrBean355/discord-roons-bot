@@ -30,18 +30,14 @@ class FeedbackCommand(
 ) : BotCommand {
 
     override val name get() = "feedback"
-    override val description get() = "Provide the developer with your feedback."
+    override val description get() = "Send some feedback to the developer."
 
     override fun buildCommand(commandData: SlashCommandData) = commandData
-        .addOption(OptionType.STRING, OPTION_COMMENTS, "Your thoughts on the Admiral Bulldog sound pack", true)
+        .addOption(OptionType.STRING, OPTION_COMMENTS, "All comments & suggestions are welcome!", true)
 
     override fun handleCommand(event: SlashCommandInteractionEvent) {
         val comments = event.getOption(OPTION_COMMENTS)?.asString.orEmpty()
-        event.reply(feedback(comments)).setEphemeral(true).queue()
-    }
-
-    private fun feedback(comments: String): String {
         telegramNotifier.sendPrivateMessage("📋 <b>Feedback received</b>\nComments: $comments")
-        return "Thank you."
+        event.reply("Thank you for your feedback.").setEphemeral(true).queue()
     }
 }

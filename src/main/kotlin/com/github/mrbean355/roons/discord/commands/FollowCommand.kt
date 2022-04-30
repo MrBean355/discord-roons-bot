@@ -35,7 +35,7 @@ class FollowCommand(
         val followedUser = settings.followedUser
 
         if (followedUser == member.id) {
-            event.reply("I'm already following ${member.asMention} :shrug:").setEphemeral(true).queue()
+            event.reply("I'm already following you.").setEphemeral(true).queue()
             return
         }
 
@@ -45,11 +45,14 @@ class FollowCommand(
             member.guild.audioManager.openAudioConnection(it)
         }
 
-        val insteadOf = if (followedUser != null) {
-            val previousUser = member.guild.jda.getUserById(followedUser)
-            "instead of ${previousUser?.asMention ?: "unknown"} "
-        } else ""
-
-        event.reply("I'm now following ${member.asMention} ${insteadOf}:ok_hand:\nType `/unfollow` and I'll stop.").queue()
+        val followedMember = followedUser?.let { member.guild.retrieveMemberById(it).complete() }
+        val reply = buildString {
+            append("I'm now following ${member.asMention}")
+            if (followedMember != null) {
+                append(' ').append("instead of ${followedMember.asMention}")
+            }
+            append('.')
+        }
+        event.reply(reply).queue()
     }
 }

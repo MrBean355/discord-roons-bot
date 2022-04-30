@@ -51,12 +51,12 @@ class VolumeCommand(
 
     private fun getVolume(member: Member): String {
         val settings = discordBotSettingsRepository.loadSettings(member.guild.id)
-        return "My volume is at `${settings.volume}%` :loud_sound:"
+        return "My volume is at `${settings.volume}%`."
     }
 
     private fun setVolume(member: Member, newVolume: Int): String {
         val settings = discordBotSettingsRepository.loadSettings(member.guild.id)
         discordBotSettingsRepository.save(settings.copy(volume = newVolume))
-        return "My volume has been set to `${newVolume}%` :ok_hand:"
+        return "My volume has been set to `${newVolume}%`."
     }
 }

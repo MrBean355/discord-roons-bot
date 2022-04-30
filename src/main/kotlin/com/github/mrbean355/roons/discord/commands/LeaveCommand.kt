@@ -27,12 +27,11 @@ class LeaveCommand : BotCommand {
 
     override fun handleCommand(event: SlashCommandInteractionEvent) {
         val member = event.member ?: return
-        val audioManager = member.guild.audioManager
 
         if (member.guild.audioManager.isConnected) {
-            val channelName = audioManager.connectedChannel?.name
+            val channelName = member.guild.audioManager.connectedChannel?.name
             member.guild.audioManager.closeAudioConnection()
-            event.reply("I've disconnected from `$channelName`.").queue()
+            event.reply("I'm disconnecting from `$channelName`.").queue()
         } else {
             event.reply("I'm not connected to a voice channel.").setEphemeral(true).queue()
         }
