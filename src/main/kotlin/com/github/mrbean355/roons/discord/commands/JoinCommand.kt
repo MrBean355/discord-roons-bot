@@ -17,19 +17,31 @@
 package com.github.mrbean355.roons.discord.commands
 
 import net.dv8tion.jda.api.Permission
+import net.dv8tion.jda.api.entities.AudioChannel
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.OptionType
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 
 @Component
 class JoinCommand : BotCommand {
 
     override val name get() = "join"
-    override val description get() = "Join the voice channel that you're in."
+    override val description get() = "Join a voice channel."
+
+    override fun buildCommand(commandData: SlashCommandData) = commandData
+        .addOption(OptionType.CHANNEL, "channel", "The channel to join. Optional; joins your current channel by default.")
 
     override fun handleCommand(event: SlashCommandInteractionEvent) {
         val member = event.member ?: return
-        val channel = member.voiceState?.channel
+        val channelArg = event.getOption("channel")?.asGuildChannel
 
+        if (channelArg != null && channelArg !is AudioChannel) {
+            event.reply("I can only connect to voice channels.").setEphemeral(true).queue()
+            return
+        }
+
+        val channel = (channelArg as AudioChannel?) ?: member.voiceState?.channel
         if (channel == null) {
             event.reply("Please join a voice channel first.").setEphemeral(true).queue()
             return
