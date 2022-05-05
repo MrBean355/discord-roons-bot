@@ -23,23 +23,29 @@ import org.springframework.stereotype.Component
 import java.util.UUID
 
 @Component
-class MagicNumberCommand(
+class NewMagicNumberCommand(
     private val discordBotUserRepository: DiscordBotUserRepository
 ) : BotCommand {
 
-    override val name get() = "magic-number"
-    override val description get() = "Check your \"magic number\" for use in the desktop app."
+    override val name get() = CommandName
+    override val description get() = "Create a new \"magic number\" for use in the desktop app."
 
     override fun handleCommand(event: SlashCommandInteractionEvent) {
         val member = event.member ?: return
         val botUser = discordBotUserRepository.findOneByDiscordUserIdAndGuildId(member.id, member.guild.id)
             ?: discordBotUserRepository.save(DiscordBotUser(0, member.id, member.guild.id, UUID.randomUUID().toString()))
 
+        val newToken = UUID.randomUUID().toString()
+        discordBotUserRepository.save(botUser.copy(token = newToken))
+
         event.reply(
-            "Here's your magic number:\n" +
-                    "```${botUser.token}```\n" +
-                    "**Please keep it secret!** Anyone who has this magic number will be able to play sounds through the bot in your server.\n" +
-                    "Use `/${NewMagicNumberCommand.CommandName}` to create a new one if it was leaked."
+            "Here's your **new** magic number:\n" +
+                    "```$newToken```\n" +
+                    "**Please keep it secret!** Anyone who has this magic number will be able to play sounds through the bot in your server."
         ).setEphemeral(true).queue()
+    }
+
+    companion object {
+        const val CommandName = "new-magic-number"
     }
 }
