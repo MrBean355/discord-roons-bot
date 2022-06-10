@@ -21,7 +21,7 @@ plugins {
     kotlin("jvm") version "1.7.0"
     id("org.jetbrains.kotlin.plugin.allopen") version "1.6.21"
     id("org.jetbrains.kotlin.plugin.noarg") version "1.6.21"
-    id("org.jetbrains.kotlin.plugin.spring") version "1.6.21"
+    id("org.jetbrains.kotlin.plugin.spring") version "1.7.0"
     id("org.jetbrains.kotlin.plugin.jpa") version "1.6.21"
     id("org.springframework.boot") version "2.7.0"
     id("org.sonarqube") version "3.4.0.2513"
