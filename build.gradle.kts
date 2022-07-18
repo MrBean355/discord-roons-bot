@@ -84,7 +84,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.9.0")
 
     runtimeOnly("ch.qos.logback:logback-classic:1.2.11")
-    implementation("net.dv8tion:JDA:5.0.0-alpha.13")
+    implementation("net.dv8tion:JDA:5.0.0-alpha.15")
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
