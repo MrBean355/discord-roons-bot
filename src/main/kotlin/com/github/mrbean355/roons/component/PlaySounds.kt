@@ -26,7 +26,7 @@ import org.springframework.web.client.getForEntity
 import java.io.File
 import java.io.FileOutputStream
 
-private const val PLAY_SOUNDS_URL = "http://chatbot.admiralbulldog.live/playsounds"
+private const val PLAY_SOUNDS_URL = "https://chatbot.admiralbulldog.live/playsounds"
 
 @Component
 class PlaySounds(

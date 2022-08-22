@@ -37,7 +37,7 @@ import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
 import java.io.File
 
-private const val EXPECTED_URL = "http://chatbot.admiralbulldog.live/playsounds"
+private const val EXPECTED_URL = "https://chatbot.admiralbulldog.live/playsounds"
 
 internal class PlaySoundsTest {
     @MockK
