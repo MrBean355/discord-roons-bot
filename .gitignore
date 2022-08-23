@@ -5,3 +5,4 @@ out/
 local.properties
 /sounds/
 /sounds_temp/
+cache.json

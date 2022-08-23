@@ -44,7 +44,7 @@ class PlaySounds(
         RestTemplate()
     )
 
-    /** Scrape the PlaySounds web page and collect a list of sound file names and URLs. */
+    /** Scrape the PlaySounds web page and collect a list of available sound bites. */
     fun listRemoteFiles(): List<RemoteSoundFile> {
         val response = listRestTemplate.getForEntity<String>(PLAY_SOUNDS_URL)
         val responseBody = response.body
@@ -52,17 +52,9 @@ class PlaySounds(
             throw RuntimeException("Error downloading PlaySounds page. Response code: ${response.statusCodeValue}")
         }
 
-        val blocks = responseBody.split("<div class=\"play-in-browser-wrapper\"")
+        return responseBody.split("class=\"category\"")
             .drop(1)
-
-        return blocks.map { block ->
-            val content = block.trim().substringBefore("</div>")
-            RemoteSoundFile(
-                name = content.split("data-name=\"")[1].substringBefore('\"'),
-                url = content.split("data-link=\"")[1].substringBefore('\"'),
-                volume = content.split("data-volume=\"")[1].substringBefore('\"').toInt(),
-            )
-        }
+            .flatMap(::processCategory)
     }
 
     /** Download the given sound to the given destination. */
@@ -84,10 +76,29 @@ class PlaySounds(
         soundBiteConverter.convert(File(filePath), file.volume)
     }
 
+    private fun processCategory(html: String): List<RemoteSoundFile> {
+        val category = html.drop(1)
+            .substringBefore("</h3>")
+            .replace("&#39;", "'")
+
+        return html.split("<div class=\"play-in-browser-wrapper\"")
+            .drop(1)
+            .map { block ->
+                val content = block.trim().substringBefore("</div>")
+                RemoteSoundFile(
+                    name = content.split("data-name=\"")[1].substringBefore('\"'),
+                    url = content.split("data-link=\"")[1].substringBefore('\"'),
+                    volume = content.split("data-volume=\"")[1].substringBefore('\"').toInt(),
+                    category = category,
+                )
+            }
+    }
+
     data class RemoteSoundFile(
         val name: String,
         val url: String,
-        val volume: Int
+        val volume: Int,
+        val category: String,
     )
 }
 

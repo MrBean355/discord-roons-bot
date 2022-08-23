@@ -16,8 +16,11 @@
 
 package com.github.mrbean355.roons.discord
 
+import com.github.mrbean355.roons.PlaySound
 import com.github.mrbean355.roons.component.PlaySounds
 import com.github.mrbean355.roons.telegram.TelegramNotifier
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -36,6 +39,7 @@ import kotlin.concurrent.write
 
 private const val SOUNDS_DIR = "sounds"
 private const val TEMP_SOUNDS_DIR = "sounds_temp"
+private const val LOCAL_CACHE_FILE = "cache.json"
 
 @Component
 class SoundStore(
@@ -44,23 +48,23 @@ class SoundStore(
     private val logger: Logger
 ) {
     private val lock = ReentrantReadWriteLock()
-    private var fileChecksums: Map<String, String> = emptyMap()
+    private var soundsCache: Map<String, PlaySound> = emptyMap()
 
-    @Value("\${roons.soundBites.skipFirstDownload:false}")
-    private var skipFirstDownload: Boolean = false
+    @Value("\${roons.soundBites.localCache:false}")
+    private var useLocalCache: Boolean = false
 
     @PostConstruct
     fun onPostConstruct(): Unit = runBlocking(IO) {
-        if (skipFirstDownload) {
+        if (useLocalCache && File(LOCAL_CACHE_FILE).exists()) {
             loadSoundBitesFromDisk()
         } else {
             downloadAllSoundBites()
         }
     }
 
-    /** @return map of sound bite name to its file's checksum. */
-    fun listAll(): Map<String, String> = lock.read {
-        fileChecksums
+    /** @return collection of all available sound bites. */
+    fun listAll(): Collection<PlaySound> = lock.read {
+        soundsCache.values
     }
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
@@ -76,20 +80,22 @@ class SoundStore(
      */
     @Scheduled(cron = "0 0 * * * *")
     fun synchroniseSoundBites(): Unit = runBlocking(IO) {
-        val old = fileChecksums
+        val old = soundsCache
         downloadAllSoundBites()
 
         sendTelegramNotification(
-            addedFiles = fileChecksums.keys - old.keys,
-            changedFiles = fileChecksums.filter { it.key in old.keys }.filter { it.value != old[it.key] }.keys,
-            removedFiles = old.keys - fileChecksums.keys
+            addedFiles = soundsCache.keys - old.keys,
+            changedFiles = soundsCache.filterKeys { it in old }.filter { it.value.checksum != old.getValue(it.key).checksum }.keys,
+            removedFiles = old.keys - soundsCache.keys
         )
     }
 
     private fun loadSoundBitesFromDisk() {
-        fileChecksums = File(SOUNDS_DIR).listFiles().orEmpty().associate {
-            it.name to it.checksum()
-        }
+        soundsCache = Gson().fromJson(
+            File(LOCAL_CACHE_FILE).readText(),
+            object : TypeToken<Map<String, PlaySound>>() {}.type
+        )
+        logger.info("Loaded ${soundsCache.size} sounds from disk cache.")
     }
 
     private suspend fun downloadAllSoundBites() {
@@ -100,8 +106,11 @@ class SoundStore(
             it.mkdir()
         }
 
+        val remoteFiles = tryListRemoteFiles()
+        val mapping = remoteFiles.associateBy { it.name }
+
         coroutineScope {
-            tryListRemoteFiles().forEach { file ->
+            remoteFiles.forEach { file ->
                 launch {
                     tryDownloadFile(file)
                 }
@@ -112,10 +121,18 @@ class SoundStore(
             val soundsDir = File(SOUNDS_DIR)
             soundsDir.deleteRecursively()
             tempSoundsDir.renameTo(soundsDir)
-            fileChecksums = soundsDir.listFiles()
+
+            soundsCache = soundsDir.listFiles()
                 .orEmpty()
-                .associateWith { it.checksum() }
+                .associateWith { PlaySound(it.name, it.checksum(), mapping.getValue(it.nameWithoutExtension).category) }
                 .mapKeys { it.key.name }
+
+            if (useLocalCache) {
+                File(LOCAL_CACHE_FILE).apply {
+                    writeText(Gson().toJson(soundsCache))
+                    logger.info("Wrote ${soundsCache.size} sounds to disk cache (${length() / 1024f} KB).")
+                }
+            }
         }
     }
 

@@ -105,22 +105,42 @@ internal class PlaySoundsTest {
     internal fun testListRemoteFiles_SuccessfulResponseWithBody_ReturnsCorrectItems() {
         val result = playSounds.listRemoteFiles()
 
-        assertEquals(4, result.size)
-        assertEquals("eight", result[0].name)
-        assertEquals("https://admiralbullbot.github.io/playsounds/files/bulldog/8.ogg", result[0].url)
-        assertEquals("eleven", result[1].name)
-        assertEquals("https://admiralbullbot.github.io/playsounds/files/bulldog/11.ogg", result[1].url)
-        assertEquals("ahaha4head", result[2].name)
-        assertEquals("https://admiralbullbot.github.io/playsounds/files/bulldog/ahaha4head.ogg", result[2].url)
-        assertEquals("alchemist", result[3].name)
-        assertEquals("https://admiralbullbot.github.io/playsounds/files/bulldog/alchemist.ogg", result[3].url)
+        assertEquals(625, result.size)
+
+        with(result[159]) {
+            assertEquals("roons", name)
+            assertEquals("https://admiralbullbot.github.io/playsounds/files/bulldog/roons.ogg", url)
+            assertEquals(30, volume)
+            assertEquals("Bulldog's voice", category)
+        }
+
+        with(result[78]) {
+            assertEquals("eel", name)
+            assertEquals("https://admiralbullbot.github.io/playsounds/files/bulldog/eel.ogg", url)
+            assertEquals(35, volume)
+            assertEquals("Bulldog's voice", category)
+        }
+
+        with(result[387]) {
+            assertEquals("weed", name)
+            assertEquals("https://admiralbullbot.github.io/playsounds/files/new/weed.ogg", url)
+            assertEquals(50, volume)
+            assertEquals("Songs", category)
+        }
+
+        with(result[473]) {
+            assertEquals("vivon", name)
+            assertEquals("https://admiralbullbot.github.io/playsounds/files/bulldog/vivon.ogg", url)
+            assertEquals(37, volume)
+            assertEquals("Ugandan", category)
+        }
     }
 
     @Test
     internal fun testDownloadFile_CallsRestTemplate() {
         justRun { soundBiteConverter.convert(any(), any()) }
 
-        playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50), destination.absolutePath)
+        playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50, ""), destination.absolutePath)
 
         verify { downloadRestTemplate.getForEntity<ByteArray>("https://roons.mp3") }
     }
@@ -133,7 +153,7 @@ internal class PlaySoundsTest {
         }
 
         assertThrows<RuntimeException> {
-            playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50), destination.absolutePath)
+            playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50, ""), destination.absolutePath)
         }
     }
 
@@ -145,7 +165,7 @@ internal class PlaySoundsTest {
         }
 
         assertThrows<RuntimeException> {
-            playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50), destination.absolutePath)
+            playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50, ""), destination.absolutePath)
         }
     }
 
@@ -157,7 +177,7 @@ internal class PlaySoundsTest {
         }
         justRun { soundBiteConverter.convert(any(), any()) }
 
-        playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50), destination.absolutePath)
+        playSounds.downloadFile(PlaySounds.RemoteSoundFile("roons", "https://roons.mp3", 50, ""), destination.absolutePath)
 
         val slot = slot<File>()
         verify { soundBiteConverter.convert(capture(slot), 50) }
