@@ -34,14 +34,14 @@ class JoinCommand : BotCommand {
 
     override fun handleCommand(event: SlashCommandInteractionEvent) {
         val member = event.member ?: return
-        val channelArg = event.getOption("channel")?.asGuildChannel
+        val channelArg = event.getOption("channel")?.asChannel
 
         if (channelArg != null && channelArg !is AudioChannel) {
             event.reply("I can only connect to voice channels.").setEphemeral(true).queue()
             return
         }
 
-        val channel = (channelArg as AudioChannel?) ?: member.voiceState?.channel
+        val channel = (channelArg?.asAudioChannel()) ?: member.voiceState?.channel
         if (channel == null) {
             event.reply("Please join a voice channel first.").setEphemeral(true).queue()
             return
@@ -60,9 +60,11 @@ class JoinCommand : BotCommand {
             !self.hasPermission(channel, Permission.VOICE_CONNECT) -> {
                 event.reply("I don't have permission to connect to `${channel.name}`.").setEphemeral(true).queue()
             }
+
             !self.hasPermission(channel, Permission.VOICE_SPEAK) -> {
                 event.reply("I don't have permission to speak in `${channel.name}`.").setEphemeral(true).queue()
             }
+
             else -> {
                 member.guild.audioManager.openAudioConnection(channel)
                 event.reply("I'm connecting to `${channel.name}`.").queue()

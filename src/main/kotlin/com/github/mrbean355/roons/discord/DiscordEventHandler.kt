@@ -30,7 +30,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.BaseGuildMessageChannel
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.GuildChannel
@@ -87,7 +86,7 @@ class DiscordEventHandler(
         val message = metadataRepository.takeStartupMessage()
             ?.replace("\\n", "\n")
 
-        if (message != null && message.isNotBlank()) {
+        if (!message.isNullOrBlank()) {
             supervisorScope {
                 event.jda.guilds.forEach {
                     launch {
@@ -164,7 +163,7 @@ class DiscordEventHandler(
     override fun onMessageReceived(event: MessageReceivedEvent) {
         botScope.launch {
             if (event.isFromType(ChannelType.PRIVATE) && !event.author.isBot) {
-                event.privateChannel.sendMessage(":no_entry: Please send me commands through a text channel in your server.").queue()
+                event.channel.asPrivateChannel().sendMessage(":no_entry: Please send me commands through a text channel in your server.").queue()
             }
         }
     }
@@ -181,13 +180,11 @@ class DiscordEventHandler(
     }
 
     /** @return the first (if any) [TextChannel] which the bot can read & write to. */
-    private fun Guild.findWelcomeChannel(): BaseGuildMessageChannel? {
+    private fun Guild.findWelcomeChannel(): TextChannel? {
         val self = selfMember
         val defaultChannel = defaultChannel
-        if (defaultChannel != null) {
-            if (self.canReadAndWrite(defaultChannel)) {
-                return defaultChannel
-            }
+        if (defaultChannel?.type == ChannelType.TEXT && self.canReadAndWrite(defaultChannel)) {
+            return defaultChannel.asTextChannel()
         }
         return textChannels.firstOrNull {
             self.canReadAndWrite(it)
