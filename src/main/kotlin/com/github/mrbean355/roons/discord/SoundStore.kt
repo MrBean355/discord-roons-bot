@@ -78,7 +78,7 @@ class SoundStore(
      * Synchronise our collection of sound bites with the PlaySounds page.
      * Re-downloads all sounds to make sure that sounds with the same name but different content are also downloaded.
      */
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 0 * * *")
     fun synchroniseSoundBites(): Unit = runBlocking(IO) {
         val old = soundsCache
         downloadAllSoundBites()
