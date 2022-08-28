@@ -18,32 +18,26 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.sonarqube.gradle.SonarQubeTask
 
 plugins {
-    kotlin("jvm") version "1.7.10"
-    id("org.jetbrains.kotlin.plugin.allopen") version "1.7.10"
-    id("org.jetbrains.kotlin.plugin.noarg") version "1.7.10"
-    id("org.jetbrains.kotlin.plugin.spring") version "1.7.10"
-    id("org.jetbrains.kotlin.plugin.jpa") version "1.7.10"
-    id("org.springframework.boot") version "2.7.3"
-    id("org.sonarqube") version "3.4.0.2513"
+    kotlin("jvm")
+    id("org.jetbrains.kotlin.plugin.allopen")
+    id("org.jetbrains.kotlin.plugin.noarg")
+    id("org.jetbrains.kotlin.plugin.spring")
+    id("org.jetbrains.kotlin.plugin.jpa")
+    id("org.springframework.boot")
+    id("org.sonarqube")
     jacoco
 }
 
 group = "com.github.mrbean355"
 version = "1.17.0-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-    maven("https://m2.dv8tion.net/releases")
-    jcenter() // needed for 'lavadsp'
-}
-
 java {
-    sourceCompatibility = JavaVersion.VERSION_15
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_12
+    targetCompatibility = JavaVersion.VERSION_12
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "12"
 }
 
 tasks.test {
@@ -75,6 +69,8 @@ sonarqube {
 }
 
 dependencies {
+    implementation(project(":api"))
+
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
 
