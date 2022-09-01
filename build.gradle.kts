@@ -29,7 +29,7 @@ plugins {
 }
 
 group = "com.github.mrbean355"
-version = "1.17.0"
+version = "1.18.0-SNAPSHOT"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_12
