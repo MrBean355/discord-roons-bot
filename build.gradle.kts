@@ -69,7 +69,7 @@ sonarqube {
 }
 
 dependencies {
-    implementation(project(":api"))
+    // implementation(project(":api"))
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")

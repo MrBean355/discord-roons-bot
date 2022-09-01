@@ -24,7 +24,7 @@ import org.springframework.scheduling.annotation.EnableScheduling
 @SpringBootApplication(
     scanBasePackageClasses = [
         Scannable::class,
-        com.github.mrbean355.bulldog.api.Scannable::class
+        // com.github.mrbean355.bulldog.api.Scannable::class
     ]
 )
 @EnableScheduling
