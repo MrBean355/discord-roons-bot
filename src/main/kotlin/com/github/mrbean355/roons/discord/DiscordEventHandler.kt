@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Michael Johnston
+ * Copyright 2022 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,10 @@
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.discord.commands.BotCommand
-import com.github.mrbean355.roons.discord.commands.MessageCommandContext
-import com.github.mrbean355.roons.discord.commands.SlashCommandContext
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.takeStartupMessage
-import com.github.mrbean355.roons.repository.takeUpdateSlashCommandsFlag
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +31,7 @@ import kotlinx.coroutines.supervisorScope
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.TextChannel
 import net.dv8tion.jda.api.events.ReadyEvent
@@ -43,13 +41,10 @@ import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
-import net.dv8tion.jda.api.events.interaction.SlashCommandEvent
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
-import net.dv8tion.jda.api.events.message.priv.PrivateMessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
-import org.slf4j.Logger
-import org.springframework.beans.factory.annotation.Value
+import net.dv8tion.jda.api.interactions.commands.build.Commands
 import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -60,35 +55,26 @@ class DiscordEventHandler(
     private val discordBotSettingsRepository: DiscordBotSettingsRepository,
     private val metadataRepository: MetadataRepository,
     private val telegramNotifier: TelegramNotifier,
-    private val logger: Logger
 ) : ListenerAdapter() {
 
     private val botScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    @Value("\${roons.slashCommands.testGuild:false}")
-    private var testSlashCommands: Boolean = false
-
     override fun onReady(event: ReadyEvent) = runBlocking(Dispatchers.IO) {
-        // Register slash commands:
-        if (testSlashCommands) {
-            logger.info("Testing slash commands")
-            event.jda.guilds.forEach { guild ->
-                guild.updateCommands()
-                    .addCommands(commands.map { CommandData(it.name, it.description).apply(it::buildSlashCommand) })
-                    .queue()
+        // Update slash commands:
+        event.jda.updateCommands().queue()
+        supervisorScope {
+            event.jda.guilds.forEach {
+                launch {
+                    updateSlashCommands(it)
+                }
             }
-        } else if (metadataRepository.takeUpdateSlashCommandsFlag()) {
-            logger.info("Updating slash commands")
-            event.jda.updateCommands()
-                .addCommands(commands.map { CommandData(it.name, it.description).apply(it::buildSlashCommand) })
-                .queue()
         }
 
         // Show startup message if there is one:
         val message = metadataRepository.takeStartupMessage()
             ?.replace("\\n", "\n")
 
-        if (message != null && message.isNotBlank()) {
+        if (!message.isNullOrBlank()) {
             supervisorScope {
                 event.jda.guilds.forEach {
                     launch {
@@ -119,26 +105,10 @@ class DiscordEventHandler(
         telegramNotifier.sendPrivateMessage("⚙️ <b>Started up</b>:\nReconnected to <b>${reconnects.get()}</b> voice channels.")
     }
 
-    override fun onMessageReceived(event: MessageReceivedEvent) {
-        botScope.launch {
-            if (event.author.isBot || !event.isFromType(ChannelType.TEXT)) {
-                return@launch
-            }
-            val message = event.message.contentRaw.trim()
-            if (!message.startsWith('!')) {
-                return@launch
-            }
-            val args = message.drop(1).split(' ').filter { it.isNotBlank() }
-            val name = args.first()
-
-            commands.find { it.legacyName == name }
-                ?.handleMessageCommand(MessageCommandContext(event))
-        }
-    }
-
     override fun onGuildJoin(event: GuildJoinEvent) {
         botScope.launch {
             val guild = event.guild
+            updateSlashCommands(guild)
             telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.memberCount} members")
 
             guild.findWelcomeChannel()?.sendMessage(
@@ -179,33 +149,37 @@ class DiscordEventHandler(
         }
     }
 
-    override fun onPrivateMessageReceived(event: PrivateMessageReceivedEvent) {
+    override fun onMessageReceived(event: MessageReceivedEvent) {
         botScope.launch {
-            if (!event.author.isBot) {
-                event.message.channel.sendMessage(":no_entry: Please send me commands through a text channel in your server.").queue()
+            if (event.isFromType(ChannelType.PRIVATE) && !event.author.isBot) {
+                event.channel.asPrivateChannel().sendMessage(":no_entry: Please send me commands through a text channel in your server.").queue()
             }
         }
     }
 
-    override fun onSlashCommand(event: SlashCommandEvent) {
+    override fun onSlashCommandInteraction(event: SlashCommandInteractionEvent) {
         botScope.launch {
             if (event.guild == null) {
                 event.reply("Please use that command in a server's text channel.").setEphemeral(true).queue()
                 return@launch
             }
             commands.find { it.name == event.name }
-                ?.handleSlashCommand(SlashCommandContext(event))
+                ?.handleCommand(event)
         }
+    }
+
+    private fun updateSlashCommands(guild: Guild) {
+        guild.updateCommands()
+            .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
+            .queue()
     }
 
     /** @return the first (if any) [TextChannel] which the bot can read & write to. */
     private fun Guild.findWelcomeChannel(): TextChannel? {
         val self = selfMember
         val defaultChannel = defaultChannel
-        if (defaultChannel != null) {
-            if (self.canReadAndWrite(defaultChannel)) {
-                return defaultChannel
-            }
+        if (defaultChannel?.type == ChannelType.TEXT && self.canReadAndWrite(defaultChannel)) {
+            return defaultChannel.asTextChannel()
         }
         return textChannels.firstOrNull {
             self.canReadAndWrite(it)
@@ -213,7 +187,7 @@ class DiscordEventHandler(
     }
 
     /** @return `true` if this [Member] can read & write to the [channel]. */
-    private fun Member.canReadAndWrite(channel: TextChannel): Boolean {
-        return hasPermission(channel, Permission.MESSAGE_READ, Permission.MESSAGE_WRITE)
+    private fun Member.canReadAndWrite(channel: GuildChannel): Boolean {
+        return hasPermission(channel, Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND)
     }
 }

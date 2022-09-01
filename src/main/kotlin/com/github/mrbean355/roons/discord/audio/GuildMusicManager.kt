@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Michael Johnston
+ * Copyright 2022 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.github.mrbean355.roons.discord
+package com.github.mrbean355.roons.discord.audio
 
-import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
-import com.github.mrbean355.roons.repository.loadSettings
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 
 const val DEFAULT_VOLUME = 25
 private const val MIN_VOLUME = 0
 private const val MAX_VOLUME = 100
 
-class GuildMusicManager(private val guildId: String, manager: AudioPlayerManager, private val discordBotSettingsRepository: DiscordBotSettingsRepository) {
+class GuildMusicManager(
+    manager: AudioPlayerManager
+) {
     private val player = manager.createPlayer()
     val scheduler = TrackScheduler(player)
 
@@ -34,17 +34,6 @@ class GuildMusicManager(private val guildId: String, manager: AudioPlayerManager
 
     fun getSendHandler(): AudioPlayerSendHandler {
         return AudioPlayerSendHandler(player)
-    }
-
-    fun getMasterVolume(): Int {
-        return discordBotSettingsRepository.loadSettings(guildId).volume
-    }
-
-    fun setMasterVolume(volume: Int) {
-        discordBotSettingsRepository.loadSettings(guildId).let {
-            it.volume = volume
-            discordBotSettingsRepository.save(it)
-        }
     }
 }
 

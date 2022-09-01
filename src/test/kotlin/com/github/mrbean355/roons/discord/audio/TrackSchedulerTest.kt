@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Michael Johnston
+ * Copyright 2022 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.github.mrbean355.roons.discord
+package com.github.mrbean355.roons.discord.audio
 
 import com.github.natanbc.lavadsp.timescale.TimescalePcmAudioFilter
 import com.sedmelluq.discord.lavaplayer.format.OpusAudioDataFormat

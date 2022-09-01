@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Michael Johnston
+ * Copyright 2022 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,11 @@
 
 package com.github.mrbean355.roons.discord.commands
 
-import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 
-/** A command that users can type in a guild channel to interact with the bot. */
+/** A slash command that users can type in a guild channel to interact with the bot. */
 sealed interface BotCommand {
-
-    /** Name used for message commands (prefixed with '!'). */
-    val legacyName: String
 
     /** Name used for slash commands. */
     val name: String
@@ -31,26 +28,10 @@ sealed interface BotCommand {
     /** Description used for slash commands. */
     val description: String
 
-    /** Optionally build upon the [CommandData] object. */
-    fun buildSlashCommand(commandData: CommandData): CommandData = commandData
-
-    /** Handle the command received via normal message (e.g. !command). */
-    fun handleMessageCommand(context: MessageCommandContext)
+    /** Optionally build upon the [SlashCommandData] object. */
+    fun buildCommand(commandData: SlashCommandData): SlashCommandData = commandData
 
     /** Handle the received slash command (e.g. /command). */
-    fun handleSlashCommand(context: SlashCommandContext)
+    fun handleCommand(event: SlashCommandInteractionEvent)
 
-}
-
-/** Simple command which doesn't need additional command context. */
-abstract class BasicCommand : BotCommand {
-
-    /** Handle the received command. Could be a message or slash command. */
-    abstract fun handleCommand(member: Member, reply: CommandReply)
-
-    final override fun handleMessageCommand(context: MessageCommandContext) =
-        handleCommand(context.member, context.reply)
-
-    final override fun handleSlashCommand(context: SlashCommandContext) =
-        handleCommand(context.member, context.reply)
 }

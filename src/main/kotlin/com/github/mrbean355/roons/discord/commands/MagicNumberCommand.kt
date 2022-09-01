@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Michael Johnston
+ * Copyright 2022 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,70 +18,28 @@ package com.github.mrbean355.roons.discord.commands
 
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
-import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
-import net.dv8tion.jda.api.interactions.commands.build.SubcommandData
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import org.springframework.stereotype.Component
 import java.util.UUID
-
-private const val COMMAND_GET = "get"
-private const val COMMAND_NEW = "new"
 
 @Component
 class MagicNumberCommand(
     private val discordBotUserRepository: DiscordBotUserRepository
 ) : BotCommand {
 
-    override val legacyName get() = "magic"
-    override val name get() = "magicnumber"
-    override val description get() = "Get or recreate your \"magic number\" for communicating with the bot."
+    override val name get() = "magic-number"
+    override val description get() = "Check your \"magic number\" for use in the desktop app."
 
-    override fun buildSlashCommand(commandData: CommandData) = commandData
-        .addSubcommands(
-            SubcommandData(COMMAND_GET, "Get your current magic number."),
-            SubcommandData(COMMAND_NEW, "Create a new magic number in case your previous one was leaked.")
-        )
-
-    override fun handleMessageCommand(context: MessageCommandContext) {
-        val message = if (context.arguments.firstOrNull() == COMMAND_NEW) {
-            createMagicNumber(context.member)
-        } else {
-            getMagicNumber(context.member)
-        }
-        context.reply(message, sensitive = true)
-    }
-
-    override fun handleSlashCommand(context: SlashCommandContext) {
-        val message = if (context.subcommandName == COMMAND_NEW) {
-            createMagicNumber(context.member)
-        } else {
-            getMagicNumber(context.member)
-        }
-        context.reply(message, sensitive = true)
-    }
-
-    private fun getMagicNumber(member: Member): String {
+    override fun handleCommand(event: SlashCommandInteractionEvent) {
+        val member = event.member ?: return
         val botUser = discordBotUserRepository.findOneByDiscordUserIdAndGuildId(member.id, member.guild.id)
-            ?: discordBotUserRepository.save(DiscordBotUser(0, member.id, member.guild.id, MagicNumber()))
+            ?: discordBotUserRepository.save(DiscordBotUser(0, member.id, member.guild.id, UUID.randomUUID().toString()))
 
-        return "Here's your magic number:\n" +
-                "```${botUser.token}```\n" +
-                "Please keep it secret! Anyone who has this magic number will be able to play sounds through the bot in your server."
+        event.reply(
+            "Here's your magic number:\n" +
+                    "```${botUser.token}```\n" +
+                    "**Please keep it secret!** Anyone who has this magic number will be able to play sounds through the bot in your server.\n" +
+                    "Use `/${NewMagicNumberCommand.CommandName}` to create a new one if it was leaked."
+        ).setEphemeral(true).queue()
     }
-
-    private fun createMagicNumber(member: Member): String {
-        val botUser = discordBotUserRepository.findOneByDiscordUserIdAndGuildId(member.id, member.guild.id)
-            ?: discordBotUserRepository.save(DiscordBotUser(0, member.id, member.guild.id, MagicNumber()))
-
-        val newToken = MagicNumber()
-        discordBotUserRepository.save(botUser.copy(token = newToken))
-
-        return "Here's your **new** magic number:\n" +
-                "```$newToken```\n" +
-                "Please keep it secret! Anyone who has this magic number will be able to play sounds through the bot in your server."
-    }
-
-    @Suppress("FunctionName")
-    private fun MagicNumber(): String = UUID.randomUUID().toString()
-
 }

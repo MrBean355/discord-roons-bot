@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Michael Johnston
+ * Copyright 2022 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,32 +18,26 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.sonarqube.gradle.SonarQubeTask
 
 plugins {
-    kotlin("jvm") version "1.5.31"
-    id("org.jetbrains.kotlin.plugin.allopen") version "1.5.31"
-    id("org.jetbrains.kotlin.plugin.noarg") version "1.5.31"
-    id("org.jetbrains.kotlin.plugin.spring") version "1.5.31"
-    id("org.jetbrains.kotlin.plugin.jpa") version "1.5.31"
-    id("org.springframework.boot") version "2.5.6"
-    id("org.sonarqube") version "3.3"
+    kotlin("jvm")
+    id("org.jetbrains.kotlin.plugin.allopen")
+    id("org.jetbrains.kotlin.plugin.noarg")
+    id("org.jetbrains.kotlin.plugin.spring")
+    id("org.jetbrains.kotlin.plugin.jpa")
+    id("org.springframework.boot")
+    id("org.sonarqube")
     jacoco
 }
 
 group = "com.github.mrbean355"
-version = "1.16.0"
-
-repositories {
-    mavenCentral()
-    maven("https://m2.dv8tion.net/releases")
-    jcenter() // needed for 'lavadsp'
-}
+version = "1.17.0"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_15
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_12
+    targetCompatibility = JavaVersion.VERSION_12
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "12"
 }
 
 tasks.test {
@@ -51,7 +45,7 @@ tasks.test {
 }
 
 jacoco {
-    toolVersion = "0.8.7"
+    toolVersion = "0.8.8"
 }
 
 tasks.withType<JacocoReport> {
@@ -75,24 +69,25 @@ sonarqube {
 }
 
 dependencies {
+    // implementation(project(":api"))
+
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.5.6")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.5.6")
-    implementation("mysql:mysql-connector-java:8.0.27")
-    implementation("com.google.code.gson:gson:2.8.9")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.7.3")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.7.3")
+    implementation("mysql:mysql-connector-java:8.0.30")
+    implementation("com.google.code.gson:gson:2.9.1")
 
-    runtimeOnly("ch.qos.logback:logback-classic:1.2.6")
-    implementation("net.dv8tion:JDA:4.3.0_277")
+    implementation("net.dv8tion:JDA:5.0.0-alpha.18")
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots:5.3.0")
-    implementation("org.telegram:telegrambots-spring-boot-starter:5.3.0")
+    implementation("org.telegram:telegrambots:6.1.0")
+    implementation("org.telegram:telegrambots-spring-boot-starter:6.1.0")
 
-    testImplementation(platform("org.junit:junit-bom:5.8.1"))
+    testImplementation(platform("org.junit:junit-bom:5.9.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.12.0")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.2")
+    testImplementation("io.mockk:mockk:1.12.7")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
 }

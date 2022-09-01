@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Michael Johnston
+ * Copyright 2022 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@
 package com.github.mrbean355.roons.discord.commands
 
 import com.github.mrbean355.roons.telegram.TelegramNotifier
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
-import net.dv8tion.jda.api.interactions.commands.build.CommandData
+import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 import org.springframework.stereotype.Component
 
 private const val OPTION_COMMENTS = "comments"
@@ -28,27 +29,15 @@ class FeedbackCommand(
     private val telegramNotifier: TelegramNotifier
 ) : BotCommand {
 
-    override val legacyName get() = "feedback"
     override val name get() = "feedback"
-    override val description get() = "Provide the developer with your feedback."
+    override val description get() = "Send some feedback to the developer."
 
-    override fun buildSlashCommand(commandData: CommandData) = commandData
-        .addOption(OptionType.STRING, OPTION_COMMENTS, "Your thoughts on the Admiral Bulldog sound pack", true)
+    override fun buildCommand(commandData: SlashCommandData) = commandData
+        .addOption(OptionType.STRING, OPTION_COMMENTS, "All comments & suggestions are welcome!", true)
 
-    override fun handleMessageCommand(context: MessageCommandContext) {
-        if (context.arguments.isNotEmpty()) {
-            val comments = context.arguments.joinToString(separator = " ")
-            context.reply(feedback(comments))
-        }
-    }
-
-    override fun handleSlashCommand(context: SlashCommandContext) {
-        val comments = context.getOption(OPTION_COMMENTS)?.asString.orEmpty()
-        context.reply(feedback(comments))
-    }
-
-    private fun feedback(comments: String): String {
+    override fun handleCommand(event: SlashCommandInteractionEvent) {
+        val comments = event.getOption(OPTION_COMMENTS)?.asString.orEmpty()
         telegramNotifier.sendPrivateMessage("📋 <b>Feedback received</b>\nComments: $comments")
-        return "Thank you."
+        event.reply("Thank you for your feedback.").setEphemeral(true).queue()
     }
 }

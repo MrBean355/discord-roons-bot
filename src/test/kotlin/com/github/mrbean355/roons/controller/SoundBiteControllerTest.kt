@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Michael Johnston
+ * Copyright 2022 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.github.mrbean355.roons.controller
 
+import com.github.mrbean355.roons.PlaySound
 import com.github.mrbean355.roons.discord.SoundStore
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -42,11 +43,26 @@ internal class SoundBiteControllerTest {
     }
 
     @Test
-    internal fun testListV2_FetchesFromStore() {
-        val sounds = mapOf("roons.mp3" to "abc-123", "wtff.mp3" to "def-456")
+    @Suppress("DEPRECATION")
+    internal fun testListV2_FetchesFromStoreAndTransformsResult() {
+        val sounds = getMockSounds()
         every { soundStore.listAll() } returns sounds
 
         val result = controller.listV2()
+
+        assertEquals(sounds.size, result.size)
+        sounds.forEach {
+            assertTrue(it.name in result)
+            assertEquals(it.checksum, result.getValue(it.name))
+        }
+    }
+
+    @Test
+    internal fun testListV3_FetchesFromStore() {
+        val sounds = getMockSounds()
+        every { soundStore.listAll() } returns sounds
+
+        val result = controller.listV3()
 
         assertSame(sounds, result)
     }
@@ -71,5 +87,14 @@ internal class SoundBiteControllerTest {
         assertEquals("attachment; filename=\"roons.mp3\"", result.headers.getFirst("Content-Disposition"))
         assertTrue(result.body is UrlResource)
         assertEquals(soundFile.absolutePath, (result.body as UrlResource).file.absolutePath)
+    }
+
+    private fun getMockSounds(): Collection<PlaySound> {
+        return listOf(
+            PlaySound("roons.mp3", "3f0c5367ee", "Bulldog's voice"),
+            PlaySound("eel.mp3", "8332e735d8", "Bulldog's voice"),
+            PlaySound("weed.mp3", "101d75dad9", "Songs"),
+            PlaySound("vivon.mp3", "b4d443041a", "Ugandan"),
+        )
     }
 }
