@@ -26,7 +26,6 @@ interface MetadataRepository : CrudRepository<Metadata, String> {
 private const val KEY_ADMIN_TOKEN = "admin_token"
 private const val KEY_STARTUP_MESSAGE = "startup_message"
 private const val KEY_WELCOME_MESSAGE = "app_welcome_message"
-private const val KEY_UPDATE_SLASH_COMMANDS = "update_slash_commands"
 
 val MetadataRepository.adminToken: String?
     get() = findByKey(KEY_ADMIN_TOKEN)?.value
@@ -45,10 +44,4 @@ fun MetadataRepository.saveWelcomeMessage(newMessage: String) {
         ?: Metadata(KEY_WELCOME_MESSAGE, newMessage)
 
     save(metadata)
-}
-
-fun MetadataRepository.takeUpdateSlashCommandsFlag(): Boolean {
-    val metadata = findByKey(KEY_UPDATE_SLASH_COMMANDS) ?: return false
-    delete(metadata)
-    return true
 }

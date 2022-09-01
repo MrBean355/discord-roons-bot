@@ -21,7 +21,6 @@ import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.takeStartupMessage
-import com.github.mrbean355.roons.repository.takeUpdateSlashCommandsFlag
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,8 +45,6 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.build.Commands
-import org.slf4j.Logger
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -58,28 +55,19 @@ class DiscordEventHandler(
     private val discordBotSettingsRepository: DiscordBotSettingsRepository,
     private val metadataRepository: MetadataRepository,
     private val telegramNotifier: TelegramNotifier,
-    private val logger: Logger
 ) : ListenerAdapter() {
 
     private val botScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    @Value("\${roons.slashCommands.testGuild:false}")
-    private var testSlashCommands: Boolean = false
-
     override fun onReady(event: ReadyEvent) = runBlocking(Dispatchers.IO) {
-        // Register slash commands:
-        if (testSlashCommands) {
-            logger.info("Testing slash commands")
-            event.jda.guilds.forEach { guild ->
-                guild.updateCommands()
-                    .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
-                    .queue()
+        // Update slash commands:
+        event.jda.updateCommands().queue()
+        supervisorScope {
+            event.jda.guilds.forEach {
+                launch {
+                    updateSlashCommands(it)
+                }
             }
-        } else if (metadataRepository.takeUpdateSlashCommandsFlag()) {
-            logger.info("Updating slash commands")
-            event.jda.updateCommands()
-                .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
-                .queue()
         }
 
         // Show startup message if there is one:
@@ -120,6 +108,7 @@ class DiscordEventHandler(
     override fun onGuildJoin(event: GuildJoinEvent) {
         botScope.launch {
             val guild = event.guild
+            updateSlashCommands(guild)
             telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.memberCount} members")
 
             guild.findWelcomeChannel()?.sendMessage(
@@ -177,6 +166,12 @@ class DiscordEventHandler(
             commands.find { it.name == event.name }
                 ?.handleCommand(event)
         }
+    }
+
+    private fun updateSlashCommands(guild: Guild) {
+        guild.updateCommands()
+            .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
+            .queue()
     }
 
     /** @return the first (if any) [TextChannel] which the bot can read & write to. */
