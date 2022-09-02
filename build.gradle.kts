@@ -29,15 +29,15 @@ plugins {
 }
 
 group = "com.github.mrbean355"
-version = "1.17.0"
+version = "1.17.1"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_12
-    targetCompatibility = JavaVersion.VERSION_12
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "12"
+    kotlinOptions.jvmTarget = "1.8"
 }
 
 tasks.test {
