@@ -32,12 +32,12 @@ group = "com.github.mrbean355"
 version = "1.18.0-SNAPSHOT"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_12
-    targetCompatibility = JavaVersion.VERSION_12
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "12"
+    kotlinOptions.jvmTarget = "1.8"
 }
 
 tasks.test {
