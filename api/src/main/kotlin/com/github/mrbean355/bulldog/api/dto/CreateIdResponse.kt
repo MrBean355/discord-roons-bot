@@ -16,8 +16,6 @@
 
 package com.github.mrbean355.bulldog.api.dto
 
-data class FeedbackRequest(
+data class CreateIdResponse(
     val userId: String,
-    val rating: Int,
-    val comments: String,
 )

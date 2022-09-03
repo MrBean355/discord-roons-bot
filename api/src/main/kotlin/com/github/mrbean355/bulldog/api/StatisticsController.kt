@@ -18,19 +18,27 @@ package com.github.mrbean355.bulldog.api
 
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/metadata")
-class MetadataController {
+@RequestMapping("/statistics")
+class StatisticsController {
 
-    /**
-     * Gracefully terminate the application.
-     */
-    @GetMapping("/shutdown")
-    fun shutdown(@RequestParam("token") token: String): ResponseEntity<String> {
+    @GetMapping("/properties")
+    fun listProperties(@RequestParam("token") token: String): ResponseEntity<List<String>> {
+        throw UnsupportedOperationException()
+    }
+
+    @GetMapping("/recentUsers")
+    fun getRecentUsers(@RequestParam("token") token: String, @RequestParam("period") period: Long): ResponseEntity<Long> {
+        throw UnsupportedOperationException()
+    }
+
+    @GetMapping("/{property}")
+    fun getStatistic(@RequestParam("token") token: String, @PathVariable("property") property: String): ResponseEntity<Map<String, Int>> {
         throw UnsupportedOperationException()
     }
 }

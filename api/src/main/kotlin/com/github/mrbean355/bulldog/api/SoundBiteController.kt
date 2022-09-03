@@ -24,15 +24,24 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@RestController("soundBiteController2")
-@RequestMapping("/api/sound-bites")
+@RestController
+@RequestMapping("/soundBites")
 class SoundBiteController {
 
     /**
      * Get a list of available sound bites.
      */
-    @GetMapping
-    fun list(): ResponseEntity<List<SoundBiteDto>> {
+    @GetMapping("/listV2")
+    @Deprecated("Use listV3() instead, as it supports sound bite categories.")
+    fun listV2(): Map<String, String> {
+        throw UnsupportedOperationException()
+    }
+
+    /**
+     * Get a list of available sound bites.
+     */
+    @GetMapping("/v3/list")
+    fun listV3(): Collection<SoundBiteDto> {
         throw UnsupportedOperationException()
     }
 
@@ -42,7 +51,7 @@ class SoundBiteController {
      * @param name Name of the sound bite, e.g. "roons.mp3".
      */
     @GetMapping("/{name}")
-    fun download(@PathVariable name: String): ResponseEntity<Resource> {
+    fun get(@PathVariable("name") name: String): ResponseEntity<Resource> {
         throw UnsupportedOperationException()
     }
 }

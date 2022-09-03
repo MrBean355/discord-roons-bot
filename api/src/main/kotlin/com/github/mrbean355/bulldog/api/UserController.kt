@@ -16,47 +16,30 @@
 
 package com.github.mrbean355.bulldog.api
 
-import com.github.mrbean355.bulldog.api.dto.FeedbackRequest
+import com.github.mrbean355.bulldog.api.dto.CreateIdResponse
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@RestController("userController2")
-@RequestMapping("/api/users")
+@RestController
 class UserController {
 
     /**
      * Create a new ID for a user.
      */
-    @PostMapping
-    fun create(): ResponseEntity<String> {
+    @PostMapping("/createId")
+    fun create(): ResponseEntity<CreateIdResponse> {
         throw UnsupportedOperationException()
     }
 
     /**
      * Send a heartbeat, indicating that the user was recently active.
      *
-     * @param id User ID, as returned by [create].
+     * @param userId User ID, as returned by [create].
      */
-    @PostMapping("/{id}/heartbeat")
-    fun heartbeat(@PathVariable id: String): ResponseEntity<Void> {
-        throw UnsupportedOperationException()
-    }
-
-    /**
-     * Send some feedback about the application.
-     *
-     * @param id User ID.
-     * @param request Feedback data.
-     */
-    @PostMapping("/{id}/feedback")
-    fun feedback(
-        @PathVariable id: String,
-        @RequestBody request: FeedbackRequest,
-    ): ResponseEntity<Void> {
+    @PostMapping("/heartbeat")
+    fun heartbeat(@RequestParam("userId") userId: String): ResponseEntity<Void> {
         throw UnsupportedOperationException()
     }
 }

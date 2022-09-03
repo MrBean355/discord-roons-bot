@@ -16,21 +16,22 @@
 
 package com.github.mrbean355.bulldog.api
 
+import com.github.mrbean355.bulldog.api.dto.AnalyticsRequest
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/metadata")
-class MetadataController {
+@RequestMapping("/analytics")
+class AnalyticsController {
 
     /**
-     * Gracefully terminate the application.
+     * Log various properties about the user's application setup.
      */
-    @GetMapping("/shutdown")
-    fun shutdown(@RequestParam("token") token: String): ResponseEntity<String> {
+    @PostMapping("/logProperties")
+    fun logProperties(@RequestBody request: AnalyticsRequest): ResponseEntity<Void> {
         throw UnsupportedOperationException()
     }
 }

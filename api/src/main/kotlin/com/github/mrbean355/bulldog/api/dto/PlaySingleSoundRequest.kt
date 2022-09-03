@@ -16,8 +16,10 @@
 
 package com.github.mrbean355.bulldog.api.dto
 
-data class PlaySoundRequest(
-    val name: String,
+data class PlaySingleSoundRequest(
+    val userId: String,
+    val token: String,
+    val soundFileName: String,
     val volume: Int,
     val rate: Int,
 )

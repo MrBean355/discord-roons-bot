@@ -17,24 +17,22 @@
 package com.github.mrbean355.bulldog.api
 
 import com.github.mrbean355.bulldog.api.dto.DotaModDto
-import com.github.mrbean355.bulldog.api.dto.UpdateDotaModRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@RestController("dotaModController2")
-@RequestMapping("/api/dota-mods")
+@RestController
+@RequestMapping("/mods")
 class DotaModController {
 
     /**
      * Get a list of available Dota mods.
      */
-    @GetMapping
+    @GetMapping("/")
     fun list(): ResponseEntity<List<DotaModDto>> {
         throw UnsupportedOperationException()
     }
@@ -43,7 +41,7 @@ class DotaModController {
      * Lookup the Dota mod with the given [key].
      */
     @GetMapping("/{key}")
-    fun get(@PathVariable key: String): ResponseEntity<DotaModDto> {
+    fun get(@PathVariable("key") key: String): ResponseEntity<DotaModDto> {
         throw UnsupportedOperationException()
     }
 
@@ -51,11 +49,19 @@ class DotaModController {
      * Update the Dota mod with the given [key].
      */
     @PatchMapping("/{key}")
-    fun updateMod(
-        @PathVariable key: String,
-        @RequestParam("authToken") authToken: String,
-        @RequestBody request: UpdateDotaModRequest,
+    fun update(
+        @PathVariable("key") key: String,
+        @RequestParam("hash") hash: String,
+        @RequestParam("size") size: Int,
+        @RequestParam("token") token: String,
+        @RequestParam("message") message: String?
     ): ResponseEntity<Void> {
+        throw UnsupportedOperationException()
+    }
+
+    // TODO: Still needed?
+    @GetMapping("/refresh")
+    fun refresh(@RequestParam("token") token: String): ResponseEntity<Void> {
         throw UnsupportedOperationException()
     }
 }

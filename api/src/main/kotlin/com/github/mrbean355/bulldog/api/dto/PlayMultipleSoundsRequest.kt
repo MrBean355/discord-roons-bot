@@ -16,8 +16,14 @@
 
 package com.github.mrbean355.bulldog.api.dto
 
-data class FeedbackRequest(
+data class PlayMultipleSoundsRequest(
     val userId: String,
-    val rating: Int,
-    val comments: String,
-)
+    val token: String,
+    val sounds: List<Sound>,
+) {
+    data class Sound(
+        val soundFileName: String,
+        val volume: Int,
+        val rate: Int,
+    )
+}

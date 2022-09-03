@@ -16,8 +16,7 @@
 
 package com.github.mrbean355.bulldog.api.dto
 
-data class UpdateDotaModRequest(
-    val hash: String,
-    val size: Int,
-    val telegramMessage: String?,
+data class AnalyticsRequest(
+    val userId: String,
+    val properties: Map<String, String>,
 )
