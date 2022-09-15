@@ -29,15 +29,15 @@ plugins {
 }
 
 group = "com.github.mrbean355"
-version = "1.17.1"
+version = "1.17.2"
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+java.toolchain {
+    languageVersion.set(JavaLanguageVersion.of(11))
+    vendor.set(JvmVendorSpec.ADOPTOPENJDK)
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "11"
 }
 
 tasks.test {
@@ -85,6 +85,13 @@ dependencies {
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.telegram:telegrambots:6.1.0")
     implementation("org.telegram:telegrambots-spring-boot-starter:6.1.0")
+
+    runtimeOnly("jakarta.xml.ws:jakarta.xml.ws-api:4.0.0") {
+        because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
+    }
+    runtimeOnly("javax.xml.ws:jaxws-api:2.3.1") {
+        because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
+    }
 
     testImplementation(platform("org.junit:junit-bom:5.9.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
