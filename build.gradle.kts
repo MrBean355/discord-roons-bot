@@ -83,7 +83,7 @@ dependencies {
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots:6.1.0")
+    implementation("org.telegram:telegrambots:6.3.0")
     implementation("org.telegram:telegrambots-spring-boot-starter:6.1.0")
 
     runtimeOnly("jakarta.xml.ws:jakarta.xml.ws-api:4.0.0") {
