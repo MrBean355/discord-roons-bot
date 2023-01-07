@@ -16,16 +16,9 @@
 
 package com.github.mrbean355.roons
 
+import jakarta.persistence.*
+import jakarta.persistence.GenerationType.IDENTITY
 import java.util.Date
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.GenerationType.IDENTITY
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
-import javax.persistence.Temporal
-import javax.persistence.TemporalType
 
 @Entity
 data class AppUser(
