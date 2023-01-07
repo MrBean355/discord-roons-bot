@@ -1,5 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.sonarqube.gradle.SonarQubeTask
+import org.sonarqube.gradle.SonarTask
 
 plugins {
     kotlin("jvm")
@@ -40,7 +40,7 @@ tasks.withType<JacocoReport> {
     }
 }
 
-tasks.withType<SonarQubeTask> {
+tasks.withType<SonarTask> {
     dependsOn(tasks.named("jacocoTestReport"))
 }
 
