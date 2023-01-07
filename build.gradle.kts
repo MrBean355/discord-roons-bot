@@ -31,9 +31,9 @@ plugins {
 group = "com.github.mrbean355"
 version = "1.18.0-SNAPSHOT"
 
-java.toolchain {
-    languageVersion.set(JavaLanguageVersion.of(11))
-    vendor.set(JvmVendorSpec.ADOPTOPENJDK)
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 tasks.withType<KotlinCompile> {
