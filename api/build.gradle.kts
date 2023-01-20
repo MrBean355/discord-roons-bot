@@ -12,5 +12,5 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:3.0.1")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:3.0.2")
 }
