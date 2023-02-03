@@ -5,7 +5,7 @@ pluginManagement {
         kotlin("jvm") version "1.8.10"
         id("org.jetbrains.kotlin.plugin.allopen") version "1.8.0"
         id("org.jetbrains.kotlin.plugin.noarg") version "1.8.0"
-        id("org.jetbrains.kotlin.plugin.spring") version "1.8.0"
+        id("org.jetbrains.kotlin.plugin.spring") version "1.8.10"
         id("org.jetbrains.kotlin.plugin.jpa") version "1.8.0"
         id("org.springframework.boot") version "3.0.2"
         id("org.sonarqube") version "3.5.0.2730"
