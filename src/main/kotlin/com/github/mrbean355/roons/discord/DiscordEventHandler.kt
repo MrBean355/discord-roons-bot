@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Michael Johnston
+ * Copyright 2023 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,20 +29,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.supervisorScope
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.ChannelType
 import net.dv8tion.jda.api.entities.Guild
-import net.dv8tion.jda.api.entities.GuildChannel
 import net.dv8tion.jda.api.entities.Member
-import net.dv8tion.jda.api.entities.TextChannel
-import net.dv8tion.jda.api.events.ReadyEvent
+import net.dv8tion.jda.api.entities.channel.ChannelType
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
-import net.dv8tion.jda.api.events.guild.voice.GenericGuildVoiceEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceJoinEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceLeaveEvent
-import net.dv8tion.jda.api.events.guild.voice.GuildVoiceMoveEvent
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent
+import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import org.springframework.stereotype.Component
@@ -133,17 +130,17 @@ class DiscordEventHandler(
         }
     }
 
-    override fun onGenericGuildVoice(event: GenericGuildVoiceEvent) {
+    override fun onGuildVoiceUpdate(event: GuildVoiceUpdateEvent) {
         botScope.launch {
             if (event.member.user.isBot) {
                 return@launch
             }
             val settings = discordBotSettingsRepository.findOneByGuildId(event.guild.id) ?: return@launch
             if (settings.followedUser == event.member.id) {
-                when (event) {
-                    is GuildVoiceJoinEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
-                    is GuildVoiceMoveEvent -> event.guild.audioManager.openAudioConnection(event.channelJoined)
-                    is GuildVoiceLeaveEvent -> event.guild.audioManager.closeAudioConnection()
+                if (event.channelJoined != null) {
+                    event.guild.audioManager.openAudioConnection(event.channelJoined)
+                } else {
+                    event.guild.audioManager.closeAudioConnection()
                 }
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Michael Johnston
+ * Copyright 2023 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.github.mrbean355.roons.telegram
 
 import com.github.mrbean355.roons.SendHtmlMessage
-import com.google.common.annotations.VisibleForTesting
+import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

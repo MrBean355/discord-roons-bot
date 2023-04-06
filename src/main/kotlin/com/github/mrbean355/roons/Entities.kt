@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Michael Johnston
+ * Copyright 2023 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,9 @@
 
 package com.github.mrbean355.roons
 
+import jakarta.persistence.*
+import jakarta.persistence.GenerationType.IDENTITY
 import java.util.Date
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.GenerationType.IDENTITY
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
-import javax.persistence.Temporal
-import javax.persistence.TemporalType
 
 @Entity
 data class AppUser(

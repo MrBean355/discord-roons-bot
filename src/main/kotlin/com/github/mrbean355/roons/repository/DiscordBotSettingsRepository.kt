@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Michael Johnston
+ * Copyright 2023 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package com.github.mrbean355.roons.repository
 
 import com.github.mrbean355.roons.DiscordBotSettings
 import com.github.mrbean355.roons.discord.audio.DEFAULT_VOLUME
+import jakarta.transaction.Transactional
 import org.springframework.data.repository.CrudRepository
-import javax.transaction.Transactional
 
 interface DiscordBotSettingsRepository : CrudRepository<DiscordBotSettings, Int> {
 
