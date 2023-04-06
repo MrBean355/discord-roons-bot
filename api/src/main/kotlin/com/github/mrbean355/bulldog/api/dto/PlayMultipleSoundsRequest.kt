@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Michael Johnston
+ * Copyright 2023 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,14 @@
 
 package com.github.mrbean355.bulldog.api.dto
 
-data class UpdateDotaModRequest(
-    val hash: String,
-    val size: Int,
-    val telegramMessage: String?,
-)
+data class PlayMultipleSoundsRequest(
+    val userId: String,
+    val token: String,
+    val sounds: List<Sound>,
+) {
+    data class Sound(
+        val soundFileName: String,
+        val volume: Int,
+        val rate: Int,
+    )
+}

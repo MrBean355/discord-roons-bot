@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package com.github.mrbean355.roons.controller
+package com.github.mrbean355.bulldog.api
 
-import com.github.mrbean355.roons.FeedbackRequest
-import com.github.mrbean355.roons.repository.AppUserRepository
-import com.github.mrbean355.roons.telegram.TelegramNotifier
+import com.github.mrbean355.bulldog.api.dto.FeedbackRequest
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -27,24 +25,13 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/feedback")
-class FeedbackController(
-    private val appUserRepository: AppUserRepository,
-    private val telegramNotifier: TelegramNotifier
-) {
+class FeedbackController {
 
-    @PostMapping
-    fun postFeedback(@RequestBody request: FeedbackRequest): ResponseEntity<Void> {
-        appUserRepository.findByGeneratedId(request.userId)
-            ?: return ResponseEntity.notFound().build()
-
-        telegramNotifier.sendPrivateMessage(
-            """
-            📋 <b>Feedback received</b>
-            Rating: ${request.rating}
-            Comments: ${request.comments}
-            """.trimIndent()
-        )
-
-        return ResponseEntity.ok().build()
+    /**
+     * Send some feedback about the application.
+     */
+    @PostMapping("/")
+    fun feedback(@RequestBody request: FeedbackRequest): ResponseEntity<Void> {
+        throw UnsupportedOperationException()
     }
 }

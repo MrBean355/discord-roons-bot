@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Michael Johnston
+ * Copyright 2023 Michael Johnston
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.github.mrbean355.roons.component.PlaySounds
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -33,7 +34,6 @@ import java.io.File
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import javax.annotation.PostConstruct
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 

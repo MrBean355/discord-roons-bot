@@ -1,21 +1,5 @@
-/*
- * Copyright 2022 Michael Johnston
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.sonarqube.gradle.SonarQubeTask
+import org.sonarqube.gradle.SonarTask
 
 plugins {
     kotlin("jvm")
@@ -29,15 +13,15 @@ plugins {
 }
 
 group = "com.github.mrbean355"
-version = "1.17.2"
+version = "1.18.0"
 
-java.toolchain {
-    languageVersion.set(JavaLanguageVersion.of(11))
-    vendor.set(JvmVendorSpec.ADOPTOPENJDK)
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
+    kotlinOptions.jvmTarget = "17"
 }
 
 tasks.test {
@@ -45,7 +29,7 @@ tasks.test {
 }
 
 jacoco {
-    toolVersion = "0.8.8"
+    toolVersion = "0.8.9"
 }
 
 tasks.withType<JacocoReport> {
@@ -56,7 +40,7 @@ tasks.withType<JacocoReport> {
     }
 }
 
-tasks.withType<SonarQubeTask> {
+tasks.withType<SonarTask> {
     dependsOn(tasks.named("jacocoTestReport"))
 }
 
@@ -74,17 +58,19 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:2.7.3")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:2.7.3")
-    implementation("mysql:mysql-connector-java:8.0.30")
-    implementation("com.google.code.gson:gson:2.9.1")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:3.0.5")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.0.5")
+    implementation("mysql:mysql-connector-java:8.0.32")
+    implementation("com.google.code.gson:gson:2.10.1")
 
-    implementation("net.dv8tion:JDA:5.0.0-alpha.18")
+    implementation("net.dv8tion:JDA:5.0.0-beta.6")
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots:6.1.0")
-    implementation("org.telegram:telegrambots-spring-boot-starter:6.1.0")
+    implementation("org.telegram:telegrambots:6.5.0")
+    implementation("org.telegram:telegrambots-spring-boot-starter:6.5.0")
+
+    compileOnly("org.jetbrains:annotations:24.0.1")
 
     runtimeOnly("jakarta.xml.ws:jakarta.xml.ws-api:4.0.0") {
         because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
@@ -93,8 +79,8 @@ dependencies {
         because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
     }
 
-    testImplementation(platform("org.junit:junit-bom:5.9.0"))
+    testImplementation(platform("org.junit:junit-bom:5.9.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.12.7")
+    testImplementation("io.mockk:mockk:1.13.4")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
 }
