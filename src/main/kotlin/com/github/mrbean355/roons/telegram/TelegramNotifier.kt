@@ -17,7 +17,7 @@
 package com.github.mrbean355.roons.telegram
 
 import com.github.mrbean355.roons.SendHtmlMessage
-import com.google.common.annotations.VisibleForTesting
+import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component

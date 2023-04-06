@@ -17,7 +17,6 @@
 package com.github.mrbean355.roons.discord.audio
 
 import com.github.natanbc.lavadsp.timescale.TimescalePcmAudioFilter
-import com.google.common.annotations.VisibleForTesting
 import com.sedmelluq.discord.lavaplayer.filter.AudioFilter
 import com.sedmelluq.discord.lavaplayer.filter.PcmFilterFactory
 import com.sedmelluq.discord.lavaplayer.filter.UniversalPcmAudioFilter
@@ -26,6 +25,7 @@ import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason
+import org.jetbrains.annotations.VisibleForTesting
 import java.util.concurrent.LinkedBlockingQueue
 
 class TrackScheduler(private val player: AudioPlayer) : AudioEventAdapter() {
