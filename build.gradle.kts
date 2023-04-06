@@ -63,12 +63,14 @@ dependencies {
     implementation("mysql:mysql-connector-java:8.0.32")
     implementation("com.google.code.gson:gson:2.10.1")
 
-    implementation("net.dv8tion:JDA:5.0.0-alpha.18")
+    implementation("net.dv8tion:JDA:5.0.0-beta.6")
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.telegram:telegrambots:6.5.0")
     implementation("org.telegram:telegrambots-spring-boot-starter:6.5.0")
+
+    compileOnly("org.jetbrains:annotations:24.0.1")
 
     runtimeOnly("jakarta.xml.ws:jakarta.xml.ws-api:4.0.0") {
         because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")

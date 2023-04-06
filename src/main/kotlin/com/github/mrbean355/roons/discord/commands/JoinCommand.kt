@@ -17,7 +17,7 @@
 package com.github.mrbean355.roons.discord.commands
 
 import net.dv8tion.jda.api.Permission
-import net.dv8tion.jda.api.entities.AudioChannel
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
