@@ -18,7 +18,6 @@ package com.github.mrbean355.roons
 
 import org.telegram.telegrambots.meta.api.methods.ParseMode.HTML
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
-import java.util.Optional
 
 @Suppress("FunctionName")
 fun SendHtmlMessage(chatId: String, text: String): SendMessage = SendMessage.builder()
@@ -26,6 +25,3 @@ fun SendHtmlMessage(chatId: String, text: String): SendMessage = SendMessage.bui
     .text(text)
     .parseMode(HTML)
     .build()
-
-@Suppress("NOTHING_TO_INLINE")
-inline fun <T> Optional<T>.orNull(): T? = orElse(null)

@@ -18,7 +18,6 @@ package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.DotaModDto
 import com.github.mrbean355.roons.asDto
-import com.github.mrbean355.roons.orNull
 import com.github.mrbean355.roons.repository.DotaModRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
@@ -34,6 +33,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import kotlin.jvm.optionals.getOrNull
 
 @RestController
 @RequestMapping("/mods")
@@ -51,7 +51,7 @@ class ModController(
     @GetMapping("{key}")
     @DotaModCache
     fun getMod(@PathVariable("key") key: String): ResponseEntity<DotaModDto> {
-        val mod = dotaModRepository.findById(key).orNull()
+        val mod = dotaModRepository.findById(key).getOrNull()
             ?: return ResponseEntity(NOT_FOUND)
 
         return ResponseEntity.ok(mod.asDto())
@@ -68,7 +68,7 @@ class ModController(
         if (token != metadataRepository.adminToken) {
             return ResponseEntity(UNAUTHORIZED)
         }
-        val mod = dotaModRepository.findById(key).orNull()
+        val mod = dotaModRepository.findById(key).getOrNull()
             ?: return ResponseEntity(NOT_FOUND)
 
         dotaModRepository.save(mod.copy(size = size, hash = hash))
