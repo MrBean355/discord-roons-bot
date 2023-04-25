@@ -17,10 +17,8 @@
 package com.github.mrbean355.roons
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.telegram.telegrambots.meta.api.methods.ParseMode
-import java.util.Optional
 
 internal class UtilsKtTest {
 
@@ -31,19 +29,5 @@ internal class UtilsKtTest {
         assertEquals("12345", message.chatId)
         assertEquals("Hello world", message.text)
         assertEquals(ParseMode.HTML, message.parseMode)
-    }
-
-    @Test
-    internal fun testOptionalOrNull_NullValue_ReturnsNull() {
-        val result = Optional.ofNullable<String>(null).orNull()
-
-        assertNull(result)
-    }
-
-    @Test
-    internal fun testOptionalOrNull_NonNullValue_ReturnsValue() {
-        val result = Optional.ofNullable<String>("abc").orNull()
-
-        assertEquals("abc", result)
     }
 }
