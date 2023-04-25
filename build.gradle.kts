@@ -60,7 +60,7 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-data-rest:3.0.5")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.0.6")
-    implementation("mysql:mysql-connector-java:8.0.32")
+    implementation("mysql:mysql-connector-java:8.0.33")
     implementation("com.google.code.gson:gson:2.10.1")
 
     implementation("net.dv8tion:JDA:5.0.0-beta.8")
