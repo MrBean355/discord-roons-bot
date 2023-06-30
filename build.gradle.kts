@@ -56,7 +56,7 @@ dependencies {
     // implementation(project(":api"))
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
 
     implementation("org.springframework.boot:spring-boot-starter-data-rest:3.1.0")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.1.0")
