@@ -20,5 +20,3 @@ dependencyResolutionManagement {
         jcenter() // needed for 'lavadsp'
     }
 }
-
-include(":api")
