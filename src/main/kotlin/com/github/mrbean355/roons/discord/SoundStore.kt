@@ -37,6 +37,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
+const val FILE_EXTENSION = "mp3"
 private const val SOUNDS_DIR = "sounds"
 private const val TEMP_SOUNDS_DIR = "sounds_temp"
 private const val LOCAL_CACHE_FILE = "cache.json"
@@ -112,7 +113,16 @@ class SoundStore(
         coroutineScope {
             remoteFiles.forEach { file ->
                 launch {
-                    tryDownloadFile(file)
+                    try {
+                        playSounds.downloadFile(file, TEMP_SOUNDS_DIR)
+                    } catch (t: Throwable) {
+                        val fallback = File(SOUNDS_DIR, "${file.name}.$FILE_EXTENSION")
+                        if (fallback.exists()) {
+                            fallback.copyTo(File(TEMP_SOUNDS_DIR, fallback.name))
+                        } else {
+                            telegramNotifier.sendPrivateMessage("⚠️ Error downloading ${file.name} with no local fallback: ${t.message}")
+                        }
+                    }
                 }
             }
         }
@@ -142,16 +152,6 @@ class SoundStore(
         } catch (t: Throwable) {
             logger.error("Error listing sound bites", t)
             telegramNotifier.sendPrivateMessage("⚠️ Error listing sound bites: ${t.message}")
-            throw t
-        }
-    }
-
-    private fun tryDownloadFile(file: PlaySounds.RemoteSoundFile) {
-        try {
-            playSounds.downloadFile(file, TEMP_SOUNDS_DIR)
-        } catch (t: Throwable) {
-            logger.error("Error downloading $file", t)
-            telegramNotifier.sendPrivateMessage("⚠️ Error downloading ${file.name} (${file.url}): ${t.message}")
             throw t
         }
     }

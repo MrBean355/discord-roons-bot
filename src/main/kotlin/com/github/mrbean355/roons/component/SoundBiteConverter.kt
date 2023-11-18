@@ -16,6 +16,7 @@
 
 package com.github.mrbean355.roons.component
 
+import com.github.mrbean355.roons.discord.FILE_EXTENSION
 import org.slf4j.Logger
 import org.springframework.stereotype.Component
 import java.io.File
@@ -49,7 +50,7 @@ class SoundBiteConverter(private val logger: Logger) {
         }
         val victimPath = victim.absolutePath
         val parentDir = File(victimPath.substringBeforeLast(File.separatorChar))
-        val convertedName = victim.nameWithoutExtension + ".mp3"
+        val convertedName = victim.nameWithoutExtension + ".$FILE_EXTENSION"
         val tempOutputName = "tmp_$convertedName"
         val tempOutputFile = File(parentDir, tempOutputName)
         val exitCode = SystemCommands.execute(ffmpegPath, "-i", victimPath, tempOutputFile.absolutePath, "-vol", volume.transformVolume())
