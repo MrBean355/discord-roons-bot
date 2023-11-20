@@ -61,7 +61,7 @@ dependencies {
     implementation("mysql:mysql-connector-java:8.0.33")
     implementation("com.google.code.gson:gson:2.10.1")
 
-    implementation("net.dv8tion:JDA:5.0.0-beta.17")
+    implementation("net.dv8tion:JDA:5.0.0-beta.18")
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
