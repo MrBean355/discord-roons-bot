@@ -56,7 +56,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:3.2.0")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:3.2.1")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.2.1")
     implementation("mysql:mysql-connector-java:8.0.33")
     implementation("com.google.code.gson:gson:2.10.1")
