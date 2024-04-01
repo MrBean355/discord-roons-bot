@@ -44,7 +44,7 @@ tasks.withType<SonarTask> {
     dependsOn(tasks.named("jacocoTestReport"))
 }
 
-sonarqube {
+sonar {
     properties {
         property("sonar.projectKey", "discord-roons-bot")
         property("sonar.organization", "admiral-bulldog-sounds")
