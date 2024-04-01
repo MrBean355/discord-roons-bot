@@ -3,8 +3,7 @@ updates:
 - package-ecosystem: gradle
   directory: "/"
   schedule:
-    interval: daily
-    time: "03:00"
+    interval: monthly
   open-pull-requests-limit: 10
   target-branch: develop
   reviewers:
