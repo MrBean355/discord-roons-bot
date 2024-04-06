@@ -19,48 +19,54 @@ package com.github.mrbean355.roons.discord
 import com.github.mrbean355.roons.PlaySound
 import com.github.mrbean355.roons.component.PlaySounds
 import com.github.mrbean355.roons.telegram.TelegramNotifier
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import software.amazon.awssdk.core.sync.RequestBody
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.elastictranscoder.ElasticTranscoderClient
+import software.amazon.awssdk.services.elastictranscoder.model.CreateJobRequest
+import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request
+import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import java.io.File
-import java.math.BigInteger
-import java.security.MessageDigest
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 const val FILE_EXTENSION = "mp3"
-private const val SOUNDS_DIR = "sounds"
-private const val TEMP_SOUNDS_DIR = "sounds_temp"
-private const val LOCAL_CACHE_FILE = "cache.json"
+
+private const val S3_INPUT_BUCKET = "bulldog-sounds-input"
+private const val S3_OUTPUT_BUCKET = "bulldog-sounds"
+private const val TRANSCODER_PIPELINE_ID = "1712082859281-9m36m8"
+private const val TRANSCODER_PRESET_ID = "1351620000001-300040" // Audio MP3 - 128k
 
 @Component
 class SoundStore(
     private val playSounds: PlaySounds,
     private val telegramNotifier: TelegramNotifier,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
+    private val s3 by lazy { S3Client.builder().region(Region.US_EAST_1).build() }
+    private val transcoder by lazy { ElasticTranscoderClient.builder().region(Region.US_EAST_1).build() }
+    private val queue = LinkedBlockingQueue<String>()
+    private val busy = AtomicBoolean(false)
     private val lock = ReentrantReadWriteLock()
     private var soundsCache: Map<String, PlaySound> = emptyMap()
 
-    @Value("\${roons.soundBites.localCache:false}")
-    private var useLocalCache: Boolean = false
-
     @PostConstruct
     fun onPostConstruct(): Unit = runBlocking(IO) {
-        if (useLocalCache && File(LOCAL_CACHE_FILE).exists()) {
-            loadSoundBitesFromDisk()
-        } else {
-            downloadAllSoundBites()
-        }
+        downloadAllSoundBites()
     }
 
     /** @return collection of all available sound bites. */
@@ -70,9 +76,10 @@ class SoundStore(
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
     fun getFile(soundFileName: String): File? = lock.read {
-        File(SOUNDS_DIR, soundFileName.trim()).let {
-            if (it.exists()) it else null
-        }
+//        File(SOUNDS_DIR, soundFileName.trim()).let {
+//            if (it.exists()) it else null
+//        }
+        TODO()
     }
 
     /**
@@ -86,85 +93,89 @@ class SoundStore(
 
         sendTelegramNotification(
             addedFiles = soundsCache.keys - old.keys,
-            changedFiles = soundsCache.filterKeys { it in old }.filter { it.value.checksum != old.getValue(it.key).checksum }.keys,
             removedFiles = old.keys - soundsCache.keys
         )
     }
 
-    private fun loadSoundBitesFromDisk() {
-        soundsCache = Gson().fromJson(
-            File(LOCAL_CACHE_FILE).readText(),
-            object : TypeToken<Map<String, PlaySound>>() {}.type
-        )
-        logger.info("Loaded ${soundsCache.size} sounds from disk cache.")
-    }
-
     private suspend fun downloadAllSoundBites() {
-        val tempSoundsDir = File(TEMP_SOUNDS_DIR).also {
-            if (it.exists()) {
-                it.deleteRecursively()
-            }
-            it.mkdir()
+        val ourFileNames = s3.listObjectsV2(ListObjectsV2Request.builder().bucket(S3_OUTPUT_BUCKET).build())
+            .contents().map { it.key().substringBeforeLast('.') }
+        val theirFiles = playSounds.listRemoteFiles()
+        val theirFileNames = theirFiles.map { it.name }
+
+        val toDownload = theirFiles.filter { theirs ->
+            theirs.name !in ourFileNames
+        }
+        val toDelete = ourFileNames.filter { ourName ->
+            ourName !in theirFileNames
         }
 
-        val remoteFiles = tryListRemoteFiles()
-        val mapping = remoteFiles.associateBy { it.name }
+        coroutineScope {
+            toDownload.forEach { file ->
+                launch {
+                    val bytes = playSounds.downloadFile(file)
+                    logger.info("Uploading ${file.name}")
+                    s3.putObject(
+                        PutObjectRequest.builder().bucket(S3_INPUT_BUCKET).key(file.name).build(),
+                        RequestBody.fromBytes(bytes)
+                    )
+                    enqueueTranscode(file.name)
+                }
+            }
+        }
 
         coroutineScope {
-            remoteFiles.forEach { file ->
+            toDelete.forEach { file ->
                 launch {
-                    try {
-                        playSounds.downloadFile(file, TEMP_SOUNDS_DIR)
-                    } catch (t: Throwable) {
-                        val fallback = File(SOUNDS_DIR, "${file.name}.$FILE_EXTENSION")
-                        if (fallback.exists()) {
-                            fallback.copyTo(File(TEMP_SOUNDS_DIR, fallback.name))
-                        } else {
-                            telegramNotifier.sendPrivateMessage("⚠️ Error downloading ${file.name} with no local fallback: ${t.message}")
-                        }
-                    }
+                    logger.info("Deleting $file")
+                    s3.deleteObject(DeleteObjectRequest.builder().bucket(S3_INPUT_BUCKET).key(file).build())
+                    s3.deleteObject(DeleteObjectRequest.builder().bucket(S3_OUTPUT_BUCKET).key("${file}.$FILE_EXTENSION").build())
                 }
             }
         }
 
         lock.write {
-            val soundsDir = File(SOUNDS_DIR)
-            soundsDir.deleteRecursively()
-            tempSoundsDir.renameTo(soundsDir)
-
-            soundsCache = soundsDir.listFiles()
-                .orEmpty()
-                .associateWith { PlaySound(it.name, it.checksum(), mapping.getValue(it.nameWithoutExtension).category) }
-                .mapKeys { it.key.name }
-
-            if (useLocalCache) {
-                File(LOCAL_CACHE_FILE).apply {
-                    writeText(Gson().toJson(soundsCache))
-                    logger.info("Wrote ${soundsCache.size} sounds to disk cache (${length() / 1024f} KB).")
+            soundsCache = s3.listObjectsV2(ListObjectsV2Request.builder().bucket(S3_OUTPUT_BUCKET).build())
+                .contents()
+                .associate {
+                    it.key() to PlaySound(it.key(), it.eTag().removeSurrounding("\""))
                 }
+        }
+    }
+
+    private fun enqueueTranscode(name: String) {
+        queue += name
+
+        if (!busy.getAndSet(true)) {
+            GlobalScope.launch {
+                while (true) {
+                    val item = queue.poll()
+                        ?: break
+
+                    transcoder.createJob(
+                        CreateJobRequest.builder()
+                            .pipelineId(TRANSCODER_PIPELINE_ID)
+                            .input { it.key(item) }
+                            .output {
+                                it.presetId(TRANSCODER_PRESET_ID)
+                                it.key("$item.$FILE_EXTENSION")
+                            }
+                            .build()
+                    )
+
+                    delay(250)
+                }
+
+                busy.set(false)
             }
         }
     }
 
-    private fun tryListRemoteFiles(): List<PlaySounds.RemoteSoundFile> {
-        return try {
-            playSounds.listRemoteFiles()
-        } catch (t: Throwable) {
-            logger.error("Error listing sound bites", t)
-            telegramNotifier.sendPrivateMessage("⚠️ Error listing sound bites: ${t.message}")
-            throw t
-        }
-    }
-
-    private fun sendTelegramNotification(addedFiles: Collection<String>, changedFiles: Collection<String>, removedFiles: Collection<String>) {
+    private fun sendTelegramNotification(addedFiles: Collection<String>, removedFiles: Collection<String>) {
         val message = buildString {
             if (addedFiles.isNotEmpty()) {
                 append("<b>Added:</b> ")
                 appendLine(addedFiles.removeExtensions().joinToString())
-            }
-            if (changedFiles.isNotEmpty()) {
-                append("<b>Changed:</b> ")
-                appendLine(changedFiles.removeExtensions().joinToString())
             }
             if (removedFiles.isNotEmpty()) {
                 append("<b>Removed:</b> ")
@@ -174,17 +185,6 @@ class SoundStore(
         if (message.isNotEmpty()) {
             telegramNotifier.sendChannelMessage("🔊 Play Sounds Updated 🔊\n\n$message")
         }
-    }
-
-    private fun File.checksum(): String {
-        val messageDigest = MessageDigest.getInstance("SHA-512")
-        val result = messageDigest.digest(readBytes())
-        val convertedResult = BigInteger(1, result)
-        var hashText = convertedResult.toString(16)
-        while (hashText.length < 32) {
-            hashText = "0$hashText"
-        }
-        return hashText
     }
 
     private fun Iterable<String>.removeExtensions(): List<String> =

@@ -91,10 +91,10 @@ internal class SoundBiteControllerTest {
 
     private fun getMockSounds(): Collection<PlaySound> {
         return listOf(
-            PlaySound("roons.mp3", "3f0c5367ee", "Bulldog's voice"),
-            PlaySound("eel.mp3", "8332e735d8", "Bulldog's voice"),
-            PlaySound("weed.mp3", "101d75dad9", "Songs"),
-            PlaySound("vivon.mp3", "b4d443041a", "Ugandan"),
+            PlaySound("roons.mp3", "3f0c5367ee"),
+            PlaySound("eel.mp3", "8332e735d8"),
+            PlaySound("weed.mp3", "101d75dad9"),
+            PlaySound("vivon.mp3", "b4d443041a"),
         )
     }
 }

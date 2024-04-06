@@ -65,6 +65,10 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.3")
     implementation("com.google.code.gson:gson:2.10.1")
 
+    implementation(platform("software.amazon.awssdk:bom:2.25.22"))
+    implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:elastictranscoder")
+
     implementation("net.dv8tion:JDA:5.0.0-beta.21")
     implementation("com.sedmelluq:lavaplayer:1.3.78")
     implementation("com.github.natanbc:lavadsp:0.7.7")

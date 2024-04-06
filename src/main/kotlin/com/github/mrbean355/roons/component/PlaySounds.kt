@@ -23,21 +23,17 @@ import org.springframework.http.converter.StringHttpMessageConverter
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.client.getForEntity
-import java.io.File
-import java.io.FileOutputStream
 
 private const val PLAY_SOUNDS_URL = "https://chatbot.admiralbulldog.live/playsounds"
 
 @Component
 class PlaySounds(
-    private val soundBiteConverter: SoundBiteConverter,
     private val listRestTemplate: RestTemplate,
     private val downloadRestTemplate: RestTemplate,
 ) {
 
     @Autowired
-    constructor(soundBiteConverter: SoundBiteConverter) : this(
-        soundBiteConverter,
+    constructor() : this(
         RestTemplateBuilder()
             .messageConverters(StringHttpMessageConverter())
             .build(),
@@ -57,23 +53,14 @@ class PlaySounds(
             .flatMap(::processCategory)
     }
 
-    /** Download the given sound to the given destination. */
-    fun downloadFile(file: RemoteSoundFile, destination: String) {
+    fun downloadFile(file: RemoteSoundFile): ByteArray {
         val response = downloadRestTemplate.getForEntity<ByteArray>(file.url)
         val responseBody = response.body
         if (response.statusCode != HttpStatus.OK || responseBody == null) {
             throw RuntimeException("Error downloading file: ${file.name}. Response code: ${response.statusCode}")
         }
 
-        val filePath = "$destination/${file.name}"
-
-        responseBody.inputStream().use { input ->
-            FileOutputStream(filePath).use { output ->
-                input.copyTo(output)
-            }
-        }
-
-        soundBiteConverter.convert(File(filePath), file.volume)
+        return responseBody
     }
 
     private fun processCategory(html: String): List<RemoteSoundFile> {
