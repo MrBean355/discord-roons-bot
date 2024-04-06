@@ -24,6 +24,10 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "17"
 }
 
+tasks.getByName<Jar>("jar") {
+    enabled = false
+}
+
 tasks.test {
     useJUnitPlatform()
 }
