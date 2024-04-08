@@ -98,7 +98,7 @@ class SoundStore(
     }
 
     private suspend fun downloadAllSoundBites() {
-        val ourFileNames = s3.listObjectsV2(ListObjectsV2Request.builder().bucket(S3_OUTPUT_BUCKET).build())
+        val ourFileNames = s3.listObjectsV2(ListObjectsV2Request.builder().bucket(S3_INPUT_BUCKET).build())
             .contents().map { it.key().substringBeforeLast('.') }
         val theirFiles = playSounds.listRemoteFiles()
         val theirFileNames = theirFiles.map { it.name }
@@ -119,7 +119,7 @@ class SoundStore(
                         PutObjectRequest.builder().bucket(S3_INPUT_BUCKET).key(file.name).build(),
                         RequestBody.fromBytes(bytes)
                     )
-                    enqueueTranscode(file.name)
+                    //enqueueTranscode(file.name)
                 }
             }
         }
@@ -134,6 +134,8 @@ class SoundStore(
             }
         }
 
+        // FIXME:
+        //  Needs to happen elsewhere, as the output bucket won't be finalised, since Transcoder is async.
         lock.write {
             soundsCache = s3.listObjectsV2(ListObjectsV2Request.builder().bucket(S3_OUTPUT_BUCKET).build())
                 .contents()
