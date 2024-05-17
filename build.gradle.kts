@@ -70,7 +70,7 @@ dependencies {
 
     compileOnly("org.jetbrains:annotations:24.1.0")
 
-    runtimeOnly("jakarta.xml.ws:jakarta.xml.ws-api:4.0.1") {
+    runtimeOnly("jakarta.xml.ws:jakarta.xml.ws-api:4.0.2") {
         because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
     }
     runtimeOnly("javax.xml.ws:jaxws-api:2.3.1") {
