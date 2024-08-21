@@ -4,7 +4,7 @@ pluginManagement {
     plugins {
         kotlin("jvm") version "1.9.23"
         id("org.jetbrains.kotlin.plugin.allopen") version "2.0.0"
-        id("org.jetbrains.kotlin.plugin.noarg") version "1.9.23"
+        id("org.jetbrains.kotlin.plugin.noarg") version "2.0.10"
         id("org.jetbrains.kotlin.plugin.spring") version "2.0.0"
         id("org.jetbrains.kotlin.plugin.jpa") version "1.9.23"
         id("org.springframework.boot") version "3.2.5"
