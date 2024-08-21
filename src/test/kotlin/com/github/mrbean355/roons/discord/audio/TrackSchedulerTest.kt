@@ -16,8 +16,6 @@
 
 package com.github.mrbean355.roons.discord.audio
 
-import com.github.natanbc.lavadsp.timescale.TimescalePcmAudioFilter
-import com.sedmelluq.discord.lavaplayer.format.OpusAudioDataFormat
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason
@@ -26,8 +24,6 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import io.mockk.verify
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -51,7 +47,7 @@ internal class TrackSchedulerTest {
 
         verify {
             audioPlayer.volume = 55
-            audioPlayer.setFilterFactory(any<TrackScheduler.RateFilterFactory>())
+            // audioPlayer.setFilterFactory(any<TrackScheduler.RateFilterFactory>())
             audioPlayer.startTrack(track, false)
         }
     }
@@ -102,12 +98,12 @@ internal class TrackSchedulerTest {
 
         verify {
             audioPlayer.volume = 75
-            audioPlayer.setFilterFactory(any<TrackScheduler.RateFilterFactory>())
+            // audioPlayer.setFilterFactory(any<TrackScheduler.RateFilterFactory>())
             audioPlayer.startTrack(queuedTrack, false)
         }
     }
 
-    @Test
+    /*@Test
     internal fun testRateFilterFactory() {
         val factory = TrackScheduler.RateFilterFactory(0.33)
         val format = OpusAudioDataFormat(4, 44000, 0)
@@ -118,5 +114,5 @@ internal class TrackSchedulerTest {
         assertTrue(filters[0] is TimescalePcmAudioFilter)
         val filter = filters[0] as TimescalePcmAudioFilter
         assertEquals(0.33, filter.rate)
-    }
+    }*/
 }

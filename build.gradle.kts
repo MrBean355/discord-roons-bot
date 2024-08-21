@@ -56,14 +56,14 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:3.2.5")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.2.5")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:3.3.2")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.3.2")
     implementation("mysql:mysql-connector-java:8.0.33")
-    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.code.gson:gson:2.11.0")
 
     implementation("net.dv8tion:JDA:5.0.2")
-    implementation("com.sedmelluq:lavaplayer:1.3.78")
-    implementation("com.github.natanbc:lavadsp:0.7.7")
+    implementation("dev.arbjerg:lavaplayer:2.2.1")
+    // implementation("com.github.natanbc:lavadsp:0.7.7")
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.telegram:telegrambots:6.9.7.1")
     implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
@@ -77,7 +77,7 @@ dependencies {
         because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
     }
 
-    testImplementation(platform("org.junit:junit-bom:5.10.2"))
+    testImplementation(platform("org.junit:junit-bom:5.11.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
