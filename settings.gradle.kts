@@ -2,13 +2,13 @@ rootProject.name = "discord-roons-bot"
 
 pluginManagement {
     plugins {
-        kotlin("jvm") version "1.9.20"
-        id("org.jetbrains.kotlin.plugin.allopen") version "1.9.20"
-        id("org.jetbrains.kotlin.plugin.noarg") version "1.9.20"
-        id("org.jetbrains.kotlin.plugin.spring") version "1.9.20"
-        id("org.jetbrains.kotlin.plugin.jpa") version "1.9.20"
-        id("org.springframework.boot") version "3.1.5"
-        id("org.sonarqube") version "4.4.1.3373"
+        kotlin("jvm") version "2.0.10"
+        id("org.jetbrains.kotlin.plugin.allopen") version "2.0.10"
+        id("org.jetbrains.kotlin.plugin.noarg") version "2.0.10"
+        id("org.jetbrains.kotlin.plugin.spring") version "2.0.10"
+        id("org.jetbrains.kotlin.plugin.jpa") version "2.0.10"
+        id("org.springframework.boot") version "3.3.2"
+        id("org.sonarqube") version "5.1.0.4882"
     }
 }
 
@@ -16,9 +16,6 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         mavenCentral()
-        maven("https://m2.dv8tion.net/releases")
-        jcenter() // needed for 'lavadsp'
+        maven("https://www.jitpack.io")
     }
 }
-
-include(":api")

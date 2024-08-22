@@ -60,7 +60,7 @@ class TrackScheduler(private val player: AudioPlayer) : AudioEventAdapter() {
     private class QueuedTrack(
         val track: AudioTrack,
         val volume: Int,
-        val rate: Int
+        val rate: Int,
     )
 
     @VisibleForTesting
