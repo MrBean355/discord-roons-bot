@@ -16,6 +16,6 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         mavenCentral()
-        jcenter() // needed for 'lavadsp'
+        maven("https://www.jitpack.io")
     }
 }

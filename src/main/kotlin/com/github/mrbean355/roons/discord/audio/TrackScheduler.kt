@@ -16,6 +16,7 @@
 
 package com.github.mrbean355.roons.discord.audio
 
+import com.github.natanbc.lavadsp.timescale.TimescalePcmAudioFilter
 import com.sedmelluq.discord.lavaplayer.filter.AudioFilter
 import com.sedmelluq.discord.lavaplayer.filter.PcmFilterFactory
 import com.sedmelluq.discord.lavaplayer.filter.UniversalPcmAudioFilter
@@ -52,7 +53,7 @@ class TrackScheduler(private val player: AudioPlayer) : AudioEventAdapter() {
 
     private fun startTrack(track: AudioTrack, volume: Int, rate: Int) {
         player.volume = volume
-        // player.setFilterFactory(RateFilterFactory(rate / 100.0))
+        player.setFilterFactory(RateFilterFactory(rate / 100.0))
         player.startTrack(track, false)
     }
 
@@ -67,8 +68,8 @@ class TrackScheduler(private val player: AudioPlayer) : AudioEventAdapter() {
 
         override fun buildChain(track: AudioTrack?, format: AudioDataFormat, output: UniversalPcmAudioFilter): List<AudioFilter> {
             return listOf(
-                // TimescalePcmAudioFilter(output, format.channelCount, format.sampleRate)
-                //    .setRate(rate)
+                TimescalePcmAudioFilter(output, format.channelCount, format.sampleRate)
+                    .setRate(rate)
             )
         }
     }
