@@ -7,7 +7,7 @@ pluginManagement {
         id("org.jetbrains.kotlin.plugin.noarg") version "2.0.20"
         id("org.jetbrains.kotlin.plugin.spring") version "2.0.20"
         id("org.jetbrains.kotlin.plugin.jpa") version "2.0.20"
-        id("org.springframework.boot") version "3.3.2"
+        id("org.springframework.boot") version "3.3.3"
         id("org.sonarqube") version "5.1.0.4882"
     }
 }
