@@ -62,7 +62,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
 
     implementation("net.dv8tion:JDA:5.1.0")
-    implementation("dev.arbjerg:lavaplayer:2.2.1")
+    implementation("dev.arbjerg:lavaplayer:2.2.2")
     implementation("com.github.JustRed23:lavadsp:0.7.7-1")
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.telegram:telegrambots:6.9.7.1")
