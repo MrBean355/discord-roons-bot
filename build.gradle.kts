@@ -59,7 +59,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-rest:3.4.3")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.4.2")
     implementation("mysql:mysql-connector-java:8.0.33")
-    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.google.code.gson:gson:2.12.1")
 
     implementation("net.dv8tion:JDA:5.2.3")
     implementation("dev.arbjerg:lavaplayer:2.2.2")
