@@ -28,7 +28,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.File
 import java.math.BigInteger
@@ -46,7 +45,7 @@ private const val LOCAL_CACHE_FILE = "cache.json"
 class SoundStore(
     private val playSounds: PlaySounds,
     private val telegramNotifier: TelegramNotifier,
-    private val logger: Logger
+    private val logger: Logger,
 ) {
     private val lock = ReentrantReadWriteLock()
     private var soundsCache: Map<String, PlaySound> = emptyMap()
@@ -78,8 +77,10 @@ class SoundStore(
     /**
      * Synchronise our collection of sound bites with the PlaySounds page.
      * Re-downloads all sounds to make sure that sounds with the same name but different content are also downloaded.
+     *
+     * Disabled until a proper solution can be found.
      */
-    @Scheduled(cron = "0 0 0 * * *")
+    /*@Scheduled(cron = "0 0 0 * * *")
     fun synchroniseSoundBites(): Unit = runBlocking(IO) {
         val old = soundsCache
         downloadAllSoundBites()
@@ -89,7 +90,7 @@ class SoundStore(
             changedFiles = soundsCache.filterKeys { it in old }.filter { it.value.checksum != old.getValue(it.key).checksum }.keys,
             removedFiles = old.keys - soundsCache.keys
         )
-    }
+    }*/
 
     private fun loadSoundBitesFromDisk() {
         soundsCache = Gson().fromJson(
