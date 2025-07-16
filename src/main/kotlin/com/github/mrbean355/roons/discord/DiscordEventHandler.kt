@@ -137,8 +137,9 @@ class DiscordEventHandler(
             }
             val settings = discordBotSettingsRepository.findOneByGuildId(event.guild.id) ?: return@launch
             if (settings.followedUser == event.member.id) {
-                if (event.channelJoined != null) {
-                    event.guild.audioManager.openAudioConnection(event.channelJoined)
+                val channelJoined = event.channelJoined?.asVoiceChannel()
+                if (channelJoined != null) {
+                    event.guild.audioManager.openAudioConnection(channelJoined)
                 } else {
                     event.guild.audioManager.closeAudioConnection()
                 }

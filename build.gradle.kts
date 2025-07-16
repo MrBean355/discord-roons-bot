@@ -29,7 +29,7 @@ tasks.test {
 }
 
 jacoco {
-    toolVersion = "0.8.12"
+    toolVersion = "0.8.13"
 }
 
 tasks.withType<JacocoReport> {
@@ -54,21 +54,21 @@ sonar {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:3.4.3")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.4.2")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:3.5.3")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.5.3")
     implementation("mysql:mysql-connector-java:8.0.33")
-    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.google.code.gson:gson:2.13.1")
 
-    implementation("net.dv8tion:JDA:5.2.3")
-    implementation("dev.arbjerg:lavaplayer:2.2.2")
+    implementation("net.dv8tion:JDA:5.6.1")
+    implementation("dev.arbjerg:lavaplayer:2.2.3")
     implementation("com.github.JustRed23:lavadsp:0.7.7-1")
     implementation("com.vdurmont:semver4j:3.1.0")
     implementation("org.telegram:telegrambots:6.9.7.1")
     implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
 
-    compileOnly("org.jetbrains:annotations:26.0.1")
+    compileOnly("org.jetbrains:annotations:26.0.2")
 
     runtimeOnly("jakarta.xml.ws:jakarta.xml.ws-api:4.0.2") {
         because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
@@ -77,8 +77,8 @@ dependencies {
         because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
     }
 
-    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation(platform("org.junit:junit-bom:5.12.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.13.13")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("io.mockk:mockk:1.14.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
