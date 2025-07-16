@@ -10,6 +10,7 @@ plugins {
     id("org.springframework.boot")
     id("org.sonarqube")
     jacoco
+    `jvm-test-suite`
 }
 
 group = "com.github.mrbean355"
@@ -22,10 +23,6 @@ java {
 
 kotlin {
     compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
 
 jacoco {
@@ -49,6 +46,18 @@ sonar {
         property("sonar.projectKey", "discord-roons-bot")
         property("sonar.organization", "admiral-bulldog-sounds")
         property("sonar.host.url", "https://sonarcloud.io")
+    }
+}
+
+testing {
+    suites {
+        val test by getting(JvmTestSuite::class) {
+            useJUnitJupiter("5.12.2")
+            dependencies {
+                implementation("io.mockk:mockk:1.14.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+            }
+        }
     }
 }
 
@@ -76,9 +85,4 @@ dependencies {
     runtimeOnly("javax.xml.ws:jaxws-api:2.3.1") {
         because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
     }
-
-    testImplementation(platform("org.junit:junit-bom:5.12.2"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.14.3")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
