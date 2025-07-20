@@ -76,7 +76,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.5.3")
     implementation("mysql:mysql-connector-java:8.0.33")
 
-    implementation("net.dv8tion:JDA:5.6.1")
+    implementation("net.dv8tion:JDA:6.0.0-preview")
     implementation("dev.arbjerg:lavaplayer:2.2.4")
     implementation("com.github.JustRed23:lavadsp:0.7.7-1")
     implementation("com.vdurmont:semver4j:3.1.0")
