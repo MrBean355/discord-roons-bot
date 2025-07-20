@@ -16,7 +16,6 @@
 
 package com.github.mrbean355.roons.controller
 
-import com.github.mrbean355.roons.PlaySound
 import com.github.mrbean355.roons.discord.SoundStore
 import org.springframework.core.io.Resource
 import org.springframework.core.io.UrlResource
@@ -30,18 +29,11 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("soundBites/")
 class SoundBiteController(
-    private val soundStore: SoundStore
+    private val soundStore: SoundStore,
 ) {
 
-    @Deprecated("Use the new listV3() method instead.")
     @GetMapping("listV2")
     fun listV2(): Map<String, String> {
-        return soundStore.listAll()
-            .associate { it.name to it.checksum }
-    }
-
-    @GetMapping("v3/list")
-    fun listV3(): Collection<PlaySound> {
         return soundStore.listAll()
     }
 
