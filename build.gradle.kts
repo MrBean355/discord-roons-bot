@@ -54,7 +54,7 @@ testing {
         val test by getting(JvmTestSuite::class) {
             useJUnitJupiter("5.12.2")
             dependencies {
-                implementation("io.mockk:mockk:1.14.3")
+                implementation("io.mockk:mockk:1.14.5")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
             }
         }
