@@ -1,8 +1,10 @@
+import com.github.mrbean355.roons.UpdateSoundBitesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.sonarqube.gradle.SonarTask
 
 plugins {
     kotlin("jvm")
+    kotlin("plugin.serialization")
     id("org.jetbrains.kotlin.plugin.allopen")
     id("org.jetbrains.kotlin.plugin.noarg")
     id("org.jetbrains.kotlin.plugin.spring")
@@ -41,6 +43,10 @@ tasks.withType<SonarTask> {
     dependsOn(tasks.named("jacocoTestReport"))
 }
 
+tasks.register<UpdateSoundBitesTask>("updateSoundBites") {
+    destination.set(file("src/main/resources/sounds"))
+}
+
 sonar {
     properties {
         property("sonar.projectKey", "discord-roons-bot")
@@ -64,11 +70,11 @@ testing {
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
     implementation("org.springframework.boot:spring-boot-starter-data-rest:3.5.3")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:3.5.3")
     implementation("mysql:mysql-connector-java:8.0.33")
-    implementation("com.google.code.gson:gson:2.13.1")
 
     implementation("net.dv8tion:JDA:5.6.1")
     implementation("dev.arbjerg:lavaplayer:2.2.3")

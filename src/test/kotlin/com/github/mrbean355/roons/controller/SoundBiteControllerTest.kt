@@ -16,7 +16,6 @@
 
 package com.github.mrbean355.roons.controller
 
-import com.github.mrbean355.roons.PlaySound
 import com.github.mrbean355.roons.discord.SoundStore
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -43,7 +42,6 @@ internal class SoundBiteControllerTest {
     }
 
     @Test
-    @Suppress("DEPRECATION")
     internal fun testListV2_FetchesFromStoreAndTransformsResult() {
         val sounds = getMockSounds()
         every { soundStore.listAll() } returns sounds
@@ -52,19 +50,9 @@ internal class SoundBiteControllerTest {
 
         assertEquals(sounds.size, result.size)
         sounds.forEach {
-            assertTrue(it.name in result)
-            assertEquals(it.checksum, result.getValue(it.name))
+            assertTrue(it.key in result)
+            assertEquals(it.value, result.getValue(it.key))
         }
-    }
-
-    @Test
-    internal fun testListV3_FetchesFromStore() {
-        val sounds = getMockSounds()
-        every { soundStore.listAll() } returns sounds
-
-        val result = controller.listV3()
-
-        assertSame(sounds, result)
     }
 
     @Test
@@ -89,12 +77,12 @@ internal class SoundBiteControllerTest {
         assertEquals(soundFile.absolutePath, (result.body as UrlResource).file.absolutePath)
     }
 
-    private fun getMockSounds(): Collection<PlaySound> {
-        return listOf(
-            PlaySound("roons.mp3", "3f0c5367ee", "Bulldog's voice"),
-            PlaySound("eel.mp3", "8332e735d8", "Bulldog's voice"),
-            PlaySound("weed.mp3", "101d75dad9", "Songs"),
-            PlaySound("vivon.mp3", "b4d443041a", "Ugandan"),
+    private fun getMockSounds(): Map<String, String> {
+        return mapOf(
+            "roons.mp3" to "3f0c5367ee",
+            "eel.mp3" to "8332e735d8",
+            "weed.mp3" to "101d75dad9",
+            "vivon.mp3" to "b4d443041a",
         )
     }
 }

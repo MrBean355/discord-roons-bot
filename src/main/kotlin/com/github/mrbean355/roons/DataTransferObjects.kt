@@ -22,12 +22,6 @@ data class WelcomeMessageResponse(val message: String)
 
 data class AnalyticsRequest(val userId: String, val properties: Map<String, String>)
 
-data class PlaySound(
-    val name: String,
-    val checksum: String,
-    val category: String,
-)
-
 data class PlaySoundRequest(
     val userId: String,
     val token: String,

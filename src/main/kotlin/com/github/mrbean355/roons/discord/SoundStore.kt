@@ -16,164 +16,66 @@
 
 package com.github.mrbean355.roons.discord
 
-import com.github.mrbean355.roons.PlaySound
-import com.github.mrbean355.roons.component.PlaySounds
-import com.github.mrbean355.roons.telegram.TelegramNotifier
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import jakarta.annotation.PostConstruct
-import kotlinx.coroutines.Dispatchers.IO
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import org.slf4j.Logger
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.io.File
 import java.math.BigInteger
 import java.security.MessageDigest
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
 
-const val FILE_EXTENSION = "mp3"
 private const val SOUNDS_DIR = "sounds"
-private const val TEMP_SOUNDS_DIR = "sounds_temp"
-private const val LOCAL_CACHE_FILE = "cache.json"
 
 @Component
 class SoundStore(
-    private val playSounds: PlaySounds,
-    private val telegramNotifier: TelegramNotifier,
     private val logger: Logger,
 ) {
-    private val lock = ReentrantReadWriteLock()
-    private var soundsCache: Map<String, PlaySound> = emptyMap()
 
-    @Value("\${roons.soundBites.localCache:false}")
-    private var useLocalCache: Boolean = false
+    private var soundsCache: Map<String, String> = emptyMap()
 
     @PostConstruct
-    fun onPostConstruct(): Unit = runBlocking(IO) {
-        if (useLocalCache && File(LOCAL_CACHE_FILE).exists()) {
-            loadSoundBitesFromDisk()
-        } else {
-            downloadAllSoundBites()
+    fun unpackSounds() {
+        val manifest = readSoundResource("manifest.json").decodeToString()
+            .let { Json.decodeFromString<List<String>>(it) }
+
+        val output = File(SOUNDS_DIR).apply {
+            deleteRecursively()
+            mkdirs()
         }
+
+        manifest.forEach { name ->
+            File(output, name).also {
+                it.writeBytes(readSoundResource(name))
+                soundsCache += name to it.checksum()
+            }
+        }
+
+        val copied = output.listFiles().map { it.name }
+        check(manifest.all { it in copied }) {
+            "Failed to copy all sounds."
+        }
+
+        logger.info("Total sounds: ${manifest.size}")
     }
 
     /** @return collection of all available sound bites. */
-    fun listAll(): Collection<PlaySound> = lock.read {
-        soundsCache.values
+    fun listAll(): Map<String, String> {
+        return soundsCache
     }
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
-    fun getFile(soundFileName: String): File? = lock.read {
-        File(SOUNDS_DIR, soundFileName.trim()).let {
+    fun getFile(soundFileName: String): File? {
+        return File(SOUNDS_DIR, soundFileName.trim()).let {
             if (it.exists()) it else null
         }
     }
 
-    /**
-     * Synchronise our collection of sound bites with the PlaySounds page.
-     * Re-downloads all sounds to make sure that sounds with the same name but different content are also downloaded.
-     *
-     * Disabled until a proper solution can be found.
-     */
-    /*@Scheduled(cron = "0 0 0 * * *")
-    fun synchroniseSoundBites(): Unit = runBlocking(IO) {
-        val old = soundsCache
-        downloadAllSoundBites()
+    private fun readSoundResource(name: String): ByteArray {
+        val stream = SoundStore::class.java.classLoader.getResourceAsStream("sounds/$name")
+        require(stream != null) { "Couldn't find sound resource: $name" }
 
-        sendTelegramNotification(
-            addedFiles = soundsCache.keys - old.keys,
-            changedFiles = soundsCache.filterKeys { it in old }.filter { it.value.checksum != old.getValue(it.key).checksum }.keys,
-            removedFiles = old.keys - soundsCache.keys
-        )
-    }*/
-
-    private fun loadSoundBitesFromDisk() {
-        soundsCache = Gson().fromJson(
-            File(LOCAL_CACHE_FILE).readText(),
-            object : TypeToken<Map<String, PlaySound>>() {}.type
-        )
-        logger.info("Loaded ${soundsCache.size} sounds from disk cache.")
-    }
-
-    private suspend fun downloadAllSoundBites() {
-        val tempSoundsDir = File(TEMP_SOUNDS_DIR).also {
-            if (it.exists()) {
-                it.deleteRecursively()
-            }
-            it.mkdir()
-        }
-
-        val remoteFiles = tryListRemoteFiles()
-        val mapping = remoteFiles.associateBy { it.name }
-
-        coroutineScope {
-            remoteFiles.forEach { file ->
-                launch {
-                    try {
-                        playSounds.downloadFile(file, TEMP_SOUNDS_DIR)
-                    } catch (t: Throwable) {
-                        val fallback = File(SOUNDS_DIR, "${file.name}.$FILE_EXTENSION")
-                        if (fallback.exists()) {
-                            fallback.copyTo(File(TEMP_SOUNDS_DIR, fallback.name))
-                        } else {
-                            telegramNotifier.sendPrivateMessage("⚠️ Error downloading ${file.name} with no local fallback: ${t.message}")
-                        }
-                    }
-                }
-            }
-        }
-
-        lock.write {
-            val soundsDir = File(SOUNDS_DIR)
-            soundsDir.deleteRecursively()
-            tempSoundsDir.renameTo(soundsDir)
-
-            soundsCache = soundsDir.listFiles()
-                .orEmpty()
-                .associateWith { PlaySound(it.name, it.checksum(), mapping.getValue(it.nameWithoutExtension).category) }
-                .mapKeys { it.key.name }
-
-            if (useLocalCache) {
-                File(LOCAL_CACHE_FILE).apply {
-                    writeText(Gson().toJson(soundsCache))
-                    logger.info("Wrote ${soundsCache.size} sounds to disk cache (${length() / 1024f} KB).")
-                }
-            }
-        }
-    }
-
-    private fun tryListRemoteFiles(): List<PlaySounds.RemoteSoundFile> {
-        return try {
-            playSounds.listRemoteFiles()
-        } catch (t: Throwable) {
-            logger.error("Error listing sound bites", t)
-            telegramNotifier.sendPrivateMessage("⚠️ Error listing sound bites: ${t.message}")
-            throw t
-        }
-    }
-
-    private fun sendTelegramNotification(addedFiles: Collection<String>, changedFiles: Collection<String>, removedFiles: Collection<String>) {
-        val message = buildString {
-            if (addedFiles.isNotEmpty()) {
-                append("<b>Added:</b> ")
-                appendLine(addedFiles.removeExtensions().joinToString())
-            }
-            if (changedFiles.isNotEmpty()) {
-                append("<b>Changed:</b> ")
-                appendLine(changedFiles.removeExtensions().joinToString())
-            }
-            if (removedFiles.isNotEmpty()) {
-                append("<b>Removed:</b> ")
-                appendLine(removedFiles.removeExtensions().joinToString())
-            }
-        }
-        if (message.isNotEmpty()) {
-            telegramNotifier.sendChannelMessage("🔊 Play Sounds Updated 🔊\n\n$message")
+        return stream.use {
+            it.readBytes()
         }
     }
 
@@ -187,7 +89,4 @@ class SoundStore(
         }
         return hashText
     }
-
-    private fun Iterable<String>.removeExtensions(): List<String> =
-        map { it.substringBeforeLast('.') }
 }
