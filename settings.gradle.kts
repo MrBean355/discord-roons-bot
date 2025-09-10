@@ -4,7 +4,7 @@ pluginManagement {
     plugins {
         kotlin("jvm") version "2.2.0"
         kotlin("plugin.serialization") version "2.2.20"
-        id("org.jetbrains.kotlin.plugin.allopen") version "2.2.0"
+        id("org.jetbrains.kotlin.plugin.allopen") version "2.2.20"
         id("org.jetbrains.kotlin.plugin.noarg") version "2.2.10"
         id("org.jetbrains.kotlin.plugin.spring") version "2.2.20"
         id("org.jetbrains.kotlin.plugin.jpa") version "2.2.10"
