@@ -2,7 +2,7 @@ rootProject.name = "discord-roons-bot"
 
 pluginManagement {
     plugins {
-        kotlin("jvm") version "2.2.0"
+        kotlin("jvm") version "2.2.21"
         kotlin("plugin.serialization") version "2.2.20"
         id("org.jetbrains.kotlin.plugin.allopen") version "2.2.20"
         id("org.jetbrains.kotlin.plugin.noarg") version "2.2.10"
