@@ -53,7 +53,7 @@ internal class UserControllerTest {
         with(slot.captured) {
             assertEquals(0, id)
             assertNotNull(UUID.fromString(generatedId))
-            assertTimeIsRoughlyNow(lastSeen?.time)
+            assertTimeIsRoughlyNow(lastSeen?.toEpochMilli())
         }
     }
 

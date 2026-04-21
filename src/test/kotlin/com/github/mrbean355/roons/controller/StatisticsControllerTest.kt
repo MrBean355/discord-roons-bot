@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.http.HttpStatus
-import java.util.Date
+import java.time.Instant
 
 @ExtendWith(MockKExtension::class)
 internal class StatisticsControllerTest {
@@ -75,9 +75,9 @@ internal class StatisticsControllerTest {
 
         assertSame(HttpStatus.OK, result.statusCode)
         assertEquals(999, result.body ?: 0)
-        val slot = slot<Date>()
+        val slot = slot<Instant>()
         verify { appUserRepository.countByLastSeenAfter(capture(slot)) }
-        assertEquals(700_000, slot.captured.time)
+        assertEquals(700_000, slot.captured.toEpochMilli())
     }
 
     @Test
