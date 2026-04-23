@@ -1,19 +1,3 @@
-/*
- * Copyright 2023 Michael Johnston
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
@@ -52,16 +36,7 @@ class DiscordBot(
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
     private val activities = listOf(
-        Activity.playing("with the roons"),
-        Activity.playing("with your mom"),
-        Activity.listening("Bulldog yelling"),
-        Activity.listening("Bulldog malding"),
-        Activity.listening("STUN HIM!"),
-        Activity.listening("COVER THE EXITS!"),
-        Activity.watching("a god gamer"),
-        Activity.watching("bad game design"),
-        Activity.watching("Bulldog being stomped"),
-        Activity.competing("Cute Tales"),
+        Activity.customStatus("✅ Fixed now, surely")
     )
 
     init {
