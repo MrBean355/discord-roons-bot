@@ -42,14 +42,9 @@ class DiscordEventHandler(
 
     override fun onReady(event: ReadyEvent) = runBlocking(Dispatchers.IO) {
         // Update slash commands:
-        event.jda.updateCommands().queue()
-        supervisorScope {
-            event.jda.guilds.forEach {
-                launch {
-                    updateSlashCommands(it)
-                }
-            }
-        }
+        event.jda.updateCommands()
+            .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
+            .queue()
 
         // Show startup message if there is one:
         val message = metadataRepository.takeStartupMessage()
@@ -89,7 +84,6 @@ class DiscordEventHandler(
     override fun onGuildJoin(event: GuildJoinEvent) {
         botScope.launch {
             val guild = event.guild
-            updateSlashCommands(guild)
             telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.memberCount} members")
 
             guild.findWelcomeChannel()?.sendMessage(
@@ -148,12 +142,6 @@ class DiscordEventHandler(
             commands.find { it.name == event.name }
                 ?.handleCommand(event)
         }
-    }
-
-    private fun updateSlashCommands(guild: Guild) {
-        guild.updateCommands()
-            .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
-            .queue()
     }
 
     /** @return the first (if any) [TextChannel] which the bot can read & write to. */
