@@ -36,16 +36,7 @@ class DiscordBot(
     private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
     private val activities = listOf(
-        Activity.playing("with the roons"),
-        Activity.playing("with your mom"),
-        Activity.listening("Bulldog yelling"),
-        Activity.listening("Bulldog malding"),
-        Activity.listening("STUN HIM!"),
-        Activity.listening("COVER THE EXITS!"),
-        Activity.watching("a god gamer"),
-        Activity.watching("bad game design"),
-        Activity.watching("Bulldog being stomped"),
-        Activity.competing("Cute Tales"),
+        Activity.customStatus("✅ Fixed now, surely")
     )
 
     init {
