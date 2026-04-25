@@ -16,7 +16,7 @@ plugins {
 }
 
 group = "com.github.mrbean355"
-version = "1.22.4"
+version = "1.23.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
