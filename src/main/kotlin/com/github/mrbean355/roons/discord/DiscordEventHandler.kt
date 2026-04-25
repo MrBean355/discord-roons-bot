@@ -3,8 +3,6 @@ package com.github.mrbean355.roons.discord
 import com.github.mrbean355.roons.discord.commands.BotCommand
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.takeStartupMessage
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +32,6 @@ class DiscordEventHandler(
     private val commands: List<BotCommand>,
     private val discordBotUserRepository: DiscordBotUserRepository,
     private val discordBotSettingsRepository: DiscordBotSettingsRepository,
-    private val metadataRepository: MetadataRepository,
     private val telegramNotifier: TelegramNotifier,
 ) : ListenerAdapter() {
 
@@ -46,19 +43,6 @@ class DiscordEventHandler(
             .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
             .queue()
 
-        // Show startup message if there is one:
-        val message = metadataRepository.takeStartupMessage()
-            ?.replace("\\n", "\n")
-
-        if (!message.isNullOrBlank()) {
-            supervisorScope {
-                event.jda.guilds.forEach {
-                    launch {
-                        it.findWelcomeChannel()?.sendMessage(message)?.queue()
-                    }
-                }
-            }
-        }
 
         val reconnects = AtomicInteger()
         // Reconnect to previous voice channels:

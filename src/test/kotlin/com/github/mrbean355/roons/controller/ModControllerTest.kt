@@ -5,14 +5,12 @@ import com.github.mrbean355.roons.DotaModDto
 import com.github.mrbean355.roons.repository.DotaModRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
-import com.github.mrbean355.roons.repository.takeStartupMessage
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
@@ -44,7 +42,6 @@ internal class ModControllerTest {
 
     @BeforeEach
     internal fun setUp() {
-        mockkStatic(MetadataRepository::takeStartupMessage)
         every { dotaModRepository.save(any()) } returns mockk()
         every { metadataRepository.adminToken } returns "12345"
         every { cacheManager.getCache("dota_mod_cache") } returns modCache

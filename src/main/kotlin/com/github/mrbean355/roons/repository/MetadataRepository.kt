@@ -8,17 +8,10 @@ interface MetadataRepository : CrudRepository<Metadata, String> {
 }
 
 private const val KEY_ADMIN_TOKEN = "admin_token"
-private const val KEY_STARTUP_MESSAGE = "startup_message"
 private const val KEY_WELCOME_MESSAGE = "app_welcome_message"
 
 val MetadataRepository.adminToken: String?
     get() = findByKey(KEY_ADMIN_TOKEN)?.value
-
-fun MetadataRepository.takeStartupMessage(): String? {
-    val metadata = findByKey(KEY_STARTUP_MESSAGE) ?: return null
-    delete(metadata)
-    return metadata.value
-}
 
 fun MetadataRepository.getWelcomeMessage(): String? =
     findByKey(KEY_WELCOME_MESSAGE)?.value
