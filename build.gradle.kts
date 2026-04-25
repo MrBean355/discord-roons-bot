@@ -16,7 +16,7 @@ plugins {
 }
 
 group = "com.github.mrbean355"
-version = "1.22.2"
+version = "1.22.3"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
@@ -75,7 +75,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-rest:4.0.5")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa:4.0.5")
     implementation("org.springframework.boot:spring-boot-starter-cache:4.0.5")
-    implementation("mysql:mysql-connector-java:8.0.33")
+    implementation("org.postgresql:postgresql:42.7.10")
 
     implementation("net.dv8tion:JDA:6.4.1")
     implementation("club.minnced:jdave-api:0.1.8")
