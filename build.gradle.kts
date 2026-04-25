@@ -16,7 +16,7 @@ plugins {
 }
 
 group = "com.github.mrbean355"
-version = "1.22.3"
+version = "1.22.4"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
@@ -95,4 +95,8 @@ dependencies {
     runtimeOnly("javax.xml.ws:jaxws-api:2.3.1") {
         because("JAXB APIs are considered to be Java EE APIs and are completely removed from JDK 11")
     }
+}
+
+tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    archiveFileName.set("app.jar")
 }
