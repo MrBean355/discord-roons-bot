@@ -11,6 +11,7 @@ import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.justRun
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -43,6 +44,7 @@ internal class MetadataControllerTest {
 
     @BeforeEach
     internal fun setUp() {
+        mockkStatic(MetadataRepository::getWelcomeMessage)
         every { metadataRepository.adminToken } returns "12345"
         every { cacheManager.getCache("welcome_message_cache") } returns welcomeMessageCache
         justRun { metadataRepository.saveWelcomeMessage(any()) }
