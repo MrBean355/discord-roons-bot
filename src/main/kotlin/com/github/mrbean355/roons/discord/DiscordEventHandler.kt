@@ -1,5 +1,6 @@
 package com.github.mrbean355.roons.discord
 
+import com.github.mrbean355.roons.component.Analytics
 import com.github.mrbean355.roons.discord.commands.BotCommand
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
@@ -33,6 +34,7 @@ class DiscordEventHandler(
     private val discordBotUserRepository: DiscordBotUserRepository,
     private val discordBotSettingsRepository: DiscordBotSettingsRepository,
     private val telegramNotifier: TelegramNotifier,
+    private val analytics: Analytics,
 ) : ListenerAdapter() {
 
     private val botScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -125,6 +127,8 @@ class DiscordEventHandler(
             }
             commands.find { it.name == event.name }
                 ?.handleCommand(event)
+
+            analytics.logCommandUsage(event.user.id, event.name)
         }
     }
 
