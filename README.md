@@ -40,3 +40,33 @@ This component manages the Discord bot using the official Discord API. It handle
 
 Refer to the [DiscordBot](src/main/kotlin/com/github/mrbean355/roons/discord/DiscordBot.kt) class for implementation
 details.
+
+## Local Development
+
+### Prerequisites
+- **Java 25**: The project uses modern JVM features.
+- **PostgreSQL**: A local database instance is required.
+
+### Database Setup
+1. Create a database named `roons_bot` in PostgreSQL.
+2. Run the [schema.sql](schema.sql) script against your database to create the necessary tables.
+
+### Environment Variables
+Configure the following environment variables (e.g., in an `.env` file or your IDE's run configuration):
+
+| Variable | Description |
+| :--- | :--- |
+| `JDBC_DATABASE_URL` | e.g. `jdbc:postgresql://localhost:5432/roons_bot` |
+| `JDBC_DATABASE_USERNAME` | Database username |
+| `JDBC_DATABASE_PASSWORD` | Database password |
+| `DISCORD_BOT_TOKEN` | Token for your Discord bot application |
+
+### Running the Application
+Run the following command to start the server with a stubbed Telegram client (logs messages to the console instead of sending them):
+```bash
+./gradlew bootRun --args='--spring.profiles.active=local'
+```
+
+### Analytics Dashboard
+Once running, you can access the analytics dashboard at:
+`http://localhost:8090/dashboard.html`
