@@ -79,8 +79,14 @@ dependencies {
 
     implementation("net.dv8tion:JDA:6.4.1")
     implementation("club.minnced:jdave-api:0.1.8")
-    implementation("club.minnced:jdave-native-win-x86-64:0.1.8")
-    implementation("club.minnced:jdave-native-linux-x86-64:0.1.8")
+
+    val os = org.gradle.internal.os.OperatingSystem.current()
+    when {
+        os.isWindows -> implementation("club.minnced:jdave-native-win-x86-64:0.1.8")
+        os.isMacOsX -> implementation("club.minnced:jdave-native-darwin:0.1.8")
+        else -> implementation("club.minnced:jdave-native-linux-x86-64:0.1.8")
+    }
+
     implementation("dev.arbjerg:lavaplayer:2.2.6")
     implementation("com.github.JustRed23:lavadsp:0.7.7-1")
     implementation("com.vdurmont:semver4j:3.1.0")
