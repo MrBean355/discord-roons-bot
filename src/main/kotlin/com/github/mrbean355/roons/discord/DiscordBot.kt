@@ -80,6 +80,10 @@ class DiscordBot(
         return bot.getGuildById(id)
     }
 
+    fun getGatewayStatus(): JDA.Status = bot.status
+
+    fun getGatewayPing(): Long = bot.gatewayPing
+
     /** @return a guild-specific [GuildMusicManager]. */
     private fun getGuildAudioPlayer(guild: Guild): GuildMusicManager {
         return synchronized(this) {

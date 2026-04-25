@@ -36,6 +36,24 @@
     </section>
 
     <section class="content-area">
+        <div class="health-container">
+            <div class="glass stat-card">
+                <h3>Uptime</h3>
+                <div id="healthUptime" class="stat-value" style="font-size: 1.25rem;">...</div>
+            </div>
+            <div class="glass stat-card">
+                <h3>Memory Usage</h3>
+                <div id="healthMemory" class="stat-value" style="font-size: 1.25rem;">...</div>
+            </div>
+            <div class="glass stat-card">
+                <h3>Discord Status</h3>
+                <div id="healthDiscord" class="stat-value" style="font-size: 1.25rem;">...</div>
+            </div>
+            <div class="glass stat-card">
+                <h3>Discord Ping</h3>
+                <div id="healthPing" class="stat-value" style="font-size: 1.25rem;">...</div>
+            </div>
+        </div>
         <div class="glass chart-container" id="chartWrapper">
             <div id="loading" class="loading-overlay">
                 <div class="spinner"></div>
@@ -88,6 +106,9 @@
             const servers = await fetchApi('/statistics/discordServers');
             renderServers(servers);
 
+            const health = await fetchApi('/statistics/health');
+            renderHealth(health);
+
         } catch (err) {
             alert(err.message);
         }
@@ -117,6 +138,16 @@
                 `;
             container.appendChild(div);
         });
+    }
+
+    function renderHealth(health) {
+        document.getElementById('healthUptime').textContent = health.uptime;
+        document.getElementById('healthMemory').textContent = health.memoryUsage;
+        document.getElementById('healthDiscord').textContent = health.discordStatus;
+        document.getElementById('healthPing').textContent = health.discordPing + 'ms';
+
+        const discordEl = document.getElementById('healthDiscord');
+        discordEl.style.color = health.discordStatus === 'CONNECTED' ? 'var(--success-color)' : 'var(--accent-color)';
     }
 
     async function loadPropertyStats(prop, element) {

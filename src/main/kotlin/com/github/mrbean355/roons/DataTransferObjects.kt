@@ -50,4 +50,11 @@ data class DiscordServerDto(
     val voiceChannel: String?
 )
 
+data class SystemHealthResponse(
+    val uptime: String,
+    val memoryUsage: String,
+    val discordStatus: String,
+    val discordPing: Long
+)
+
 fun DotaMod.asDto(): DotaModDto = DotaModDto(key, name, description, size, hash, downloadUrl, infoUrl)

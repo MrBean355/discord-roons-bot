@@ -153,6 +153,12 @@ main {
     gap: 2rem;
 }
 
+.health-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
 .chart-container {
     padding: 2rem;
     min-height: 400px;
