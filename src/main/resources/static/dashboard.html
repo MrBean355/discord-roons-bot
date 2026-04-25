@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roons Analytics Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<header>
+    <div class="title-group">
+        <h1>Roons Dashboard</h1>
+        <p style="color: var(--text-secondary); font-size: 0.875rem;">System Analytics & Bot Statistics</p>
+    </div>
+    <div class="token-input-group">
+        <input type="password" id="adminToken" placeholder="Enter Admin Token" value="">
+        <button onclick="refreshData()">Refresh</button>
+    </div>
+</header>
+
+<main>
+    <section class="sidebar">
+        <div class="glass stat-card">
+            <h3>Recent Users (24h)</h3>
+            <div id="recentUsers" class="stat-value">...</div>
+        </div>
+
+        <div class="glass stat-card" style="flex: 1; display: flex; flex-direction: column;">
+            <h3>Tracked Properties</h3>
+            <input type="text" id="propertySearch" placeholder="Search properties..."
+                   style="margin-bottom: 1rem; width: 100%;">
+            <div id="propertyList" class="property-list">
+                <!-- Properties will be injected here -->
+            </div>
+        </div>
+    </section>
+
+    <section class="content-area">
+        <div class="health-container">
+            <div class="glass stat-card">
+                <h3>Uptime</h3>
+                <div id="healthUptime" class="stat-value" style="font-size: 1.25rem;">...</div>
+            </div>
+            <div class="glass stat-card">
+                <h3>Memory Usage</h3>
+                <div id="healthMemory" class="stat-value" style="font-size: 1.25rem;">...</div>
+            </div>
+            <div class="glass stat-card">
+                <h3>Discord Status</h3>
+                <div id="healthDiscord" class="stat-value" style="font-size: 1.25rem;">...</div>
+            </div>
+            <div class="glass stat-card">
+                <h3>Discord Ping</h3>
+                <div id="healthPing" class="stat-value" style="font-size: 1.25rem;">...</div>
+            </div>
+        </div>
+        <div class="glass chart-container" id="chartWrapper">
+            <div id="loading" class="loading-overlay">
+                <div class="spinner"></div>
+            </div>
+            <canvas id="analyticsChart"></canvas>
+            <div id="noDataMessage"
+                 style="display: none; text-align: center; margin-top: 100px; color: var(--text-secondary);">
+                Select a property to view distribution
+            </div>
+        </div>
+
+        <div class="glass stat-card">
+            <h3>Active Discord Servers</h3>
+            <div id="serversGrid" class="servers-grid">
+                <!-- Servers will be injected here -->
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+    let myChart = null;
+    let allProperties = [];
+
+    // Initialize from URL param if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('token');
+    if (urlToken) {
+        document.getElementById('adminToken').value = urlToken;
+        localStorage.setItem('roons_admin_token', urlToken);
+    }
+
+    async function fetchApi(path) {
+        const token = document.getElementById('adminToken').value;
+        const response = await fetch(`${path}${path.includes('?') ? '&' : '?'}token=${token}`);
+        if (!response.ok) {
+            if (response.status === 401) throw new Error('Unauthorized: Invalid Token');
+            throw new Error(`API Error: ${response.status}`);
+        }
+        return response.json();
+    }
+
+    async function refreshData() {
+        try {
+            const recentUsers = await fetchApi('/statistics/recentUsers?period=1440');
+            document.getElementById('recentUsers').textContent = recentUsers;
+
+            const properties = await fetchApi('/statistics/properties');
+            allProperties = properties;
+            renderPropertyList(properties);
+
+            const servers = await fetchApi('/statistics/discordServers');
+            renderServers(servers);
+
+            const health = await fetchApi('/statistics/health');
+            renderHealth(health);
+
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+
+    function renderPropertyList(properties) {
+        const container = document.getElementById('propertyList');
+        container.innerHTML = '';
+        const filter = document.getElementById('propertySearch').value.toLowerCase();
+        
+        properties.sort().forEach(prop => {
+            if (prop.toLowerCase().includes(filter)) {
+                const div = document.createElement('div');
+                div.className = 'property-item';
+                div.textContent = prop;
+                div.onclick = () => loadPropertyStats(prop, div);
+                container.appendChild(div);
+            }
+        });
+    }
+
+    document.getElementById('propertySearch').oninput = () => {
+        renderPropertyList(allProperties);
+    };
+
+    function renderServers(servers) {
+        const container = document.getElementById('serversGrid');
+        container.innerHTML = '';
+        servers.forEach(server => {
+            const div = document.createElement('div');
+            div.className = 'server-card';
+            div.innerHTML = `
+                    <div class="server-name">${server.name}</div>
+                    <div class="server-info">${server.members} members • ${server.voiceChannel || 'Idle'}</div>
+                `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderHealth(health) {
+        document.getElementById('healthUptime').textContent = health.uptime;
+        document.getElementById('healthMemory').textContent = health.memoryUsage;
+        document.getElementById('healthDiscord').textContent = health.discordStatus;
+        document.getElementById('healthPing').textContent = health.discordPing + 'ms';
+
+        const discordEl = document.getElementById('healthDiscord');
+        discordEl.style.color = health.discordStatus === 'CONNECTED' ? 'var(--success-color)' : 'var(--accent-color)';
+    }
+
+    async function loadPropertyStats(prop, element) {
+        document.querySelectorAll('.property-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+        document.getElementById('loading').style.display = 'flex';
+        document.getElementById('noDataMessage').style.display = 'none';
+
+        try {
+            const data = await fetchApi(`/statistics/${prop}`);
+            renderChart(prop, data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+        }
+    }
+
+    function renderChart(label, data) {
+        const ctx = document.getElementById('analyticsChart').getContext('2d');
+        if (myChart) myChart.destroy();
+
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `Distribution of ${label}`,
+                    data: values,
+                    backgroundColor: 'rgba(56, 189, 248, 0.5)',
+                    borderColor: 'rgba(56, 189, 248, 1)',
+                    borderWidth: 1,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {labels: {color: '#94a3b8'}}
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {color: 'rgba(255, 255, 255, 0.1)'},
+                        ticks: {color: '#94a3b8'}
+                    },
+                    x: {
+                        grid: {display: false},
+                        ticks: {color: '#94a3b8'}
+                    }
+                }
+            }
+        });
+    }
+
+    window.onload = () => {
+        const savedToken = localStorage.getItem('roons_admin_token');
+        if (savedToken || urlToken) {
+            if (!document.getElementById('adminToken').value && savedToken) {
+                document.getElementById('adminToken').value = savedToken;
+            }
+            refreshData();
+        }
+    };
+
+    document.getElementById('adminToken').onchange = (e) => {
+        localStorage.setItem('roons_admin_token', e.target.value);
+    };
+</script>
+</body>
+</html>

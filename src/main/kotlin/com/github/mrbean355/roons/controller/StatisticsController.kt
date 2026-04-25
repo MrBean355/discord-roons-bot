@@ -1,22 +1,7 @@
-/*
- * Copyright 2023 Michael Johnston
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.DiscordServerDto
+import com.github.mrbean355.roons.SystemHealthResponse
 import com.github.mrbean355.roons.component.Clock
 import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
@@ -30,7 +15,9 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.util.Date
+import java.lang.management.ManagementFactory
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 @RestController
@@ -42,6 +29,32 @@ class StatisticsController(
     private val discordBot: DiscordBot,
     private val clock: Clock
 ) {
+
+    @GetMapping("health")
+    fun getHealth(@RequestParam("token") token: String): ResponseEntity<SystemHealthResponse> {
+        if (token != metadataRepository.adminToken) {
+            return ResponseEntity(HttpStatus.UNAUTHORIZED)
+        }
+        val runtime = ManagementFactory.getRuntimeMXBean()
+        val mem = Runtime.getRuntime()
+        val uptime = Duration.ofMillis(runtime.uptime)
+        
+        return ResponseEntity.ok(
+            SystemHealthResponse(
+                uptime = formatDuration(uptime),
+                memoryUsage = "${(mem.totalMemory() - mem.freeMemory()) / 1024 / 1024} MB / ${mem.maxMemory() / 1024 / 1024} MB",
+                discordStatus = discordBot.getGatewayStatus().name,
+                discordPing = discordBot.getGatewayPing()
+            )
+        )
+    }
+
+    private fun formatDuration(duration: Duration): String {
+        val days = duration.toDays()
+        val hours = duration.toHoursPart()
+        val minutes = duration.toMinutesPart()
+        return "${days}d ${hours}h ${minutes}m"
+    }
 
     @GetMapping("properties")
     fun listProperties(@RequestParam("token") token: String): ResponseEntity<List<String>> {
@@ -57,7 +70,7 @@ class StatisticsController(
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         val since = clock.currentTimeMs - TimeUnit.MINUTES.toMillis(period)
-        return ResponseEntity.ok(appUserRepository.countByLastSeenAfter(Date(since)))
+        return ResponseEntity.ok(appUserRepository.countByLastSeenAfter(Instant.ofEpochMilli(since)))
     }
 
     @GetMapping("{property}")

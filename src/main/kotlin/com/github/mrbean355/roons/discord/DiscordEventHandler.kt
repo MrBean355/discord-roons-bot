@@ -1,26 +1,9 @@
-/*
- * Copyright 2023 Michael Johnston
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.github.mrbean355.roons.discord
 
+import com.github.mrbean355.roons.component.Analytics
 import com.github.mrbean355.roons.discord.commands.BotCommand
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.takeStartupMessage
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,36 +33,18 @@ class DiscordEventHandler(
     private val commands: List<BotCommand>,
     private val discordBotUserRepository: DiscordBotUserRepository,
     private val discordBotSettingsRepository: DiscordBotSettingsRepository,
-    private val metadataRepository: MetadataRepository,
     private val telegramNotifier: TelegramNotifier,
+    private val analytics: Analytics,
 ) : ListenerAdapter() {
 
     private val botScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     override fun onReady(event: ReadyEvent) = runBlocking(Dispatchers.IO) {
         // Update slash commands:
-        event.jda.updateCommands().queue()
-        supervisorScope {
-            event.jda.guilds.forEach {
-                launch {
-                    updateSlashCommands(it)
-                }
-            }
-        }
+        event.jda.updateCommands()
+            .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
+            .queue()
 
-        // Show startup message if there is one:
-        val message = metadataRepository.takeStartupMessage()
-            ?.replace("\\n", "\n")
-
-        if (!message.isNullOrBlank()) {
-            supervisorScope {
-                event.jda.guilds.forEach {
-                    launch {
-                        it.findWelcomeChannel()?.sendMessage(message)?.queue()
-                    }
-                }
-            }
-        }
 
         val reconnects = AtomicInteger()
         // Reconnect to previous voice channels:
@@ -105,7 +70,6 @@ class DiscordEventHandler(
     override fun onGuildJoin(event: GuildJoinEvent) {
         botScope.launch {
             val guild = event.guild
-            updateSlashCommands(guild)
             telegramNotifier.sendPrivateMessage("🎉 <b>Joined a guild</b>:\n${guild.name}, ${guild.memberCount} members")
 
             guild.findWelcomeChannel()?.sendMessage(
@@ -163,13 +127,9 @@ class DiscordEventHandler(
             }
             commands.find { it.name == event.name }
                 ?.handleCommand(event)
-        }
-    }
 
-    private fun updateSlashCommands(guild: Guild) {
-        guild.updateCommands()
-            .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
-            .queue()
+            analytics.logCommandUsage(event.user.id, event.name)
+        }
     }
 
     /** @return the first (if any) [TextChannel] which the bot can read & write to. */
