@@ -29,6 +29,8 @@
 
         <div class="glass stat-card" style="flex: 1; display: flex; flex-direction: column;">
             <h3>Tracked Properties</h3>
+            <input type="text" id="propertySearch" placeholder="Search properties..."
+                   style="margin-bottom: 1rem; width: 100%;">
             <div id="propertyList" class="property-list">
                 <!-- Properties will be injected here -->
             </div>
@@ -76,6 +78,7 @@
 
 <script>
     let myChart = null;
+    let allProperties = [];
 
     // Initialize from URL param if present
     const urlParams = new URLSearchParams(window.location.search);
@@ -101,6 +104,7 @@
             document.getElementById('recentUsers').textContent = recentUsers;
 
             const properties = await fetchApi('/statistics/properties');
+            allProperties = properties;
             renderPropertyList(properties);
 
             const servers = await fetchApi('/statistics/discordServers');
@@ -117,14 +121,22 @@
     function renderPropertyList(properties) {
         const container = document.getElementById('propertyList');
         container.innerHTML = '';
+        const filter = document.getElementById('propertySearch').value.toLowerCase();
+        
         properties.sort().forEach(prop => {
-            const div = document.createElement('div');
-            div.className = 'property-item';
-            div.textContent = prop;
-            div.onclick = () => loadPropertyStats(prop, div);
-            container.appendChild(div);
+            if (prop.toLowerCase().includes(filter)) {
+                const div = document.createElement('div');
+                div.className = 'property-item';
+                div.textContent = prop;
+                div.onclick = () => loadPropertyStats(prop, div);
+                container.appendChild(div);
+            }
         });
     }
+
+    document.getElementById('propertySearch').oninput = () => {
+        renderPropertyList(allProperties);
+    };
 
     function renderServers(servers) {
         const container = document.getElementById('serversGrid');
