@@ -8,13 +8,13 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.slf4j.Logger
-import org.telegram.telegrambots.bots.TelegramLongPollingBot
 import org.telegram.telegrambots.meta.api.methods.ParseMode
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
+import org.telegram.telegrambots.meta.generics.TelegramClient
 
 internal class TelegramNotifierTest {
     @MockK(relaxed = true)
-    private lateinit var bot: TelegramLongPollingBot
+    private lateinit var bot: TelegramClient
 
     @MockK(relaxed = true)
     private lateinit var logger: Logger

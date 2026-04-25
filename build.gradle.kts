@@ -90,8 +90,8 @@ dependencies {
     implementation("dev.arbjerg:lavaplayer:2.2.6")
     implementation("com.github.JustRed23:lavadsp:0.7.7-1")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots:6.9.7.1")
-    implementation("org.telegram:telegrambots-spring-boot-starter:6.9.7.1")
+    implementation("org.telegram:telegrambots-client:9.5.0")
+    implementation("org.telegram:telegrambots-springboot-longpolling-starter:9.5.0")
 
     compileOnly("org.jetbrains:annotations:26.1.0")
 

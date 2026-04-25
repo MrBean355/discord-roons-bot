@@ -5,19 +5,19 @@ import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import org.telegram.telegrambots.bots.TelegramLongPollingBot
+import org.telegram.telegrambots.meta.generics.TelegramClient
 
 private const val CHANNEL_ID = "@bulldog_sounds"
 
 @Component
 class TelegramNotifier @VisibleForTesting constructor(
-    private val bot: TelegramLongPollingBot,
+    private val bot: TelegramClient,
     private val logger: Logger,
     private val chatId: String?
 ) {
 
     @Autowired
-    constructor(bot: TelegramLongPollingBot, logger: Logger) : this(bot, logger, System.getenv("TELEGRAM_CHAT"))
+    constructor(bot: TelegramClient, logger: Logger) : this(bot, logger, System.getenv(ENV_TELEGRAM_CHAT))
 
     fun sendPrivateMessage(text: String) {
         if (chatId != null) {
