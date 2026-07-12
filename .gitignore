@@ -3,4 +3,6 @@
 build/
 out/
 local.properties
-sounds/
+/sounds/
+__pycache__/
+*.pyc
