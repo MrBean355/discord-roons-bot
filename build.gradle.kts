@@ -1,4 +1,3 @@
-import com.github.mrbean355.roons.UpdateSoundBitesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.sonarqube.gradle.SonarTask
 
@@ -16,7 +15,7 @@ plugins {
 }
 
 group = "com.github.mrbean355"
-version = "1.23.0"
+version = "1.24.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_25
@@ -28,7 +27,7 @@ kotlin {
 }
 
 jacoco {
-    toolVersion = "0.8.14"
+    toolVersion = "0.8.15"
 }
 
 tasks.withType<JacocoReport> {
@@ -43,10 +42,6 @@ tasks.withType<SonarTask> {
     dependsOn(tasks.named("jacocoTestReport"))
 }
 
-tasks.register<UpdateSoundBitesTask>("updateSoundBites") {
-    destination.set(file("src/main/resources/sounds"))
-}
-
 sonar {
     properties {
         property("sonar.projectKey", "discord-roons-bot")
@@ -58,10 +53,10 @@ sonar {
 testing {
     suites {
         val test by getting(JvmTestSuite::class) {
-            useJUnitJupiter("6.0.3")
+            useJUnitJupiter("6.1.2")
             dependencies {
-                implementation("io.mockk:mockk:1.14.9")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+                implementation("io.mockk:mockk:1.14.11")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
             }
         }
     }
@@ -69,15 +64,15 @@ testing {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:4.0.5")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:4.0.5")
-    implementation("org.springframework.boot:spring-boot-starter-cache:4.0.5")
-    implementation("org.postgresql:postgresql:42.7.10")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:4.1.0")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:4.1.0")
+    implementation("org.springframework.boot:spring-boot-starter-cache:4.1.0")
+    implementation("org.postgresql:postgresql:42.7.13")
 
-    implementation("net.dv8tion:JDA:6.4.1")
+    implementation("net.dv8tion:JDA:6.5.0")
     implementation("club.minnced:jdave-api:0.1.8")
 
     val os = org.gradle.internal.os.OperatingSystem.current()
@@ -87,11 +82,11 @@ dependencies {
         else -> implementation("club.minnced:jdave-native-linux-x86-64:0.1.8")
     }
 
-    implementation("dev.arbjerg:lavaplayer:2.2.6")
+    implementation("dev.arbjerg:lavaplayer:2.2.7")
     implementation("com.github.JustRed23:lavadsp:0.7.7-1")
     implementation("com.vdurmont:semver4j:3.1.0")
-    implementation("org.telegram:telegrambots-client:9.5.0")
-    implementation("org.telegram:telegrambots-springboot-longpolling-starter:9.5.0")
+    implementation("org.telegram:telegrambots-client:10.0.0")
+    implementation("org.telegram:telegrambots-springboot-longpolling-starter:10.0.0")
 
     compileOnly("org.jetbrains:annotations:26.1.0")
 
