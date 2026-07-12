@@ -1,4 +1,3 @@
-import com.github.mrbean355.roons.UpdateSoundBitesTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.sonarqube.gradle.SonarTask
 
@@ -43,9 +42,6 @@ tasks.withType<SonarTask> {
     dependsOn(tasks.named("jacocoTestReport"))
 }
 
-tasks.register<UpdateSoundBitesTask>("updateSoundBites") {
-    destination.set(file("src/main/resources/sounds"))
-}
 
 sonar {
     properties {

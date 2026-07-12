@@ -19,9 +19,21 @@ following core components:
 
 ### Sound Bite Management
 
-The backend includes a fixed set of sound bites sourced from the official Play Sounds page. To update this collection
-with the latest sound bites, run the `./gradlew updateSoundBites` command. See the [buildSrc](buildSrc) project for
-more details.
+The backend includes a set of sound bites. To import and sync the collection from an external playsounds repository, you
+can run the provided Python script:
+```bash
+python scripts/import_sounds.py --source /path/to/playsounds/files
+```
+
+This script performs the following actions:
+
+1. Runs `git pull` in the source repository to fetch the latest files (gracefully falls back if there are unstaged
+   changes or network issues).
+2. Scans files recursively and resolves duplicates (newer folders take precedence).
+3. Converts the source audio files (`.ogg`, `.wav`, etc.) to `.mp3` using `scripts/ffmpeg.exe` and outputs them to
+   `src/main/resources/sounds/`.
+4. Deletes any `.mp3` files in the target directory that are no longer in the source directory.
+5. Rebuilds the `manifest.json` file.
 
 ### REST API
 
@@ -49,7 +61,7 @@ details.
 
 ### Database Setup
 1. Create a database named `roons_bot` in PostgreSQL.
-2. Run the [schema.sql](schema.sql) script against your database to create the necessary tables.
+2. Run the [schema.sql](scripts/schema.sql) script against your database to create the necessary tables.
 
 ### Environment Variables
 Configure the following environment variables (e.g., in an `.env` file or your IDE's run configuration):
