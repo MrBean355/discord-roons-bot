@@ -1,7 +1,38 @@
 #!/usr/bin/env python3
+r"""
+Playsounds Import and Synchronization Script
+===========================================
+
+This script automates the process of importing and synchronizing sound bites from an 
+external playsounds repository into the project's resource directory.
+
+Features:
+---------
+1. Automatic Repository Updates: Runs 'git pull' in the source repository at startup 
+   to fetch the latest sound files. Aborts immediately if the pull fails.
+2. Target Directory Cleanup: Cleans up the target resources folder by deleting all 
+   existing .mp3 files at the start of the sync process to guarantee a clean state.
+3. File Conversions: Converts source audio files (.ogg, .wav, etc.) to the target .mp3 
+   format using ffmpeg, outputting them into the project resources folder.
+4. Priority Resolution: Handles duplicate sound names in different subdirectories 
+   of the source repository by prioritizing directories (e.g. 'new' overrides 'old').
+5. Exclusion List: Supports an ignored list (EXCLUDED_SOUNDS) to manually filter out 
+   spelling variants or unwanted duplicate-content sounds.
+6. Manifest Rebuilding: Rebuilds and sorts 'manifest.json' dynamically based on the 
+   final set of .mp3 sound files.
+7. Content Duplicate Detection: Performs a final validation checking for identical 
+   audio contents (SHA-256 hash comparison) in the target directory and reports 
+   them as errors, aborting if duplicates exist.
+
+Usage:
+------
+python scripts/import_sounds.py --source I:\Source\playsounds\files
+"""
+
 import os
 import sys
 import json
+import hashlib
 import argparse
 import subprocess
 from collections import defaultdict
@@ -12,6 +43,33 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 DEFAULT_RESOURCES_DIR = os.path.join(REPO_ROOT, "src", "main", "resources", "sounds")
 DEFAULT_FFMPEG_PATH = os.path.join(SCRIPT_DIR, "ffmpeg.exe")
+
+# Sounds to exclude from importing (e.g. duplicates by content/spelling)
+EXCLUDED_SOUNDS = {
+    'aaaah',
+    'aahh',
+    'bulldogoniichan2',
+    'bigritar',
+    'cd5min',
+    'comeonletsgo',
+    'georgeparasites',
+    'glickitrae',
+    'hachama',
+    'iamscared',
+    'impoweringup',
+    'raepredator',
+    'throw',
+    'thunderr',
+    'yeabut'
+}
+
+def get_file_hash(filepath):
+    """Calculate the SHA-256 hash of a file's content."""
+    sha256 = hashlib.sha256()
+    with open(filepath, 'rb') as f:
+        while chunk := f.read(8192):
+            sha256.update(chunk)
+    return sha256.hexdigest()
 
 # Priority for resolving duplicate base names in playsounds subfolders
 PRIORITY = {
@@ -24,6 +82,7 @@ PRIORITY = {
 }
 
 def get_priority(rel_path):
+    """Retrieve priority based on directory name (higher number = higher priority)."""
     parts = rel_path.split(os.sep)
     if not parts:
         return 0
@@ -79,6 +138,8 @@ def main():
     for f, full_path, rel_path in sound_files:
         name, _ = os.path.splitext(f)
         base_lower = name.lower()
+        if base_lower in EXCLUDED_SOUNDS:
+            continue
         base_name_groups[base_lower].append((full_path, rel_path))
 
     selected_files = {}
@@ -92,61 +153,46 @@ def main():
 
     print(f"Total unique sound bites to import: {len(selected_files)}")
 
-    # Check existing files in target resources directory
-    existing_mp3s = {f.lower() for f in os.listdir(args.destination) if f.lower().endswith('.mp3')}
+    # Clean the destination directory at the start of import to clear deprecated sounds
+    print("Cleaning destination directory of existing .mp3 files...")
+    cleaned_count = 0
+    for f in os.listdir(args.destination):
+        if f.lower().endswith('.mp3'):
+            path_to_del = os.path.join(args.destination, f)
+            try:
+                os.remove(path_to_del)
+                cleaned_count += 1
+            except Exception as e:
+                print(f"Error removing old sound file {f}: {e}")
+    print(f"Cleaned {cleaned_count} existing files from destination directory.")
 
-    stats = {'new': 0, 'replaced': 0, 'errors': 0}
+    stats = {'new': 0, 'errors': 0}
 
     def convert_file(base_lower, src_path):
         dest_filename = f"{base_lower}.mp3"
         dest_path = os.path.join(args.destination, dest_filename)
-        is_replaced = dest_filename.lower() in existing_mp3s
 
-        # Run ffmpeg to convert/overwrite
+        # Run ffmpeg to convert
         cmd = [args.ffmpeg, "-loglevel", "error", "-y", "-i", src_path, dest_path]
         try:
             subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-            return True, is_replaced, base_lower, None
+            return True, base_lower, None
         except Exception as e:
             err_msg = f"Failed to convert {src_path} to {dest_path}: {e}"
-            return False, is_replaced, base_lower, err_msg
+            return False, base_lower, err_msg
 
     print(f"Starting parallel conversions with {args.workers} workers...")
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         futures = {executor.submit(convert_file, base, path): base for base, path in selected_files.items()}
         for future in as_completed(futures):
-            success, is_replaced, base, err = future.result()
+            success, base, err = future.result()
             if success:
-                if is_replaced:
-                    stats['replaced'] += 1
-                else:
-                    stats['new'] += 1
+                stats['new'] += 1
             else:
                 stats['errors'] += 1
                 print(err)
 
-    print(f"Import complete. New: {stats['new']}, Replaced: {stats['replaced']}, Errors: {stats['errors']}")
-
-    # Delete files from destination that are not in the source playsounds
-    to_delete = []
-    selected_lower_mp3s = {f"{base}.mp3" for base in selected_files.keys()}
-    for f in os.listdir(args.destination):
-        if f.lower().endswith('.mp3'):
-            if f.lower() not in selected_lower_mp3s:
-                to_delete.append(f)
-
-    stats['deleted'] = 0
-    if to_delete:
-        print(f"Deleting {len(to_delete)} files from destination that are not in source...")
-        for f in to_delete:
-            path_to_del = os.path.join(args.destination, f)
-            try:
-                os.remove(path_to_del)
-                print(f"Deleted: {f}")
-                stats['deleted'] += 1
-            except Exception as e:
-                print(f"Failed to delete {path_to_del}: {e}")
-        print(f"Deletion complete. Deleted: {stats['deleted']}")
+    print(f"Import complete. Imported: {stats['new']}, Errors: {stats['errors']}")
 
     # Re-scan the destination directory to rebuild manifest.json
     print("Rebuilding manifest.json...")
@@ -157,8 +203,31 @@ def main():
     with open(manifest_path, 'w', encoding='utf-8') as f:
         json.dump(all_mp3s, f, indent=2, ensure_ascii=False)
         f.write('\n')
-
     print(f"manifest.json updated successfully with {len(all_mp3s)} total sound bites.")
+
+    # Check for duplicate sound files by content in the destination directory
+    print("Checking for duplicate sound files by content in destination...")
+    hashes = defaultdict(list)
+    for f in all_mp3s:
+        filepath = os.path.join(args.destination, f)
+        try:
+            file_hash = get_file_hash(filepath)
+            hashes[file_hash].append(f)
+        except Exception as e:
+            print(f"Error reading file hash for {filepath}: {e}")
+            sys.exit(1)
+
+    content_duplicates = {h: files for h, files in hashes.items() if len(files) > 1}
+    if content_duplicates:
+        print("\nError: Duplicate sound files by content detected in destination directory!")
+        print("The following groups of files have identical audio content but different names:")
+        for file_hash, files in content_duplicates.items():
+            print(f"  Hash {file_hash[:16]}... -> {', '.join(files)}")
+        print("\nTo resolve this, please add the duplicate names you want to ignore to the 'EXCLUDED_SOUNDS' set in this script.")
+        print("Aborting script execution.")
+        sys.exit(1)
+
+    print("No content duplicates detected in destination.")
 
 if __name__ == "__main__":
     main()
