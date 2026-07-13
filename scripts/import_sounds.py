@@ -172,10 +172,37 @@ def main():
         dest_filename = f"{base_lower}.mp3"
         dest_path = os.path.join(args.destination, dest_filename)
 
-        # Run ffmpeg to convert
-        cmd = [args.ffmpeg, "-loglevel", "error", "-y", "-i", src_path, dest_path]
+        # Pass 1: Analyze the file to get loudness stats
+        cmd1 = [args.ffmpeg, "-y", "-i", src_path, "-af", "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"]
         try:
-            subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+            res1 = subprocess.run(cmd1, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+            output_text = res1.stderr + res1.stdout
+            start_idx = output_text.find('{')
+            end_idx = output_text.rfind('}')
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                json_str = output_text[start_idx:end_idx+1]
+                stats_json = json.loads(json_str)
+                # Pass 2: Apply linear normalization using the measured stats (suitable for sound bites)
+                filter_str = (
+                    f"loudnorm=I=-16:TP=-1.5:LRA=11"
+                    f":measured_I={stats_json['input_i']}"
+                    f":measured_TP={stats_json['input_tp']}"
+                    f":measured_LRA={stats_json['input_lra']}"
+                    f":measured_thresh={stats_json['input_thresh']}"
+                    f":measured_offset={stats_json['target_offset']}"
+                    f":linear=true"
+                )
+                cmd2 = [args.ffmpeg, "-loglevel", "error", "-y", "-i", src_path, "-af", filter_str, dest_path]
+                subprocess.run(cmd2, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+                return True, base_lower, None
+        except Exception:
+            # Fallback to single-pass if two-pass fails or JSON is malformed
+            pass
+
+        # Single-pass fallback
+        cmd_fallback = [args.ffmpeg, "-loglevel", "error", "-y", "-i", src_path, "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", dest_path]
+        try:
+            subprocess.run(cmd_fallback, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
             return True, base_lower, None
         except Exception as e:
             err_msg = f"Failed to convert {src_path} to {dest_path}: {e}"
