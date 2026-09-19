@@ -101,3 +101,7 @@ dependencies {
 tasks.getByName<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("app.jar")
 }
+
+tasks.register("stage") {
+    dependsOn(tasks.named("bootJar"))
+}
