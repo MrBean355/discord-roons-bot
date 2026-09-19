@@ -6,5 +6,4 @@ local.properties
 /sounds/
 __pycache__/
 *.pyc
-.sounds_cache.json
-scripts/.sounds_cache.json
+scripts/sound_changes.md

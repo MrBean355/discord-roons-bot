@@ -3,46 +3,58 @@ r"""
 Remote Playsounds Synchronization Script
 ========================================
 
-This script synchronizes sound bite definitions from a remote API and downloads
-audio files directly into the project's resource directory.
+Synchronizes sound bite definitions from the remote playsounds API and downloads,
+converts, and normalizes audio files directly into the project's resource directory.
 
 Features:
 ---------
 1. Incremental Synchronization: Uses server ETag headers and per-sound 'uploadedAt'
-   timestamps to download/convert only new or modified sounds.
-2. Full Clean Reset: Pass '--clean' to nuke all local sounds and re-fetch everything.
+   timestamps to download and convert only new or modified sounds.
+2. Full Clean Reset: Pass '--clean' to wipe all local sound files and cache, forcing
+   a complete re-download from the server.
 3. Automatic Pruning: Deletes local sound files that no longer exist on the remote API.
-4. Concurrent Download & Audio Conversion: Downloads in parallel and normalizes loudness
-   using a 2-pass ffmpeg filter.
-5. Manifest Rebuilding: Rebuilds and sorts 'manifest.json' dynamically in the target directory.
-6. Real-Time Progress: Displays live progress updates during parallel conversion.
+4. Concurrent Download & Audio Conversion: Downloads in parallel using a thread pool
+   and normalizes audio loudness using a two-pass ffmpeg filter.
+5. Manifest Rebuilding: Dynamically rebuilds and sorts 'manifest.json' based on the
+   final set of downloaded sound files.
+6. Pull Request Changelog: Generates a Markdown summary of additions, modifications,
+   and removals in 'sound_changes.md' for CI/CD automation.
+
+Prerequisites:
+--------------
+- Python 3.8+
+- ffmpeg installed and accessible via system PATH (macOS: `brew install ffmpeg`,
+  Ubuntu: `sudo apt install ffmpeg`, Windows: `winget install Gyan.FFmpeg`).
 
 Usage:
 ------
 python scripts/download_sounds.py          # Incremental sync (default)
 python scripts/download_sounds.py --clean  # Nuke local files & full re-download
-python scripts/download_sounds.py --dry-run # Preview changes
+python scripts/download_sounds.py --dry-run # Preview changes without disk modification
 """
 
-import os
-import sys
-import json
-import shutil
+from __future__ import annotations
+
 import argparse
-import subprocess
-import urllib.request
-import urllib.parse
-import tempfile
-import re
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+from typing import Any
+import urllib.parse
+import urllib.request
 
 # Determine script directories relative to repository root
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 DEFAULT_RESOURCES_DIR = os.path.join(REPO_ROOT, "src", "main", "resources", "sounds")
-DEFAULT_FFMPEG_PATH = os.path.join(SCRIPT_DIR, "ffmpeg.exe")
-CACHE_FILE_PATH = os.path.join(SCRIPT_DIR, ".sounds_cache.json")
+CACHE_FILE_PATH = os.path.join(SCRIPT_DIR, "sounds_cache.json")
+CHANGES_REPORT_PATH = os.path.join(SCRIPT_DIR, "sound_changes.md")
 
 # Remote endpoint URLs and defaults
 API_URL = "https://admiralclanker-irc.up.railway.app/api/dashboard/sounds"
@@ -51,8 +63,67 @@ VALID_AUDIO_EXTENSIONS = ('.mp3', '.ogg', '.wav')
 WORKERS = 10
 
 
-def load_cache(cache_path):
-    """Load local sync cache containing last seen ETag and sound metadata."""
+def write_changes_report(added: list[str], modified: list[str], pruned: list[str]) -> None:
+    """
+    Write or clean up a Markdown changes report for Pull Request descriptions.
+
+    When any sound files are added, modified, or removed, this writes a formatted
+    Markdown summary file (`sound_changes.md`). If no changes occurred across all
+    three categories, any existing report file is removed to indicate a clean state.
+
+    Args:
+        added: List of destination sound file names that were newly downloaded.
+        modified: List of destination sound file names whose audio was updated.
+        pruned: List of local sound file names that were deleted (orphans).
+    """
+    if not added and not modified and not pruned:
+        if os.path.exists(CHANGES_REPORT_PATH):
+            try:
+                os.remove(CHANGES_REPORT_PATH)
+            except Exception as e:
+                print(f"Warning: Failed to remove old changes report: {e}")
+        return
+
+    lines = ["Automated sound bite synchronization from playsounds catalog.\n"]
+    if added:
+        lines.append("### Added")
+        for s in sorted(added, key=str.lower):
+            lines.append(f"- `{s}`")
+        lines.append("")
+    if modified:
+        lines.append("### Modified")
+        for s in sorted(modified, key=str.lower):
+            lines.append(f"- `{s}`")
+        lines.append("")
+    if pruned:
+        lines.append("### Removed")
+        for s in sorted(pruned, key=str.lower):
+            lines.append(f"- `{s}`")
+        lines.append("")
+
+    try:
+        with open(CHANGES_REPORT_PATH, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines).strip() + "\n")
+        print(f"Sound changes report written to {os.path.basename(CHANGES_REPORT_PATH)}.")
+    except Exception as e:
+        print(f"Warning: Failed to write sound changes report: {e}")
+
+
+def load_cache(cache_path: str) -> dict[str, Any]:
+    """
+    Load the local synchronization cache containing the last seen API ETag and sound metadata.
+
+    The cache structure contains:
+      - "api_etag": Optional[str] - The ETag header returned by the catalog API.
+      - "sounds": Dict[str, Dict[str, Any]] - Mapping of local filename to remote metadata
+        (including remote filename and server 'uploadedAt' timestamp).
+
+    Args:
+        cache_path: Absolute or relative file path to the cache JSON file.
+
+    Returns:
+        A dictionary containing "api_etag" and "sounds" keys.
+    """
     if os.path.exists(cache_path):
         try:
             with open(cache_path, "r", encoding="utf-8") as f:
@@ -62,8 +133,14 @@ def load_cache(cache_path):
     return {"api_etag": None, "sounds": {}}
 
 
-def save_cache(cache_path, cache_data):
-    """Save sync cache to disk."""
+def save_cache(cache_path: str, cache_data: dict[str, Any]) -> None:
+    """
+    Persist the synchronization cache data to disk as formatted JSON.
+
+    Args:
+        cache_path: File path where cache JSON should be saved.
+        cache_data: Dictionary containing the ETag and sound metadata.
+    """
     try:
         with open(cache_path, "w", encoding="utf-8") as f:
             json.dump(cache_data, f, indent=2, ensure_ascii=False)
@@ -72,11 +149,29 @@ def save_cache(cache_path, cache_data):
         print(f"Warning: Failed to save cache file {cache_path}: {e}")
 
 
-def fetch_sound_catalog(api_url, cached_etag=None):
+def fetch_sound_catalog(
+    api_url: str, cached_etag: str | None = None
+) -> tuple[int, str | None, list[dict[str, Any] | str]]:
     """
-    Fetch the list of sounds from the remote API endpoint.
-    Supports HTTP 304 Not Modified when cached_etag is provided.
-    Returns (status_code, new_etag, sounds_list)
+    Fetch the list of sounds from the remote playsounds API endpoint.
+
+    Supports conditional HTTP requests using the 'If-None-Match' header when
+    `cached_etag` is provided. If the remote catalog has not changed, the server
+    returns HTTP 304 (Not Modified).
+
+    Args:
+        api_url: Full URL to the remote catalog JSON endpoint.
+        cached_etag: Optional ETag string from the previous sync run.
+
+    Returns:
+        A tuple of (status_code, new_etag, sounds_list):
+          - status_code: HTTP response code (e.g. 200, 304).
+          - new_etag: The updated ETag header returned by the server, if any.
+          - sounds_list: List of sound item objects or sound filenames.
+
+    Raises:
+        RuntimeError: If an unexpected HTTP error occurs (other than 304).
+        ValueError: If the JSON response structure is unrecognized.
     """
     headers = {"User-Agent": "Mozilla/5.0 (compatible; DiscordRoonsBot/1.0)"}
     if cached_etag:
@@ -103,8 +198,17 @@ def fetch_sound_catalog(api_url, cached_etag=None):
         raise RuntimeError(f"HTTP error {e.code} fetching sounds list: {e.reason}")
 
 
-def download_file(url, dest_path):
-    """Download a single file from url to dest_path."""
+def download_file(url: str, dest_path: str) -> None:
+    """
+    Download a single file from a remote URL to a local destination path.
+
+    Args:
+        url: Remote file URL to fetch.
+        dest_path: Local file path where downloaded bytes are written.
+
+    Raises:
+        RuntimeError: If the server returns a non-200 HTTP status code.
+    """
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "Mozilla/5.0 (compatible; DiscordRoonsBot/1.0)"}
@@ -116,8 +220,26 @@ def download_file(url, dest_path):
             shutil.copyfileobj(response, out_file)
 
 
-def convert_file(ffmpeg_path, src_path, dest_path):
-    """Convert audio file to target MP3 with two-pass loudness normalization using ffmpeg."""
+def convert_file(ffmpeg_path: str, src_path: str, dest_path: str) -> bool:
+    """
+    Convert an audio file to MP3 with two-pass loudness normalization using ffmpeg.
+
+    Uses the EBU R128 loudness normalization filter (`loudnorm`):
+      1. Pass 1: Analyzes the source audio file to measure integrated loudness (I),
+         true peak (TP), loudness range (LRA), and threshold values.
+      2. Pass 2: Applies linear normalization targeting -16 LUFS, -1.5 dBFS true peak,
+         and 11 LU range using the measured statistics from Pass 1.
+      3. Fallback: If Pass 1 analysis fails to parse JSON statistics, falls back
+         to dynamic single-pass normalization.
+
+    Args:
+        ffmpeg_path: Absolute or PATH-resolved path to the ffmpeg executable.
+        src_path: Path to the input audio file (e.g. .ogg, .wav).
+        dest_path: Path where the converted .mp3 file will be written.
+
+    Returns:
+        True if audio conversion and normalization succeeded, False otherwise.
+    """
     # Pass 1: Analyze loudness
     cmd1 = [ffmpeg_path, "-y", "-i", src_path, "-af", "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"]
     try:
@@ -152,26 +274,31 @@ def convert_file(ffmpeg_path, src_path, dest_path):
         return False
 
 
-def is_executable(path):
-    """Check if a file path exists and is executable on the current platform."""
-    if not path or not os.path.isfile(path):
-        return False
-    if sys.platform != "win32" and path.lower().endswith(".exe"):
-        return False
-    return os.access(path, os.X_OK)
+def resolve_ffmpeg_path() -> str | None:
+    """
+    Find the ffmpeg executable on the system PATH.
+
+    Returns:
+        The executable path as a string if found, or None if ffmpeg is missing.
+    """
+    return shutil.which("ffmpeg")
 
 
-def resolve_ffmpeg_path():
-    """Find a valid ffmpeg binary from system PATH or local scripts dir."""
-    system_ffmpeg = shutil.which("ffmpeg")
-    if system_ffmpeg:
-        return system_ffmpeg
-    if sys.platform == "win32" and is_executable(DEFAULT_FFMPEG_PATH):
-        return DEFAULT_FFMPEG_PATH
-    return None
+def main() -> None:
+    """
+    Execute the sound bite synchronization workflow.
 
-
-def main():
+    Workflow steps:
+      1. Verify ffmpeg availability; exit immediately with instructions if missing.
+      2. Load local cache (sounds_cache.json) and query remote catalog with ETag.
+      3. Check for HTTP 304 shortcut (clean exit if local disk matches cache).
+      4. Compare remote catalog against local resources to determine sounds to download,
+         sounds to update, and orphaned sounds to prune.
+      5. Concurrently download and convert audio using a ThreadPoolExecutor.
+      6. Prune obsolete local sound files not present on the server.
+      7. Rebuild and sort manifest.json in the resources directory.
+      8. Persist updated cache and generate sound_changes.md changelog report.
+    """
     parser = argparse.ArgumentParser(description="Synchronize sound bites from remote API into project resources.")
     parser.add_argument("--clean", "-c", action="store_true", help="Wipe all local sounds and cache to re-fetch everything fresh from server")
     parser.add_argument("--dry-run", "-n", action="store_true", help="Preview additions, conversions, and prunes without modifying disk")
@@ -179,9 +306,13 @@ def main():
 
     os.makedirs(DEFAULT_RESOURCES_DIR, exist_ok=True)
     ffmpeg_executable = resolve_ffmpeg_path()
-
     if not ffmpeg_executable:
-        print("Note: ffmpeg was not found. Downloading raw audio files directly without MP3 conversion.")
+        print("Error: ffmpeg is required to convert and normalize audio files, but was not found on your PATH.")
+        print("Please install ffmpeg and ensure it is available in your PATH:")
+        print("  - macOS:   brew install ffmpeg")
+        print("  - Ubuntu:  sudo apt install ffmpeg")
+        print("  - Windows: winget install Gyan.FFmpeg")
+        sys.exit(1)
 
     # Load cache unless --clean is requested
     cache = {"api_etag": None, "sounds": {}} if args.clean else load_cache(CACHE_FILE_PATH)
@@ -204,6 +335,7 @@ def main():
         orphan_files = existing_files - cached_sound_names
         if cached_sound_names and not missing_on_disk and not orphan_files:
             print("Remote catalog unchanged (HTTP 304 Not Modified) and all local sounds present. Everything is up to date!")
+            write_changes_report([], [], [])
             return
         # If disk state diverged from cache, fall back to fetching fresh catalog
         print("Cache ETag matches, but local files differ from cache. Fetching complete catalog...")
@@ -226,7 +358,7 @@ def main():
             continue
 
         base_name, _ = os.path.splitext(fn)
-        dest_filename = f"{base_name.lower()}.mp3" if ffmpeg_executable else fn
+        dest_filename = f"{base_name.lower()}.mp3"
         remote_catalog[dest_filename] = {
             "remote_filename": fn,
             "uploadedAt": up_at
@@ -289,7 +421,11 @@ def main():
                 print(f"  Error pruning {orphan}: {e}")
 
     # Process downloads and conversions
+    added = []
+    modified = []
+    pruned = sorted(list(to_prune)) if not args.clean else []
     stats = {'success': 0, 'errors': 0}
+
     if to_download:
         temp_dir = tempfile.mkdtemp(prefix="roons_sounds_")
         base_download_url = DOWNLOAD_BASE_URL.rstrip("/")
@@ -297,7 +433,18 @@ def main():
         counter_lock = threading.Lock()
         completed_count = 0
 
-        def process_sound(entry):
+        def process_sound(
+            entry: tuple[str, str, float | None]
+        ) -> tuple[bool, str, str, float | None, str | None]:
+            """
+            Download and convert a single sound bite into target MP3 resources.
+
+            Args:
+                entry: Tuple of (destination_filename, remote_filename, uploaded_at_timestamp).
+
+            Returns:
+                Tuple of (success_bool, destination_filename, remote_filename, uploaded_at, error_message).
+            """
             dest_name, remote_fn, up_at = entry
             encoded_fn = urllib.parse.quote(remote_fn)
             download_url = f"{base_download_url}/{encoded_fn}"
@@ -309,12 +456,9 @@ def main():
                 return False, dest_name, remote_fn, up_at, f"Download failed ({e})"
 
             dest_path = os.path.join(DEFAULT_RESOURCES_DIR, dest_name)
-            if ffmpeg_executable:
-                ok = convert_file(ffmpeg_executable, temp_file_path, dest_path)
-                if not ok:
-                    return False, dest_name, remote_fn, up_at, "Conversion failed"
-            else:
-                shutil.copy2(temp_file_path, dest_path)
+            ok = convert_file(ffmpeg_executable, temp_file_path, dest_path)
+            if not ok:
+                return False, dest_name, remote_fn, up_at, "Conversion failed"
 
             return True, dest_name, remote_fn, up_at, None
 
@@ -333,6 +477,10 @@ def main():
                                 "remote_filename": remote_fn,
                                 "uploadedAt": up_at
                             }
+                            if not args.clean and dest_name in existing_files:
+                                modified.append(dest_name)
+                            else:
+                                added.append(dest_name)
                             print(f"[{completed_count}/{total_downloads}] ({pct:.1f}%) {dest_name}")
                         else:
                             stats['errors'] += 1
@@ -358,6 +506,9 @@ def main():
     cache["sounds"] = cached_sounds
     save_cache(CACHE_FILE_PATH, cache)
     print(f"Sync cache saved to {os.path.basename(CACHE_FILE_PATH)}.")
+
+    # Write changes report for pull request description
+    write_changes_report(added, modified, pruned)
 
     if stats['errors'] > 0:
         sys.exit(1)

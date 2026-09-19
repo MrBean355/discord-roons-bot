@@ -1,0 +1,95 @@
+name: Sync sounds
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    inputs:
+      clean:
+        description: 'Clean fetch (wipe local sounds and re-download everything)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-sounds:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'adopt'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: wrapper
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Synchronize sounds
+        run: |
+          if [ "${{ inputs.clean }}" = "true" ]; then
+            python scripts/download_sounds.py --clean
+          else
+            python scripts/download_sounds.py
+          fi
+
+      - name: Check for sound changes
+        id: check_changes
+        run: |
+          if [ -f "scripts/sound_changes.md" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Found sound changes."
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No sound changes detected."
+          fi
+
+      - name: Verify sound manifest
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          chmod +x gradlew
+          ./gradlew test --tests com.github.mrbean355.roons.discord.SoundStoreTest
+
+      - name: Create or update Pull Request
+        if: steps.check_changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="automation/update-sounds"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "$BRANCH"
+          git add src/main/resources/sounds scripts/sounds_cache.json
+          git commit -m "Update sounds"
+          git push -f origin "$BRANCH"
+
+          PR_URL=$(gh pr list --head "$BRANCH" --base develop --state open --json url --jq '.[0].url')
+          if [ -n "$PR_URL" ]; then
+            echo "Updating existing PR: $PR_URL"
+            gh pr edit "$PR_URL" --title "Update sounds" --body-file scripts/sound_changes.md
+          else
+            echo "Creating new PR"
+            gh pr create --head "$BRANCH" --base develop --title "Update sounds" --body-file scripts/sound_changes.md
+          fi
