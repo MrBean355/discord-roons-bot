@@ -19,21 +19,23 @@ following core components:
 
 ### Sound Bite Management
 
-The backend includes a set of sound bites. To import and sync the collection from an external playsounds repository, you
-can run the provided Python script:
+The backend includes a set of sound bites. To synchronize the collection with the remote playsounds API, you can run the
+provided Python script:
 ```bash
-python scripts/import_sounds.py --source /path/to/playsounds/files
+python scripts/download_sounds.py
 ```
 
 This script performs the following actions:
 
-1. Runs `git pull` in the source repository to fetch the latest files (gracefully falls back if there are unstaged
-   changes or network issues).
-2. Scans files recursively and resolves duplicates (newer folders take precedence).
-3. Converts the source audio files (`.ogg`, `.wav`, etc.) to `.mp3` using `scripts/ffmpeg.exe` and outputs them to
-   `src/main/resources/sounds/`.
-4. Deletes any `.mp3` files in the target directory that are no longer in the source directory.
-5. Rebuilds the `manifest.json` file.
+1. Queries the remote sound catalog API using HTTP ETag caching to detect additions, modifications, or removals.
+2. Concurrently downloads new or modified audio files and normalizes loudness using a 2-pass ffmpeg filter.
+3. Automatically prunes local sound files that have been removed from the remote catalog.
+4. Rebuilds and sorts the `manifest.json` file.
+
+Useful flags:
+
+- `--dry-run`: Previews additions, conversions, and prunes without modifying disk.
+- `--clean`: Wipes local files and cache to perform a fresh, full re-download.
 
 ### REST API
 
