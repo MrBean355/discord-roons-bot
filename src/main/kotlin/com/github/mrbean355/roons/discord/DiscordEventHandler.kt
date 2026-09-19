@@ -26,7 +26,6 @@ import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.build.Commands
 import org.springframework.stereotype.Component
-import java.util.concurrent.atomic.AtomicInteger
 
 @Component
 class DiscordEventHandler(
@@ -45,8 +44,6 @@ class DiscordEventHandler(
             .addCommands(commands.map { Commands.slash(it.name, it.description).apply(it::buildCommand) })
             .queue()
 
-
-        val reconnects = AtomicInteger()
         // Reconnect to previous voice channels:
         supervisorScope {
             discordBotSettingsRepository.findAll().forEach { settings ->
@@ -56,15 +53,12 @@ class DiscordEventHandler(
                         val channel = guild?.getVoiceChannelById(lastChannel)
                         if (channel != null) {
                             guild.audioManager.openAudioConnection(channel)
-                            reconnects.incrementAndGet()
                         }
                         discordBotSettingsRepository.save(settings.copy(lastChannel = null))
                     }
                 }
             }
         }
-
-        telegramNotifier.sendPrivateMessage("⚙️ <b>Started up</b>:\nReconnected to <b>${reconnects.get()}</b> voice channels.")
     }
 
     override fun onGuildJoin(event: GuildJoinEvent) {

@@ -71,7 +71,6 @@ class DiscordBot(
                 }
             }
         }
-        telegramNotifier.sendPrivateMessage("⚙️ <b>Shutting down</b>:\nDisconnected from <b>${connectedGuilds.size}</b> voice channels.")
     }
 
     fun getGuilds(): List<Guild> = bot.guilds
