@@ -4,6 +4,7 @@ Welcome! Please visit the [app's page](https://github.com/MrBean355/admiralbulld
 
 ---
 
+[![Build](https://github.com/MrBean355/discord-roons-bot/actions/workflows/gradle.yml/badge.svg)](https://github.com/MrBean355/discord-roons-bot/actions/workflows/gradle.yml)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=discord-roons-bot&metric=ncloc)](https://sonarcloud.io/dashboard?id=discord-roons-bot)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=discord-roons-bot&metric=coverage)](https://sonarcloud.io/dashboard?id=discord-roons-bot)
 
@@ -98,3 +99,9 @@ sending them):
 
 Once running, you can access the analytics dashboard at:
 `http://localhost:8090/dashboard.html`
+
+### Continuous Integration
+
+A GitHub Actions workflow ([gradle.yml](.github/workflows/gradle.yml)) automatically builds the project, runs tests, and
+reports coverage to SonarCloud on every push. See the [build workflow documentation](.github/workflows/gradle.md) for
+details.

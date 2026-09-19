@@ -3,8 +3,8 @@
 ## Overview
 
 The `sync-sounds.yml` workflow automates the synchronization of sound bites from the remote playsounds catalog into the
-repository. It runs weekly to detect additions, modifications, or removals, verifies audio and manifest integrity with
-automated tests, and creates or updates a Pull Request targeting `develop`.
+repository. It runs periodically to detect additions, modifications, or removals, updates the sound resources and
+manifest, and creates or updates a Pull Request targeting `develop`.
 
 ---
 
@@ -51,7 +51,7 @@ sequenceDiagram
     participant Git as Git & GitHub CLI
     participant PR as Pull Request (develop)
     GH ->> GH: Checkout develop branch
-    GH ->> GH: Setup Java 25, Gradle, Python 3.12, & FFmpeg
+    GH ->> GH: Setup Python 3.12 & FFmpeg
     GH ->> API: Query catalog with If-None-Match (ETag)
     alt ETag Match (HTTP 304 - No Changes)
         API -->> GH: 304 Not Modified
@@ -63,7 +63,6 @@ sequenceDiagram
         GH ->> GH: Prune removed sounds & update manifest.json
         GH ->> GH: Update scripts/sounds_cache.json
         GH ->> GH: Generate scripts/sound_changes.md
-        GH ->> GH: Run ./gradlew test (SoundStoreTest)
         GH ->> Git: Commit to branch automation/update-sounds
         alt PR already open
             Git ->> PR: Push new commits & edit PR body (gh pr edit)
@@ -75,19 +74,14 @@ sequenceDiagram
 
 ### Detailed Steps:
 
-1. **Checkout**: Checks out `develop` using `actions/checkout@v4`.
+1. **Checkout**: Checks out `develop` using `actions/checkout@v7`.
 2. **Environment Setup**:
-    - Installs JDK 25 via `actions/setup-java@v4`.
-    - Caches Gradle dependencies via `gradle/actions/setup-gradle@v4`.
-    - Sets up Python 3.12 via `actions/setup-python@v5`.
+   - Sets up Python 3.12 via `actions/setup-python@v7`.
     - Installs system `ffmpeg` via `apt-get`.
 3. **Execution**:
     - Runs `python scripts/download_sounds.py` (with `--clean` if the manual input is set).
     - Checks for changes. If `scripts/sound_changes.md` was created, changes are present.
-4. **Verification**:
-    - Executes `./gradlew test --tests com.github.mrbean355.roons.discord.SoundStoreTest` to ensure that every `.mp3`
-      file on disk matches `src/main/resources/sounds/manifest.json`.
-5. **Pull Request Management**:
+4. **Pull Request Management**:
     - Force-pushes the updated sounds, manifest, and cache to branch `automation/update-sounds`.
     - Uses `gh pr list` to check if a PR from `automation/update-sounds` to `develop` is already open.
     - If an open PR exists, updates the PR title and description with the latest changelog (`gh pr edit`).
