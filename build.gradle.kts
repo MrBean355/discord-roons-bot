@@ -72,7 +72,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-cache:4.1.0")
     implementation("org.postgresql:postgresql:42.7.13")
 
-    implementation("net.dv8tion:JDA:6.5.0")
+    implementation("net.dv8tion:JDA:6.6.0")
     implementation("club.minnced:jdave-api:0.1.8")
 
     val os = org.gradle.internal.os.OperatingSystem.current()
