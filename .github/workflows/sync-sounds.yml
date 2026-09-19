@@ -22,30 +22,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout develop
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: develop
 
-      - name: Setup JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '25'
-          distribution: 'adopt'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: wrapper
-
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
       - name: Install FFmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y --no-install-recommends ffmpeg
 
       - name: Synchronize sounds
         run: |
@@ -65,12 +54,6 @@ jobs:
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
             echo "No sound changes detected."
           fi
-
-      - name: Verify sound manifest
-        if: steps.check_changes.outputs.has_changes == 'true'
-        run: |
-          chmod +x gradlew
-          ./gradlew test --tests com.github.mrbean355.roons.discord.SoundStoreTest
 
       - name: Create or update Pull Request
         if: steps.check_changes.outputs.has_changes == 'true'
