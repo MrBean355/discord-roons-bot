@@ -38,4 +38,15 @@ internal class SoundStoreTest {
 
         assertEquals(mp3Files.size, manifestSounds.size, "Count of files in directory and manifest should be equal")
     }
+
+    @Test
+    fun testGetFile_NonExistentOrPathTraversal_ReturnsNull() {
+        val store = SoundStore(org.slf4j.LoggerFactory.getLogger(SoundStore::class.java))
+        store.unpackSounds()
+
+        org.junit.jupiter.api.Assertions.assertNull(store.getFile("../../secret.txt"))
+        org.junit.jupiter.api.Assertions.assertNull(store.getFile("non_existent_file.mp3"))
+        org.junit.jupiter.api.Assertions.assertNotNull(store.getFile("roons.mp3"))
+    }
 }
+

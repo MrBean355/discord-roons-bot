@@ -49,9 +49,12 @@ class SoundStore(
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
     fun getFile(soundFileName: String): File? {
-        return File(SOUNDS_DIR, soundFileName.trim()).let {
-            if (it.exists()) it else null
+        val name = File(soundFileName.trim()).name
+        if (!soundsCache.containsKey(name)) {
+            return null
         }
+        val file = File(SOUNDS_DIR, name)
+        return if (file.exists()) file else null
     }
 
     private fun readSoundResource(name: String): ByteArray {
