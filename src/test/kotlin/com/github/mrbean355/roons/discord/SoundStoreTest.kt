@@ -48,5 +48,17 @@ internal class SoundStoreTest {
         org.junit.jupiter.api.Assertions.assertNull(store.getFile("non_existent_file.mp3"))
         org.junit.jupiter.api.Assertions.assertNotNull(store.getFile("roons.mp3"))
     }
+
+    @Test
+    fun testChecksumLength() {
+        val store = SoundStore(org.slf4j.LoggerFactory.getLogger(SoundStore::class.java))
+        store.unpackSounds()
+
+        val allSounds = store.listAll()
+        assertTrue(allSounds.isNotEmpty())
+        allSounds.values.forEach { hash ->
+            assertEquals(128, hash.length, "SHA-512 hex string should be 128 chars")
+        }
+    }
 }
 
