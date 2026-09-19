@@ -23,6 +23,7 @@ import net.dv8tion.jda.api.entities.Guild
 import org.slf4j.Logger
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.io.File
 
 @Component
 class DiscordBot(
@@ -71,7 +72,6 @@ class DiscordBot(
                 }
             }
         }
-        telegramNotifier.sendPrivateMessage("⚙️ <b>Shutting down</b>:\nDisconnected from <b>${connectedGuilds.size}</b> voice channels.")
     }
 
     fun getGuilds(): List<Guild> = bot.guilds
@@ -111,10 +111,27 @@ class DiscordBot(
 
             override fun noMatches() {
                 logger.error("No matches found for '$filePath'.")
+                val fileName = filePath.substringAfterLast(File.separator).substringAfterLast('/')
+                telegramNotifier.sendPrivateMessage(
+                    """
+                    ⚠️ <b>Audio track not found</b>
+                    Guild: <code>${guild.name}</code>
+                    File: <code>$fileName</code>
+                    """.trimIndent()
+                )
             }
 
             override fun loadFailed(exception: FriendlyException?) {
                 logger.error("Failed to load track '$filePath': $exception")
+                val fileName = filePath.substringAfterLast(File.separator).substringAfterLast('/')
+                telegramNotifier.sendPrivateMessage(
+                    """
+                    ⚠️ <b>Audio playback failed</b>
+                    Guild: <code>${guild.name}</code>
+                    File: <code>$fileName</code>
+                    Error: <code>${exception?.message ?: "Unknown error"}</code>
+                    """.trimIndent()
+                )
             }
         })
         return true

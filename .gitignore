@@ -1,6 +1,11 @@
-.idea/
 .gradle/
+.idea/
+.kotlin/
+bin/
 build/
 out/
 local.properties
-sounds/
+/sounds/
+__pycache__/
+*.pyc
+scripts/sound_changes.md

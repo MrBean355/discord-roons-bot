@@ -4,6 +4,7 @@ Welcome! Please visit the [app's page](https://github.com/MrBean355/admiralbulld
 
 ---
 
+[![Build](https://github.com/MrBean355/discord-roons-bot/actions/workflows/gradle.yml/badge.svg)](https://github.com/MrBean355/discord-roons-bot/actions/workflows/gradle.yml)
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=discord-roons-bot&metric=ncloc)](https://sonarcloud.io/dashboard?id=discord-roons-bot)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=discord-roons-bot&metric=coverage)](https://sonarcloud.io/dashboard?id=discord-roons-bot)
 
@@ -19,21 +20,28 @@ following core components:
 
 ### Sound Bite Management
 
-The backend includes a set of sound bites. To import and sync the collection from an external playsounds repository, you
-can run the provided Python script:
+The backend includes a set of sound bites. To synchronize the collection with the remote playsounds API, you can run the
+provided Python script:
+
 ```bash
-python scripts/import_sounds.py --source /path/to/playsounds/files
+python scripts/download_sounds.py
 ```
 
 This script performs the following actions:
 
-1. Runs `git pull` in the source repository to fetch the latest files (gracefully falls back if there are unstaged
-   changes or network issues).
-2. Scans files recursively and resolves duplicates (newer folders take precedence).
-3. Converts the source audio files (`.ogg`, `.wav`, etc.) to `.mp3` using `scripts/ffmpeg.exe` and outputs them to
-   `src/main/resources/sounds/`.
-4. Deletes any `.mp3` files in the target directory that are no longer in the source directory.
-5. Rebuilds the `manifest.json` file.
+1. Queries the remote sound catalog API using HTTP ETag caching to detect additions, modifications, or removals.
+2. Concurrently downloads new or modified audio files and normalizes loudness using a 2-pass ffmpeg filter.
+3. Automatically prunes local sound files that have been removed from the remote catalog.
+4. Rebuilds and sorts the `manifest.json` file.
+
+Useful flags:
+
+- `--dry-run`: Previews additions, conversions, and prunes without modifying disk.
+- `--clean`: Wipes local files and cache (`scripts/sounds_cache.json`) to perform a fresh, full re-download.
+
+> **Automation**: A scheduled GitHub Actions workflow ([sync-sounds.yml](.github/workflows/sync-sounds.yml)) runs this
+> script weekly and opens a Pull Request if sound changes are detected. See
+> the [workflow documentation](.github/workflows/sync-sounds.md) for details.
 
 ### REST API
 
@@ -56,29 +64,44 @@ details.
 ## Local Development
 
 ### Prerequisites
+
 - **Java 25**: The project uses modern JVM features.
 - **PostgreSQL**: A local database instance is required.
+- **Python 3.8+**: Required to run the sound synchronization script.
+- **FFmpeg**: Required on system `PATH` for audio normalization when running the sound sync script.
 
 ### Database Setup
+
 1. Create a database named `roons_bot` in PostgreSQL.
 2. Run the [schema.sql](scripts/schema.sql) script against your database to create the necessary tables.
 
 ### Environment Variables
+
 Configure the following environment variables (e.g., in an `.env` file or your IDE's run configuration):
 
-| Variable | Description |
-| :--- | :--- |
-| `JDBC_DATABASE_URL` | e.g. `jdbc:postgresql://localhost:5432/roons_bot` |
-| `JDBC_DATABASE_USERNAME` | Database username |
-| `JDBC_DATABASE_PASSWORD` | Database password |
-| `DISCORD_BOT_TOKEN` | Token for your Discord bot application |
+| Variable                 | Description                                       |
+|:-------------------------|:--------------------------------------------------|
+| `JDBC_DATABASE_URL`      | e.g. `jdbc:postgresql://localhost:5432/roons_bot` |
+| `JDBC_DATABASE_USERNAME` | Database username                                 |
+| `JDBC_DATABASE_PASSWORD` | Database password                                 |
+| `DISCORD_BOT_TOKEN`      | Token for your Discord bot application            |
 
 ### Running the Application
-Run the following command to start the server with a stubbed Telegram client (logs messages to the console instead of sending them):
+
+Run the following command to start the server with a stubbed Telegram client (logs messages to the console instead of
+sending them):
+
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
 ### Analytics Dashboard
+
 Once running, you can access the analytics dashboard at:
 `http://localhost:8090/dashboard.html`
+
+### Continuous Integration
+
+A GitHub Actions workflow ([gradle.yml](.github/workflows/gradle.yml)) automatically builds the project, runs tests, and
+reports coverage to SonarCloud on every push. See the [build workflow documentation](.github/workflows/gradle.md) for
+details.
