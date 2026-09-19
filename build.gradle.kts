@@ -67,9 +67,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
 
-    implementation("org.springframework.boot:spring-boot-starter-data-rest:4.1.0")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa:4.1.0")
-    implementation("org.springframework.boot:spring-boot-starter-cache:4.1.0")
+    implementation("org.springframework.boot:spring-boot-starter-data-rest:4.1.1")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa:4.1.1")
+    implementation("org.springframework.boot:spring-boot-starter-cache:4.1.1")
     implementation("org.postgresql:postgresql:42.7.13")
 
     implementation("net.dv8tion:JDA:6.5.0")
