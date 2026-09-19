@@ -7,11 +7,13 @@ import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
 import com.github.mrbean355.roons.repository.AppUserRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
+import com.github.mrbean355.roons.repository.isValidAdminToken
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -31,8 +33,11 @@ class StatisticsController(
 ) {
 
     @GetMapping("health")
-    fun getHealth(@RequestParam("token") token: String): ResponseEntity<SystemHealthResponse> {
-        if (token != metadataRepository.adminToken) {
+    fun getHealth(
+        @RequestParam("token", required = false) token: String? = null,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+    ): ResponseEntity<SystemHealthResponse> {
+        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         val runtime = ManagementFactory.getRuntimeMXBean()
@@ -57,16 +62,23 @@ class StatisticsController(
     }
 
     @GetMapping("properties")
-    fun listProperties(@RequestParam("token") token: String): ResponseEntity<List<String>> {
-        if (token != metadataRepository.adminToken) {
+    fun listProperties(
+        @RequestParam("token", required = false) token: String? = null,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+    ): ResponseEntity<List<String>> {
+        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         return ResponseEntity.ok(analyticsPropertyRepository.findDistinctProperties())
     }
 
     @GetMapping("recentUsers")
-    fun getRecentUsers(@RequestParam("token") token: String, @RequestParam("period") period: Long): ResponseEntity<Long> {
-        if (token != metadataRepository.adminToken) {
+    fun getRecentUsers(
+        @RequestParam("token", required = false) token: String? = null,
+        @RequestParam("period") period: Long,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+    ): ResponseEntity<Long> {
+        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         val since = clock.currentTimeMs - TimeUnit.MINUTES.toMillis(period)
@@ -74,8 +86,12 @@ class StatisticsController(
     }
 
     @GetMapping("{property}")
-    fun getStatistic(@RequestParam("token") token: String, @PathVariable("property") property: String): ResponseEntity<Map<String, Int>> {
-        if (token != metadataRepository.adminToken) {
+    fun getStatistic(
+        @RequestParam("token", required = false) token: String? = null,
+        @PathVariable("property") property: String,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+    ): ResponseEntity<Map<String, Int>> {
+        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         val properties = analyticsPropertyRepository.findByProperty(property)
@@ -90,8 +106,11 @@ class StatisticsController(
     }
 
     @GetMapping("discordServers")
-    fun getDiscordServers(@RequestParam("token") token: String): ResponseEntity<List<DiscordServerDto>> {
-        if (token != metadataRepository.adminToken) {
+    fun getDiscordServers(
+        @RequestParam("token", required = false) token: String? = null,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+    ): ResponseEntity<List<DiscordServerDto>> {
+        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         return ResponseEntity.ok(

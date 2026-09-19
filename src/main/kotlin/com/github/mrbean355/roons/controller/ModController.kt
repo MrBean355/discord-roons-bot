@@ -4,16 +4,18 @@ import com.github.mrbean355.roons.DotaModDto
 import com.github.mrbean355.roons.asDto
 import com.github.mrbean355.roons.repository.DotaModRepository
 import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
+import com.github.mrbean355.roons.repository.isValidAdminToken
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.HttpStatus.UNAUTHORIZED
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -46,10 +48,11 @@ class ModController(
         @PathVariable("key") key: String,
         @RequestParam("hash") hash: String,
         @RequestParam("size") size: Int,
-        @RequestParam("token") token: String,
-        @RequestParam("message") message: String?
+        @RequestParam("token", required = false) token: String? = null,
+        @RequestParam("message", required = false) message: String? = null,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<Void> {
-        if (token != metadataRepository.adminToken) {
+        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
             return ResponseEntity(UNAUTHORIZED)
         }
         val mod = dotaModRepository.findById(key).getOrNull()
@@ -66,8 +69,11 @@ class ModController(
     }
 
     @GetMapping("refresh")
-    fun refreshMods(@RequestParam("token") token: String): ResponseEntity<Void> {
-        if (token != metadataRepository.adminToken) {
+    fun refreshMods(
+        @RequestParam("token", required = false) token: String? = null,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+    ): ResponseEntity<Void> {
+        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
             return ResponseEntity(UNAUTHORIZED)
         }
         cacheManager.getCache(DOTA_MOD_CACHE_NAME)?.clear()

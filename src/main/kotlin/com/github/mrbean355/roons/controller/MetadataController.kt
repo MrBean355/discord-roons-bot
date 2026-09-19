@@ -6,14 +6,17 @@ import com.github.mrbean355.roons.repository.MetadataRepository
 import com.github.mrbean355.roons.repository.adminToken
 import com.github.mrbean355.roons.repository.getWelcomeMessage
 import com.github.mrbean355.roons.repository.saveWelcomeMessage
+import com.github.mrbean355.roons.repository.isValidAdminToken
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ConfigurableApplicationContext
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -37,8 +40,12 @@ class MetadataController(
     }
 
     @PutMapping("welcomeMessage")
-    fun putWelcomeMessage(@RequestParam("token") token: String, @RequestParam("message") message: String): ResponseEntity<Void> {
-        if (token != metadataRepository.adminToken) {
+    fun putWelcomeMessage(
+        @RequestParam("token", required = false) token: String? = null,
+        @RequestParam("message") message: String,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+    ): ResponseEntity<Void> {
+        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
 
@@ -49,11 +56,15 @@ class MetadataController(
     }
 
     @GetMapping("shutdown")
-    fun shutdown(@RequestParam("token") token: String): ResponseEntity<String> {
-        val adminToken = metadataRepository.adminToken
-            ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+    fun shutdown(
+        @RequestParam("token", required = false) token: String? = null,
+        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+    ): ResponseEntity<String> {
+        if (metadataRepository.adminToken == null) {
+            return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
+        }
 
-        if (adminToken != token) {
+        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         discordBot.shutdown()

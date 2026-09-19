@@ -190,6 +190,27 @@ internal class ModControllerTest {
         assertSame(HttpStatus.OK, result.statusCode)
     }
 
+    @Test
+    internal fun testRefreshMods_CorrectTokenInAuthHeader_ReturnsOkResult() {
+        val result = controller.refreshMods(authHeader = "Bearer 12345")
+
+        assertSame(HttpStatus.OK, result.statusCode)
+        verify {
+            cacheManager.getCache("dota_mod_cache")
+            modCache.clear()
+        }
+    }
+
+    @Test
+    internal fun testPatchMod_CorrectTokenInAuthHeader_SavesMod() {
+        every { dotaModRepository.findById("1") } returns Optional.of(createMod())
+
+        val result = controller.patchMod("1", "new-hash", 999, token = null, message = "Mod updated", authHeader = "Bearer 12345")
+
+        assertSame(HttpStatus.OK, result.statusCode)
+        verify { dotaModRepository.save(DotaMod("1", "Base mod", "Lots of stuff", 999, "new-hash", "mods://base", "github://base")) }
+    }
+
     private fun createMod(name: String = "Base mod"): DotaMod =
         DotaMod("1", name, "Lots of stuff", 123, "abc-123", "mods://base", "github://base")
 }

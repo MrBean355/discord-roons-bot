@@ -90,7 +90,11 @@
 
     async function fetchApi(path) {
         const token = document.getElementById('adminToken').value;
-        const response = await fetch(`${path}${path.includes('?') ? '&' : '?'}token=${token}`);
+        const response = await fetch(path, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         if (!response.ok) {
             if (response.status === 401) throw new Error('Unauthorized: Invalid Token');
             throw new Error(`API Error: ${response.status}`);

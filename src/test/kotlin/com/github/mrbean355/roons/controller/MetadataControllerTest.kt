@@ -90,6 +90,18 @@ internal class MetadataControllerTest {
     }
 
     @Test
+    internal fun testPutWelcomeMessage_CorrectTokenInAuthHeader_SavesWelcomeMessage() {
+        val result = controller.putWelcomeMessage(token = null, message = "new message", authHeader = "Bearer 12345")
+
+        verifyOrder {
+            metadataRepository.saveWelcomeMessage("new message")
+            cacheManager.getCache("welcome_message_cache")
+            welcomeMessageCache.clear()
+        }
+        assertSame(HttpStatus.OK, result.statusCode)
+    }
+
+    @Test
     internal fun testShutdown_AdminTokenNotFound_ReturnsInternalServerErrorResult() {
         every { metadataRepository.adminToken } returns null
 
@@ -128,6 +140,17 @@ internal class MetadataControllerTest {
     internal fun testShutdown_CorrectToken_ReturnsOkResult() {
         val result = controller.shutdown("12345")
 
+        assertSame(HttpStatus.OK, result.statusCode)
+    }
+
+    @Test
+    internal fun testShutdown_CorrectTokenInAuthHeader_ShutsDownApplication() {
+        val result = controller.shutdown(token = null, authHeader = "Bearer 12345")
+
+        verify {
+            discordBot.shutdown()
+            applicationContext.close()
+        }
         assertSame(HttpStatus.OK, result.statusCode)
     }
 }

@@ -142,6 +142,20 @@ internal class StatisticsControllerTest {
         assertEquals(DiscordServerDto("Dungeon", 25, null), body[3])
     }
 
+    @Test
+    internal fun testGetDiscordServers_CorrectTokenInAuthHeader_ReturnsGuildList() {
+        every { discordBot.getGuilds() } returns listOf(
+            mockGuild("Mr Bean Dota", 284, "Squad")
+        )
+
+        val result = controller.getDiscordServers(authHeader = "Bearer 12345")
+        val body = result.body.orEmpty()
+
+        assertSame(HttpStatus.OK, result.statusCode)
+        assertEquals(1, body.size)
+    }
+
+
     private fun mockGuild(
         guildName: String,
         guildMembers: Int,
