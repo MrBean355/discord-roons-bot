@@ -2,6 +2,7 @@
 .gradle/
 build/
 out/
+bin/
 local.properties
 /sounds/
 __pycache__/

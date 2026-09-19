@@ -23,6 +23,10 @@
     },
     "11.mp3": {
       "remote_filename": "11.ogg",
+      "uploadedAt": 0
+    },
+    "test_obsolete.mp3": {
+      "remote_filename": "test_obsolete.ogg",
       "uploadedAt": 1782719996787.4644
     },
     "2seconds.mp3": {
