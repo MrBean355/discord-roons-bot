@@ -41,11 +41,10 @@ class MetadataController(
 
     @PutMapping("welcomeMessage")
     fun putWelcomeMessage(
-        @RequestParam("token", required = false) token: String? = null,
         @RequestParam("message") message: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<Void> {
-        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
+        if (!metadataRepository.isValidAdminToken(authHeader)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
 
@@ -57,14 +56,13 @@ class MetadataController(
 
     @GetMapping("shutdown")
     fun shutdown(
-        @RequestParam("token", required = false) token: String? = null,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<String> {
         if (metadataRepository.adminToken == null) {
             return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
         }
 
-        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
+        if (!metadataRepository.isValidAdminToken(authHeader)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         discordBot.shutdown()

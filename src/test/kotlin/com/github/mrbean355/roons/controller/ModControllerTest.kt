@@ -82,8 +82,15 @@ internal class ModControllerTest {
     }
 
     @Test
+    internal fun testPatchMod_NoToken_ReturnsUnauthorized() {
+        val result = controller.patchMod("", "", 0, "Mod updated")
+
+        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
+    }
+
+    @Test
     internal fun testPatchMod_IncorrectToken_ReturnsUnauthorized() {
-        val result = controller.patchMod("", "", 0, "67890", "Mod updated")
+        val result = controller.patchMod("", "", 0, "Mod updated", authHeader = "Bearer 67890")
 
         assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
     }
@@ -92,7 +99,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModNotFound_ReturnsNotFoundResult() {
         every { dotaModRepository.findById("1") } returns Optional.empty()
 
-        val result = controller.patchMod("1", "", 0, "12345", "Mod updated")
+        val result = controller.patchMod("1", "", 0, "Mod updated", authHeader = "Bearer 12345")
 
         assertSame(HttpStatus.NOT_FOUND, result.statusCode)
     }
@@ -101,7 +108,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModFound_SavesModWithUpdatedSizeAndHash() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
 
-        controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
+        controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
 
         verify { dotaModRepository.save(DotaMod("1", "Base mod", "Lots of stuff", 999, "new-hash", "mods://base", "github://base")) }
     }
@@ -110,7 +117,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModFound_ClearsCache() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
 
-        controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
+        controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
 
         verify {
             cacheManager.getCache("dota_mod_cache")
@@ -123,7 +130,7 @@ internal class ModControllerTest {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
         every { cacheManager.getCache("dota_mod_cache") } returns null
 
-        controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
+        controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
 
         verify { cacheManager.getCache("dota_mod_cache") }
     }
@@ -132,7 +139,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_NullMessage_DoesNotSendTelegramChannelMessage() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod("Custom spell sounds"))
 
-        controller.patchMod("1", "new-hash", 999, "12345", null)
+        controller.patchMod("1", "new-hash", 999, null, authHeader = "Bearer 12345")
 
         verify(inverse = true) { telegramNotifier.sendChannelMessage(any()) }
     }
@@ -141,7 +148,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_NonNullMessage_SendsTelegramChannelMessage() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
 
-        controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
+        controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
 
         verify { telegramNotifier.sendChannelMessage("Mod updated") }
     }
@@ -150,21 +157,28 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModFound_ReturnsOkResult() {
         every { dotaModRepository.findById("1") } returns Optional.of(createMod())
 
-        val result = controller.patchMod("1", "new-hash", 999, "12345", "Mod updated")
+        val result = controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
 
         assertSame(HttpStatus.OK, result.statusCode)
     }
 
     @Test
+    internal fun testRefreshMods_NoToken_ReturnsUnauthorizedResult() {
+        val result = controller.refreshMods()
+
+        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
+    }
+
+    @Test
     internal fun testRefreshMods_IncorrectToken_ReturnsUnauthorizedResult() {
-        val result = controller.refreshMods("67890")
+        val result = controller.refreshMods("Bearer 67890")
 
         assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
     }
 
     @Test
     internal fun testRefreshMods_CorrectToken_ClearsCache() {
-        controller.refreshMods("12345")
+        controller.refreshMods("Bearer 12345")
 
         verify {
             cacheManager.getCache("dota_mod_cache")
@@ -176,7 +190,7 @@ internal class ModControllerTest {
     internal fun testRefreshMods_CacheNotFound_NoExceptionThrown() {
         every { cacheManager.getCache("dota_mod_cache") } returns null
 
-        controller.refreshMods("12345")
+        controller.refreshMods("Bearer 12345")
 
         verify {
             cacheManager.getCache("dota_mod_cache")
@@ -185,30 +199,9 @@ internal class ModControllerTest {
 
     @Test
     internal fun testRefreshMods_CorrectToken_ReturnsOkResult() {
-        val result = controller.refreshMods("12345")
+        val result = controller.refreshMods("Bearer 12345")
 
         assertSame(HttpStatus.OK, result.statusCode)
-    }
-
-    @Test
-    internal fun testRefreshMods_CorrectTokenInAuthHeader_ReturnsOkResult() {
-        val result = controller.refreshMods(authHeader = "Bearer 12345")
-
-        assertSame(HttpStatus.OK, result.statusCode)
-        verify {
-            cacheManager.getCache("dota_mod_cache")
-            modCache.clear()
-        }
-    }
-
-    @Test
-    internal fun testPatchMod_CorrectTokenInAuthHeader_SavesMod() {
-        every { dotaModRepository.findById("1") } returns Optional.of(createMod())
-
-        val result = controller.patchMod("1", "new-hash", 999, token = null, message = "Mod updated", authHeader = "Bearer 12345")
-
-        assertSame(HttpStatus.OK, result.statusCode)
-        verify { dotaModRepository.save(DotaMod("1", "Base mod", "Lots of stuff", 999, "new-hash", "mods://base", "github://base")) }
     }
 
     private fun createMod(name: String = "Base mod"): DotaMod =

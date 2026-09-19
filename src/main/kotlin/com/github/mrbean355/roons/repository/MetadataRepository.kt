@@ -23,14 +23,13 @@ fun MetadataRepository.saveWelcomeMessage(newMessage: String) {
     save(metadata)
 }
 
-fun MetadataRepository.isValidAdminToken(authHeader: String?, tokenParam: String?): Boolean {
+fun MetadataRepository.isValidAdminToken(authHeader: String?): Boolean {
     val configuredToken = adminToken ?: return false
     val headerToken = if (authHeader != null && authHeader.startsWith("Bearer ", ignoreCase = true)) {
         authHeader.substring(7).trim()
     } else {
         authHeader?.trim()
     }
-    return (!headerToken.isNullOrEmpty() && headerToken == configuredToken) ||
-            (!tokenParam.isNullOrEmpty() && tokenParam == configuredToken)
+    return !headerToken.isNullOrEmpty() && headerToken == configuredToken
 }
 

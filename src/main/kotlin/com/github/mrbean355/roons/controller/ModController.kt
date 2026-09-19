@@ -48,11 +48,10 @@ class ModController(
         @PathVariable("key") key: String,
         @RequestParam("hash") hash: String,
         @RequestParam("size") size: Int,
-        @RequestParam("token", required = false) token: String? = null,
         @RequestParam("message", required = false) message: String? = null,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<Void> {
-        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
+        if (!metadataRepository.isValidAdminToken(authHeader)) {
             return ResponseEntity(UNAUTHORIZED)
         }
         val mod = dotaModRepository.findById(key).getOrNull()
@@ -70,10 +69,9 @@ class ModController(
 
     @GetMapping("refresh")
     fun refreshMods(
-        @RequestParam("token", required = false) token: String? = null,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<Void> {
-        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
+        if (!metadataRepository.isValidAdminToken(authHeader)) {
             return ResponseEntity(UNAUTHORIZED)
         }
         cacheManager.getCache(DOTA_MOD_CACHE_NAME)?.clear()

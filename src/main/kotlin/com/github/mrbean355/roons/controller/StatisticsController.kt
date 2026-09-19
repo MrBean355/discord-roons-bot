@@ -34,10 +34,9 @@ class StatisticsController(
 
     @GetMapping("health")
     fun getHealth(
-        @RequestParam("token", required = false) token: String? = null,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<SystemHealthResponse> {
-        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
+        if (!metadataRepository.isValidAdminToken(authHeader)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         val runtime = ManagementFactory.getRuntimeMXBean()
@@ -63,10 +62,9 @@ class StatisticsController(
 
     @GetMapping("properties")
     fun listProperties(
-        @RequestParam("token", required = false) token: String? = null,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<List<String>> {
-        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
+        if (!metadataRepository.isValidAdminToken(authHeader)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         return ResponseEntity.ok(analyticsPropertyRepository.findDistinctProperties())
@@ -74,11 +72,10 @@ class StatisticsController(
 
     @GetMapping("recentUsers")
     fun getRecentUsers(
-        @RequestParam("token", required = false) token: String? = null,
         @RequestParam("period") period: Long,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<Long> {
-        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
+        if (!metadataRepository.isValidAdminToken(authHeader)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         val since = clock.currentTimeMs - TimeUnit.MINUTES.toMillis(period)
@@ -87,11 +84,10 @@ class StatisticsController(
 
     @GetMapping("{property}")
     fun getStatistic(
-        @RequestParam("token", required = false) token: String? = null,
         @PathVariable("property") property: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<Map<String, Int>> {
-        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
+        if (!metadataRepository.isValidAdminToken(authHeader)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         val properties = analyticsPropertyRepository.findByProperty(property)
@@ -107,10 +103,9 @@ class StatisticsController(
 
     @GetMapping("discordServers")
     fun getDiscordServers(
-        @RequestParam("token", required = false) token: String? = null,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<List<DiscordServerDto>> {
-        if (!metadataRepository.isValidAdminToken(authHeader, token)) {
+        if (!metadataRepository.isValidAdminToken(authHeader)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
         return ResponseEntity.ok(
