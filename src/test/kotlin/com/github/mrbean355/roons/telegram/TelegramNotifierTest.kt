@@ -75,4 +75,22 @@ internal class TelegramNotifierTest {
             assertEquals(ParseMode.HTML, parseMode)
         }
     }
+
+    @Test
+    internal fun testSendPrivateMessage_NoChatId_SanitizesNewlines() {
+        val notifier = TelegramNotifier(bot, logger, null)
+
+        notifier.sendPrivateMessage("line1\nline2\rline3")
+
+        verify { logger.info("line1_line2_line3") }
+    }
+
+    @Test
+    internal fun testSendChannelMessage_NoChatId_SanitizesNewlines() {
+        val notifier = TelegramNotifier(bot, logger, null)
+
+        notifier.sendChannelMessage("line1\nline2\rline3")
+
+        verify { logger.info("@bulldog_sounds: line1_line2_line3") }
+    }
 }

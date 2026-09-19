@@ -23,7 +23,7 @@ class TelegramNotifier @VisibleForTesting constructor(
         if (chatId != null) {
             bot.execute(SendHtmlMessage(chatId, text))
         } else {
-            logger.info(text)
+            logger.info(text.replace('\n', '_').replace('\r', '_'))
         }
     }
 
@@ -31,7 +31,7 @@ class TelegramNotifier @VisibleForTesting constructor(
         if (chatId != null) {
             bot.execute(SendHtmlMessage(CHANNEL_ID, text))
         } else {
-            logger.info("$CHANNEL_ID: $text")
+            logger.info("$CHANNEL_ID: ${text.replace('\n', '_').replace('\r', '_')}")
         }
     }
 }
