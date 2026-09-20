@@ -1,26 +1,14 @@
-package com.github.mrbean355.roons.component
+package com.github.mrbean355.roons
 
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.InjectionPoint
-import org.springframework.context.support.GenericApplicationContext
 
-internal class BeanProviderTest {
+internal class AppConfigTest {
 
-    @Test
-    internal fun testDiscordToken() {
-        val context = mockk<GenericApplicationContext> {
-            every { environment } returns mockk {
-                every { systemEnvironment } returns mapOf("DISCORD_API_TOKEN" to "abc123")
-            }
-        }
-
-        val result = BeanProvider.discordToken(context)
-
-        assertEquals("abc123", result)
-    }
+    private val appConfig = AppConfig()
 
     @Test
     internal fun testLogger_ContainingClass() {
@@ -30,7 +18,7 @@ internal class BeanProviderTest {
             }
         }
 
-        val result = BeanProvider.logger(injectionPoint)
+        val result = appConfig.logger(injectionPoint)
 
         assertEquals(ContainingClass::class.java.name, result.name)
     }
@@ -44,7 +32,7 @@ internal class BeanProviderTest {
             }
         }
 
-        val result = BeanProvider.logger(injectionPoint)
+        val result = appConfig.logger(injectionPoint)
 
         assertEquals(DeclaringClass::class.java.name, result.name)
     }

@@ -82,14 +82,15 @@ Configure the following environment variables (e.g., in an `.env` file or your I
 | Variable                 | Description                                       |
 |:-------------------------|:--------------------------------------------------|
 | `JDBC_DATABASE_URL`      | e.g. `jdbc:postgresql://localhost:5432/roons_bot` |
-| `JDBC_DATABASE_USERNAME` | Database username                                 |
-| `JDBC_DATABASE_PASSWORD` | Database password                                 |
-| `DISCORD_BOT_TOKEN`      | Token for your Discord bot application            |
+| `JDBC_DATABASE_USERNAME` | Database username (optional)                      |
+| `JDBC_DATABASE_PASSWORD` | Database password (optional)                      |
+| `DISCORD_API_TOKEN`      | Token for your Discord bot application            |
+| `TELEGRAM_TOKEN`         | Token for your Telegram bot application           |
+| `TELEGRAM_CHAT`          | Telegram chat ID for admin notifications          |
 
 ### Running the Application
 
-Run the following command to start the server with a stubbed Telegram client (logs messages to the console instead of
-sending them):
+Run the following command to start the server locally:
 
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=local'

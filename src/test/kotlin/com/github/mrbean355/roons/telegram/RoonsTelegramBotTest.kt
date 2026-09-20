@@ -8,6 +8,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import net.dv8tion.jda.api.JDA
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,7 +34,7 @@ internal class RoonsTelegramBotTest {
     @BeforeEach
     internal fun setUp() {
         MockKAnnotations.init(this)
-        bot = RoonsTelegramBot(discordBot, telegramNotifier, logger, adminChatId)
+        bot = RoonsTelegramBot(discordBot, telegramNotifier, logger, adminChatId, "token")
     }
 
     @Test
@@ -101,5 +102,13 @@ internal class RoonsTelegramBotTest {
         bot.consume(update)
 
         verify(inverse = true) { telegramNotifier.sendPrivateMessage(any()) }
+    }
+
+    @Test
+    internal fun testGetBotToken() {
+        val customBot = RoonsTelegramBot(discordBot, telegramNotifier, logger, adminChatId, "token123")
+
+        assertEquals("token123", customBot.getBotToken())
+        assertEquals("token", bot.getBotToken())
     }
 }

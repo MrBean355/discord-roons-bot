@@ -1,9 +1,8 @@
 package com.github.mrbean355.roons.telegram
 
 import com.github.mrbean355.roons.discord.DiscordBot
-import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.Logger
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsumer
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot
@@ -12,25 +11,16 @@ import org.telegram.telegrambots.meta.api.objects.Update
 import java.lang.management.ManagementFactory
 import java.time.Duration
 
-const val ENV_TELEGRAM_TOKEN = "TELEGRAM_TOKEN"
-const val ENV_TELEGRAM_CHAT = "TELEGRAM_CHAT"
-
 @Component
-class RoonsTelegramBot @VisibleForTesting constructor(
+class RoonsTelegramBot(
     private val discordBot: DiscordBot,
     private val telegramNotifier: TelegramNotifier,
     private val logger: Logger,
-    private val adminChatId: String?
+    @Value($$"${TELEGRAM_CHAT}") private val adminChatId: String,
+    @Value($$"${TELEGRAM_TOKEN}") private val botToken: String,
 ) : SpringLongPollingBot, LongPollingSingleThreadUpdateConsumer {
 
-    @Autowired
-    constructor(
-        discordBot: DiscordBot,
-        telegramNotifier: TelegramNotifier,
-        logger: Logger
-    ) : this(discordBot, telegramNotifier, logger, System.getenv(ENV_TELEGRAM_CHAT))
-
-    override fun getBotToken(): String = System.getenv(ENV_TELEGRAM_TOKEN).orEmpty()
+    override fun getBotToken(): String = botToken
 
     override fun getUpdatesConsumer(): LongPollingUpdateConsumer = this
 
@@ -41,7 +31,7 @@ class RoonsTelegramBot @VisibleForTesting constructor(
             }
             val message = update.message
             val chatId = message.chatId.toString()
-            if (adminChatId.isNullOrBlank() || chatId != adminChatId) {
+            if (chatId != adminChatId) {
                 logger.warn("Ignoring message from non-admin chat ID: $chatId")
                 return
             }
