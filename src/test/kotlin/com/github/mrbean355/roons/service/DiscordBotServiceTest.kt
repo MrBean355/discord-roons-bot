@@ -94,4 +94,56 @@ internal class DiscordBotServiceTest {
         assertEquals(settings, result)
         verify { discordBotSettingsRepository.save(settings) }
     }
+
+    @Test
+    internal fun testGetOrCreateUserToken_UserExists_ReturnsExistingToken() {
+        val existing = DiscordBotUser(1, "u1", "g1", "token123")
+        every { discordBotUserRepository.findOneByDiscordUserIdAndGuildId("u1", "g1") } returns existing
+
+        val result = service.getOrCreateUserToken("u1", "g1")
+
+        assertEquals("token123", result)
+        verify(exactly = 0) { discordBotUserRepository.save(any()) }
+    }
+
+    @Test
+    internal fun testGetOrCreateUserToken_UserDoesNotExist_SavesAndReturnsNewToken() {
+        every { discordBotUserRepository.findOneByDiscordUserIdAndGuildId("u1", "g1") } returns null
+        val slot = slot<DiscordBotUser>()
+        every { discordBotUserRepository.save(capture(slot)) } answers { slot.captured }
+
+        val result = service.getOrCreateUserToken("u1", "g1")
+
+        assertEquals(slot.captured.token, result)
+        assertEquals("u1", slot.captured.discordUserId)
+        assertEquals("g1", slot.captured.guildId)
+    }
+
+    @Test
+    internal fun testGenerateNewUserToken_UserExists_UpdatesTokenAndReturnsIt() {
+        val existing = DiscordBotUser(1, "u1", "g1", "oldToken")
+        every { discordBotUserRepository.findOneByDiscordUserIdAndGuildId("u1", "g1") } returns existing
+        val slot = slot<DiscordBotUser>()
+        every { discordBotUserRepository.save(capture(slot)) } answers { slot.captured }
+
+        val result = service.generateNewUserToken("u1", "g1")
+
+        assertEquals(slot.captured.token, result)
+        assertEquals("u1", slot.captured.discordUserId)
+        assertEquals("g1", slot.captured.guildId)
+        assert(result != "oldToken")
+    }
+
+    @Test
+    internal fun testGenerateNewUserToken_UserDoesNotExist_SavesNewUserAndReturnsToken() {
+        every { discordBotUserRepository.findOneByDiscordUserIdAndGuildId("u1", "g1") } returns null
+        val slot = slot<DiscordBotUser>()
+        every { discordBotUserRepository.save(capture(slot)) } answers { slot.captured }
+
+        val result = service.generateNewUserToken("u1", "g1")
+
+        assertEquals(slot.captured.token, result)
+        assertEquals("u1", slot.captured.discordUserId)
+        assertEquals("g1", slot.captured.guildId)
+    }
 }

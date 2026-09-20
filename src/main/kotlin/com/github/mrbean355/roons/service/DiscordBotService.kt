@@ -7,6 +7,7 @@ import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
 import com.github.mrbean355.roons.repository.DiscordBotUserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.UUID
 
 @Service
 class DiscordBotService(
@@ -37,5 +38,24 @@ class DiscordBotService(
     @Transactional
     fun saveSettings(settings: DiscordBotSettings): DiscordBotSettings {
         return discordBotSettingsRepository.save(settings)
+    }
+
+    @Transactional
+    fun getOrCreateUserToken(discordUserId: String, guildId: String): String {
+        val botUser = discordBotUserRepository.findOneByDiscordUserIdAndGuildId(discordUserId, guildId)
+            ?: discordBotUserRepository.save(DiscordBotUser(0, discordUserId, guildId, UUID.randomUUID().toString()))
+        return botUser.token
+    }
+
+    @Transactional
+    fun generateNewUserToken(discordUserId: String, guildId: String): String {
+        val newToken = UUID.randomUUID().toString()
+        val botUser = discordBotUserRepository.findOneByDiscordUserIdAndGuildId(discordUserId, guildId)
+        if (botUser != null) {
+            discordBotUserRepository.save(botUser.copy(token = newToken))
+        } else {
+            discordBotUserRepository.save(DiscordBotUser(0, discordUserId, guildId, newToken))
+        }
+        return newToken
     }
 }
