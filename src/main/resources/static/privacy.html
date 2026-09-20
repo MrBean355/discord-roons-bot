@@ -32,7 +32,7 @@
 <body>
     <div class="container">
         <h1>Privacy Policy for Roons Bot</h1>
-        <p><strong>Effective Date:</strong> 22 August 2024</p>
+        <p><strong>Effective Date:</strong> 20 September 2026</p>
         
         <h2>1. Introduction</h2>
         <p>This Privacy Policy explains how Roons Bot collects, uses, and protects your information. 
@@ -42,23 +42,28 @@
         <p>Roons Bot collects the following data to provide its functionality:</p>
         <ul>
             <li><strong>Guild ID:</strong> The unique identifier of the Discord server where the bot is used.</li>
-            <li><strong>User ID:</strong> Your unique Discord identifier.</li>
-            <li><strong>Voice Channel ID:</strong> The identifier of the voice channel where you interact with the bot.</li>
-            <li><strong>Volume Setting:</strong> Your preferred volume level for sound bites.</li>
+            <li><strong>User ID:</strong> Your unique Discord identifier, as well as the ID of the user the bot is configured to follow when using <code>/follow</code>.</li>
+            <li><strong>Voice Channel ID:</strong> The identifier of the voice channel where you interact with the bot or where the bot was active prior to a restart.</li>
+            <li><strong>Volume Setting:</strong> Your preferred volume level for sound bites in the server.</li>
+            <li><strong>Authentication Token ("Magic Number"):</strong> A unique randomly generated token generated upon request (via <code>/magic-number</code>) to authorize the AdmiralBulldog desktop application.</li>
+            <li><strong>Feedback Messages:</strong> Any comments or suggestions voluntarily submitted via <code>/feedback</code>.</li>
         </ul>
         <p>This data is collected automatically when you use the bot and is essential for delivering the bot's features.</p>
         
         <h2>3. Data Usage</h2>
         <p>The data collected by Roons Bot is used solely for the following purposes:</p>
         <ul>
-            <li>Ensuring the correct functioning of the bot.</li>
-            <li>Providing users with a personalized experience (e.g., maintaining volume settings).</li>
+            <li>Ensuring the correct functioning of the bot and voice channel playback.</li>
+            <li>Providing users with a personalized experience (e.g., maintaining volume settings, following users across voice channels).</li>
+            <li>Authorizing playback requests from the desktop application via your authentication token.</li>
+            <li>Reviewing user feedback to improve the bot.</li>
         </ul>
-        <p>No personal information beyond the data mentioned is collected, and this data is not shared with any third parties.</p>
+        <p>No personal information beyond the data mentioned is collected, and this data is not sold or shared with any third parties.</p>
         
         <h2>4. Data Retention</h2>
-        <p>The data will be stored for as long as necessary to provide the bot’s services. If you wish to have your data deleted, 
-        please contact the bot's developer, and your data will be removed upon request.</p>
+        <p>The data will be stored for as long as necessary to provide the bot’s services. 
+        When Roons Bot leaves or is removed from a Discord server, all guild settings and associated authentication tokens for that server are automatically purged. 
+        If you wish to have your data deleted manually, please contact the bot's developer, and your data will be removed upon request.</p>
         
         <h2>5. Data Security</h2>
         <p>We take the protection of your data seriously. Appropriate measures are in place to prevent unauthorized access, use, 
