@@ -37,7 +37,7 @@ class TrackScheduler(private val player: AudioPlayer) : AudioEventAdapter() {
 
     private fun startTrack(track: AudioTrack, volume: Int, rate: Int) {
         player.volume = volume
-        player.setFilterFactory(RateFilterFactory(rate / 100.0))
+        player.setFilterFactory(if (rate == 100) null else RateFilterFactory(rate / 100.0))
         player.startTrack(track, false)
     }
 

@@ -41,6 +41,20 @@ internal class TrackSchedulerTest {
     }
 
     @Test
+    internal fun testQueue_NoPlayingTrack_DefaultRate_SetsNullFilterFactory() {
+        val track = mockk<AudioTrack>()
+        every { audioPlayer.playingTrack } returns null
+
+        trackScheduler.queue(track, 55, 100)
+
+        verify {
+            audioPlayer.volume = 55
+            audioPlayer.setFilterFactory(null)
+            audioPlayer.startTrack(track, false)
+        }
+    }
+
+    @Test
     internal fun testQueue_HasPlayingTrack_DoesNotStartTrack() {
         val track = mockk<AudioTrack>()
         every { audioPlayer.playingTrack } returns mockk()
