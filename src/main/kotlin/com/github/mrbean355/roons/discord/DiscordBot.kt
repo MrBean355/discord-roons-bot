@@ -88,9 +88,11 @@ class DiscordBot(
     /** @return a guild-specific [GuildMusicManager]. */
     private fun getGuildAudioPlayer(guild: Guild): GuildMusicManager {
         return synchronized(this) {
-            val manager = musicManagers.getOrPut(guild.idLong) { GuildMusicManager(playerManager) }
-            guild.audioManager.sendingHandler = manager.getSendHandler()
-            manager
+            musicManagers.getOrPut(guild.idLong) {
+                GuildMusicManager(playerManager).also { manager ->
+                    guild.audioManager.sendingHandler = manager.sendHandler
+                }
+            }
         }
     }
 

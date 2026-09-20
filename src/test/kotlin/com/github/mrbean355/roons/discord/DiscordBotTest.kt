@@ -97,4 +97,22 @@ internal class DiscordBotTest {
         verify { discordBotService.saveSettings(match { it.lastChannel == "channel_123" }) }
         verify { audioManager.closeAudioConnection() }
     }
+
+    @Test
+    internal fun testPlaySound_SetsSendingHandlerOnlyOnceAcrossMultipleCalls() {
+        val guild = mockk<Guild>(relaxed = true)
+        val audioManager = mockk<AudioManager>(relaxed = true)
+        every { audioManager.isConnected } returns true
+        every { guild.idLong } returns 12345L
+        every { guild.id } returns "12345"
+        every { guild.audioManager } returns audioManager
+        every { bot.getGuildById("12345") } returns guild
+        every { soundStore.getFile("13.mp3") } returns File("13.mp3")
+        every { discordBotService.loadSettings("12345") } returns DiscordBotSettings(1, "12345", 100, null, null)
+
+        discordBot.playSound(DiscordBotUser(1, "user_1", "12345", "token_1"), "13.mp3", 100, 100)
+        discordBot.playSound(DiscordBotUser(1, "user_1", "12345", "token_1"), "13.mp3", 100, 100)
+
+        verify(exactly = 1) { audioManager.sendingHandler = any() }
+    }
 }

@@ -11,13 +11,10 @@ class GuildMusicManager(
 ) {
     private val player = manager.createPlayer()
     val scheduler = TrackScheduler(player)
+    val sendHandler = AudioPlayerSendHandler(player)
 
     init {
         player.addListener(scheduler)
-    }
-
-    fun getSendHandler(): AudioPlayerSendHandler {
-        return AudioPlayerSendHandler(player)
     }
 }
 
