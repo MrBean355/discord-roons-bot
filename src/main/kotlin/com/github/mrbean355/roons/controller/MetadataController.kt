@@ -1,15 +1,13 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.WelcomeMessageResponse
+import com.github.mrbean355.roons.security.AdminOnly
 import com.github.mrbean355.roons.service.MetadataService
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable
-import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -30,15 +28,11 @@ class MetadataController(
         return ResponseEntity.ok(WelcomeMessageResponse(message))
     }
 
+    @AdminOnly
     @PutMapping("welcomeMessage")
     fun putWelcomeMessage(
-        @RequestParam("message") message: String,
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+        @RequestParam("message") message: String
     ): ResponseEntity<Void> {
-        if (!metadataService.isValidAdminToken(authHeader)) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
-
         metadataService.saveWelcomeMessage(message)
         cacheManager.getCache(WELCOME_MESSAGE_CACHE_NAME)?.clear()
 

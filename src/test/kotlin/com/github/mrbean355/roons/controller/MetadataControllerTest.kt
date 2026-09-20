@@ -30,9 +30,6 @@ internal class MetadataControllerTest {
 
     @BeforeEach
     internal fun setUp() {
-        every { metadataService.isValidAdminToken("Bearer 12345") } returns true
-        every { metadataService.isValidAdminToken(not("Bearer 12345")) } returns false
-        every { metadataService.isValidAdminToken(null) } returns false
         every { cacheManager.getCache("welcome_message_cache") } returns welcomeMessageCache
         justRun { metadataService.saveWelcomeMessage(any()) }
         controller = MetadataController(metadataService, cacheManager)
@@ -58,22 +55,8 @@ internal class MetadataControllerTest {
     }
 
     @Test
-    internal fun testPutWelcomeMessage_NoToken_ReturnsUnauthorizedResult() {
-        val result = controller.putWelcomeMessage(message = "")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testPutWelcomeMessage_IncorrectToken_ReturnsUnauthorizedResult() {
-        val result = controller.putWelcomeMessage(message = "", authHeader = "Bearer 67890")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testPutWelcomeMessage_CorrectToken_SavesWelcomeMessage() {
-        val result = controller.putWelcomeMessage(message = "new message", authHeader = "Bearer 12345")
+    internal fun testPutWelcomeMessage_SavesWelcomeMessage() {
+        val result = controller.putWelcomeMessage(message = "new message")
 
         verifyOrder {
             metadataService.saveWelcomeMessage("new message")

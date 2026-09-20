@@ -4,15 +4,13 @@ import com.github.mrbean355.roons.DiscordServerDto
 import com.github.mrbean355.roons.SystemHealthResponse
 import com.github.mrbean355.roons.component.Clock
 import com.github.mrbean355.roons.discord.DiscordBot
+import com.github.mrbean355.roons.security.AdminOnly
 import com.github.mrbean355.roons.service.AnalyticsService
-import com.github.mrbean355.roons.service.MetadataService
 import com.github.mrbean355.roons.service.UserService
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -21,23 +19,18 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
+@AdminOnly
 @RestController
 @RequestMapping("/statistics")
 class StatisticsController(
     private val userService: UserService,
     private val analyticsService: AnalyticsService,
-    private val metadataService: MetadataService,
     private val discordBot: DiscordBot,
     private val clock: Clock
 ) {
 
     @GetMapping("health")
-    fun getHealth(
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
-    ): ResponseEntity<SystemHealthResponse> {
-        if (!metadataService.isValidAdminToken(authHeader)) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
+    fun getHealth(): ResponseEntity<SystemHealthResponse> {
         val runtime = ManagementFactory.getRuntimeMXBean()
         val mem = Runtime.getRuntime()
         val uptime = Duration.ofMillis(runtime.uptime)
@@ -60,35 +53,22 @@ class StatisticsController(
     }
 
     @GetMapping("properties")
-    fun listProperties(
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
-    ): ResponseEntity<List<String>> {
-        if (!metadataService.isValidAdminToken(authHeader)) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
+    fun listProperties(): ResponseEntity<List<String>> {
         return ResponseEntity.ok(analyticsService.findDistinctProperties())
     }
 
     @GetMapping("recentUsers")
     fun getRecentUsers(
-        @RequestParam("period") period: Long,
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+        @RequestParam("period") period: Long
     ): ResponseEntity<Long> {
-        if (!metadataService.isValidAdminToken(authHeader)) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
         val since = clock.currentTimeMs - TimeUnit.MINUTES.toMillis(period)
         return ResponseEntity.ok(userService.countRecentUsers(Instant.ofEpochMilli(since)))
     }
 
     @GetMapping("{property}")
     fun getStatistic(
-        @PathVariable("property") property: String,
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
+        @PathVariable("property") property: String
     ): ResponseEntity<Map<String, Int>> {
-        if (!metadataService.isValidAdminToken(authHeader)) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
         val statistics = analyticsService.getStatistic(property)
             ?: return ResponseEntity(HttpStatus.NOT_FOUND)
 
@@ -96,12 +76,7 @@ class StatisticsController(
     }
 
     @GetMapping("discordServers")
-    fun getDiscordServers(
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
-    ): ResponseEntity<List<DiscordServerDto>> {
-        if (!metadataService.isValidAdminToken(authHeader)) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
+    fun getDiscordServers(): ResponseEntity<List<DiscordServerDto>> {
         return ResponseEntity.ok(
             discordBot.getGuilds().map {
                 DiscordServerDto(

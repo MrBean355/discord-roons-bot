@@ -4,7 +4,6 @@ import com.github.mrbean355.roons.DiscordServerDto
 import com.github.mrbean355.roons.TestClock
 import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.service.AnalyticsService
-import com.github.mrbean355.roons.service.MetadataService
 import com.github.mrbean355.roons.service.UserService
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -12,8 +11,10 @@ import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -30,63 +31,43 @@ internal class StatisticsControllerTest {
     private lateinit var analyticsService: AnalyticsService
 
     @MockK
-    private lateinit var metadataService: MetadataService
-
-    @MockK
     private lateinit var discordBot: DiscordBot
     private lateinit var controller: StatisticsController
 
     @BeforeEach
     internal fun setUp() {
-        every { metadataService.isValidAdminToken("Bearer 12345") } returns true
-        every { metadataService.isValidAdminToken(not("Bearer 12345")) } returns false
-        every { metadataService.isValidAdminToken(null) } returns false
-        controller = StatisticsController(userService, analyticsService, metadataService, discordBot, TestClock(1_000_000))
+        controller = StatisticsController(userService, analyticsService, discordBot, TestClock(1_000_000))
     }
 
     @Test
-    internal fun testListProperties_NoToken_ReturnsUnauthorized() {
-        val result = controller.listProperties()
+    internal fun testGetHealth_ReturnsSystemHealth() {
+        every { discordBot.getGatewayStatus() } returns JDA.Status.CONNECTED
+        every { discordBot.getGatewayPing() } returns 42L
 
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
+        val result = controller.getHealth()
+
+        assertSame(HttpStatus.OK, result.statusCode)
+        val body = result.body
+        assertNotNull(body)
+        assertEquals("CONNECTED", body?.discordStatus)
+        assertEquals(42L, body?.discordPing)
     }
 
     @Test
-    internal fun testListProperties_WrongToken_ReturnsUnauthorized() {
-        val result = controller.listProperties("Bearer 1111")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testListProperties_CorrectToken_ReturnsProperties() {
+    internal fun testListProperties_ReturnsProperties() {
         every { analyticsService.findDistinctProperties() } returns listOf("a", "b", "c")
 
-        val result = controller.listProperties("Bearer 12345")
+        val result = controller.listProperties()
 
         assertSame(HttpStatus.OK, result.statusCode)
         assertEquals(listOf("a", "b", "c"), result.body)
     }
 
     @Test
-    internal fun testGetRecentUsers_NoToken_ReturnsUnauthorized() {
-        val result = controller.getRecentUsers(5)
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testGetRecentUsers_WrongToken_ReturnsUnauthorized() {
-        val result = controller.getRecentUsers(5, "Bearer 1111")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testGetRecentUsers_CorrectToken_ReturnsProperties() {
+    internal fun testGetRecentUsers_ReturnsUserCount() {
         every { userService.countRecentUsers(any()) } returns 999
 
-        val result = controller.getRecentUsers(5, "Bearer 12345")
+        val result = controller.getRecentUsers(5)
 
         assertSame(HttpStatus.OK, result.statusCode)
         assertEquals(999, result.body ?: 0)
@@ -96,55 +77,27 @@ internal class StatisticsControllerTest {
     }
 
     @Test
-    internal fun testGetStatistic_NoToken_ReturnsUnauthorized() {
-        val result = controller.getStatistic("")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testGetStatistic_WrongToken_ReturnsUnauthorized() {
-        val result = controller.getStatistic("", "Bearer 1111")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testGetStatistic_CorrectToken_PropertyNotFound_ReturnsNotFound() {
+    internal fun testGetStatistic_PropertyNotFound_ReturnsNotFound() {
         every { analyticsService.getStatistic("abc") } returns null
 
-        val result = controller.getStatistic("abc", "Bearer 12345")
+        val result = controller.getStatistic("abc")
 
         assertSame(HttpStatus.NOT_FOUND, result.statusCode)
     }
 
     @Test
-    internal fun testGetStatistic_CorrectToken_PropertyFound_ReturnsValueCountMap() {
+    internal fun testGetStatistic_PropertyFound_ReturnsValueCountMap() {
         val stats = mapOf("one" to 2, "two" to 3, "three" to 2, "four" to 1)
         every { analyticsService.getStatistic("abc") } returns stats
 
-        val result = controller.getStatistic("abc", "Bearer 12345")
+        val result = controller.getStatistic("abc")
 
         assertSame(HttpStatus.OK, result.statusCode)
         assertEquals(stats, result.body)
     }
 
     @Test
-    internal fun testGetDiscordServers_NoToken_ReturnsUnauthorizedResponse() {
-        val result = controller.getDiscordServers()
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testGetDiscordServers_IncorrectToken_ReturnsUnauthorizedResponse() {
-        val result = controller.getDiscordServers("Bearer 67890")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testGetDiscordServers_CorrectToken_ReturnsGuildList() {
+    internal fun testGetDiscordServers_ReturnsGuildList() {
         every { discordBot.getGuilds() } returns listOf(
             mockGuild("Mr Bean Dota", 284, "Squad"),
             mockGuild("The Krappa Kleb", 74, "General"),
@@ -152,7 +105,7 @@ internal class StatisticsControllerTest {
             mockGuild("Dungeon", 25)
         )
 
-        val result = controller.getDiscordServers("Bearer 12345")
+        val result = controller.getDiscordServers()
         val body = result.body.orEmpty()
 
         assertSame(HttpStatus.OK, result.statusCode)

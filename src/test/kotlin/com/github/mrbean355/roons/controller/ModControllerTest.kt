@@ -1,7 +1,6 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.DotaModDto
-import com.github.mrbean355.roons.service.MetadataService
 import com.github.mrbean355.roons.service.ModService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import io.mockk.every
@@ -23,9 +22,6 @@ internal class ModControllerTest {
     @MockK
     private lateinit var modService: ModService
 
-    @MockK
-    private lateinit var metadataService: MetadataService
-
     @RelaxedMockK
     private lateinit var telegramNotifier: TelegramNotifier
 
@@ -38,11 +34,8 @@ internal class ModControllerTest {
 
     @BeforeEach
     internal fun setUp() {
-        every { metadataService.isValidAdminToken("Bearer 12345") } returns true
-        every { metadataService.isValidAdminToken(not("Bearer 12345")) } returns false
-        every { metadataService.isValidAdminToken(null) } returns false
         every { cacheManager.getCache("dota_mod_cache") } returns modCache
-        controller = ModController(modService, metadataService, telegramNotifier, cacheManager)
+        controller = ModController(modService, telegramNotifier, cacheManager)
     }
 
     @Test
@@ -80,24 +73,10 @@ internal class ModControllerTest {
     }
 
     @Test
-    internal fun testPatchMod_NoToken_ReturnsUnauthorized() {
-        val result = controller.patchMod("", "", 0, "Mod updated")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testPatchMod_IncorrectToken_ReturnsUnauthorized() {
-        val result = controller.patchMod("", "", 0, "Mod updated", authHeader = "Bearer 67890")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
     internal fun testPatchMod_ModNotFound_ReturnsNotFoundResult() {
         every { modService.updateMod("1", "", 0) } returns false
 
-        val result = controller.patchMod("1", "", 0, "Mod updated", authHeader = "Bearer 12345")
+        val result = controller.patchMod("1", "", 0, "Mod updated")
 
         assertSame(HttpStatus.NOT_FOUND, result.statusCode)
     }
@@ -106,7 +85,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModFound_SavesModWithUpdatedSizeAndHash() {
         every { modService.updateMod("1", "new-hash", 999) } returns true
 
-        controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
+        controller.patchMod("1", "new-hash", 999, "Mod updated")
 
         verify { modService.updateMod("1", "new-hash", 999) }
     }
@@ -115,7 +94,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModFound_ClearsCache() {
         every { modService.updateMod("1", "new-hash", 999) } returns true
 
-        controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
+        controller.patchMod("1", "new-hash", 999, "Mod updated")
 
         verify {
             cacheManager.getCache("dota_mod_cache")
@@ -128,7 +107,7 @@ internal class ModControllerTest {
         every { modService.updateMod("1", "new-hash", 999) } returns true
         every { cacheManager.getCache("dota_mod_cache") } returns null
 
-        controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
+        controller.patchMod("1", "new-hash", 999, "Mod updated")
 
         verify { cacheManager.getCache("dota_mod_cache") }
     }
@@ -137,7 +116,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_NullMessage_DoesNotSendTelegramChannelMessage() {
         every { modService.updateMod("1", "new-hash", 999) } returns true
 
-        controller.patchMod("1", "new-hash", 999, null, authHeader = "Bearer 12345")
+        controller.patchMod("1", "new-hash", 999, null)
 
         verify(inverse = true) { telegramNotifier.sendChannelMessage(any()) }
     }
@@ -146,7 +125,7 @@ internal class ModControllerTest {
     internal fun testPatchMod_NonNullMessage_SendsTelegramChannelMessage() {
         every { modService.updateMod("1", "new-hash", 999) } returns true
 
-        controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
+        controller.patchMod("1", "new-hash", 999, "Mod updated")
 
         verify { telegramNotifier.sendChannelMessage("Mod updated") }
     }
@@ -155,28 +134,14 @@ internal class ModControllerTest {
     internal fun testPatchMod_ModFound_ReturnsOkResult() {
         every { modService.updateMod("1", "new-hash", 999) } returns true
 
-        val result = controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
+        val result = controller.patchMod("1", "new-hash", 999, "Mod updated")
 
         assertSame(HttpStatus.OK, result.statusCode)
     }
 
     @Test
-    internal fun testRefreshMods_NoToken_ReturnsUnauthorizedResult() {
-        val result = controller.refreshMods()
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testRefreshMods_IncorrectToken_ReturnsUnauthorizedResult() {
-        val result = controller.refreshMods("Bearer 67890")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testRefreshMods_CorrectToken_ClearsCache() {
-        controller.refreshMods("Bearer 12345")
+    internal fun testRefreshMods_ClearsCache() {
+        controller.refreshMods()
 
         verify {
             cacheManager.getCache("dota_mod_cache")
@@ -188,7 +153,7 @@ internal class ModControllerTest {
     internal fun testRefreshMods_CacheNotFound_NoExceptionThrown() {
         every { cacheManager.getCache("dota_mod_cache") } returns null
 
-        controller.refreshMods("Bearer 12345")
+        controller.refreshMods()
 
         verify {
             cacheManager.getCache("dota_mod_cache")
@@ -196,8 +161,8 @@ internal class ModControllerTest {
     }
 
     @Test
-    internal fun testRefreshMods_CorrectToken_ReturnsOkResult() {
-        val result = controller.refreshMods("Bearer 12345")
+    internal fun testRefreshMods_ReturnsOkResult() {
+        val result = controller.refreshMods()
 
         assertSame(HttpStatus.OK, result.statusCode)
     }
