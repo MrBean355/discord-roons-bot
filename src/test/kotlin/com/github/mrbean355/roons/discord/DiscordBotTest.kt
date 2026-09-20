@@ -2,8 +2,7 @@ package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotSettings
 import com.github.mrbean355.roons.DiscordBotUser
-import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
-import com.github.mrbean355.roons.repository.loadSettings
+import com.github.mrbean355.roons.service.DiscordBotService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import io.mockk.MockKAnnotations
 import io.mockk.every
@@ -23,7 +22,7 @@ import java.io.File
 internal class DiscordBotTest {
 
     @MockK(relaxed = true)
-    private lateinit var discordBotSettingsRepository: DiscordBotSettingsRepository
+    private lateinit var discordBotService: DiscordBotService
 
     @MockK(relaxed = true)
     private lateinit var soundStore: SoundStore
@@ -42,7 +41,7 @@ internal class DiscordBotTest {
     @BeforeEach
     internal fun setUp() {
         MockKAnnotations.init(this)
-        discordBot = DiscordBot(discordBotSettingsRepository, soundStore, telegramNotifier, logger, bot)
+        discordBot = DiscordBot(discordBotService, soundStore, telegramNotifier, logger, bot)
     }
 
     @Test
@@ -73,7 +72,7 @@ internal class DiscordBotTest {
         every { guild.audioManager } returns audioManager
         every { bot.getGuildById("guild_1") } returns guild
         every { soundStore.getFile("13.mp3") } returns File("13.mp3")
-        every { discordBotSettingsRepository.findOneByGuildId("guild_1") } returns DiscordBotSettings(1, "guild_1", 100, null, null)
+        every { discordBotService.loadSettings("guild_1") } returns DiscordBotSettings(1, "guild_1", 100, null, null)
 
         val result = discordBot.playSound(DiscordBotUser(1, "user_1", "guild_1", "token_1"), "13.mp3", 100, 100)
 
@@ -89,13 +88,13 @@ internal class DiscordBotTest {
         every { audioManager.isConnected } returns true
         every { guild.selfMember.voiceState?.channel?.id } returns "channel_123"
         every { bot.guilds } returns listOf(guild)
-        every { discordBotSettingsRepository.loadSettings("guild_1") } returns DiscordBotSettings(1, "guild_1", 100, null, null)
-        every { discordBotSettingsRepository.save(any()) } answers { firstArg() }
+        every { discordBotService.loadSettings("guild_1") } returns DiscordBotSettings(1, "guild_1", 100, null, null)
+        every { discordBotService.saveSettings(any()) } answers { firstArg() }
 
         discordBot.shutdown()
 
         verify { bot.presence.setStatus(OnlineStatus.OFFLINE) }
-        verify { discordBotSettingsRepository.save(match { it.lastChannel == "channel_123" }) }
+        verify { discordBotService.saveSettings(match { it.lastChannel == "channel_123" }) }
         verify { audioManager.closeAudioConnection() }
     }
 }

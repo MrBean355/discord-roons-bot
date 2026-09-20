@@ -2,7 +2,6 @@ package com.github.mrbean355.roons.service
 
 import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.repository.AppUserRepository
-import com.github.mrbean355.roons.repository.updateLastSeen
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -29,7 +28,9 @@ class UserService(
 
     @Transactional
     fun updateLastSeen(userId: String) {
-        appUserRepository.updateLastSeen(userId)
+        require(userId.isNotBlank())
+        val user = appUserRepository.findByGeneratedId(userId) ?: AppUser(0, userId, null)
+        appUserRepository.save(user.copy(lastSeen = Instant.now()))
     }
 
     @Transactional(readOnly = true)

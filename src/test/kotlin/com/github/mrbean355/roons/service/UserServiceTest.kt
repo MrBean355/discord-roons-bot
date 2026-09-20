@@ -2,12 +2,9 @@ package com.github.mrbean355.roons.service
 
 import com.github.mrbean355.roons.AppUser
 import com.github.mrbean355.roons.repository.AppUserRepository
-import com.github.mrbean355.roons.repository.updateLastSeen
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
-import io.mockk.justRun
-import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -17,6 +14,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import java.time.Instant
 
@@ -56,13 +54,38 @@ internal class UserServiceTest {
     }
 
     @Test
-    internal fun testUpdateLastSeen_CallsExtension() {
-        mockkStatic(AppUserRepository::updateLastSeen)
-        justRun { appUserRepository.updateLastSeen("user1") }
+    internal fun testUpdateLastSeen_BlankUserId_ThrowsException() {
+        assertThrows<IllegalArgumentException> {
+            service.updateLastSeen("   ")
+        }
+    }
+
+    @Test
+    internal fun testUpdateLastSeen_UserNotFound_CreatesNewUser() {
+        every { appUserRepository.findByGeneratedId("user1") } returns null
+        val slot = slot<AppUser>()
+        every { appUserRepository.save(capture(slot)) } answers { slot.captured }
 
         service.updateLastSeen("user1")
 
-        verify { appUserRepository.updateLastSeen("user1") }
+        assertEquals(0, slot.captured.id)
+        assertEquals("user1", slot.captured.generatedId)
+        assertNotNull(slot.captured.lastSeen)
+    }
+
+    @Test
+    internal fun testUpdateLastSeen_UserFound_UpdatesExistingUser() {
+        val existing = AppUser(5, "user1", Instant.EPOCH)
+        every { appUserRepository.findByGeneratedId("user1") } returns existing
+        val slot = slot<AppUser>()
+        every { appUserRepository.save(capture(slot)) } answers { slot.captured }
+
+        service.updateLastSeen("user1")
+
+        assertEquals(5, slot.captured.id)
+        assertEquals("user1", slot.captured.generatedId)
+        assertNotNull(slot.captured.lastSeen)
+        assertTrue(slot.captured.lastSeen!! > Instant.EPOCH)
     }
 
     @Test

@@ -1,10 +1,7 @@
 package com.github.mrbean355.roons.service
 
+import com.github.mrbean355.roons.Metadata
 import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
-import com.github.mrbean355.roons.repository.getWelcomeMessage
-import com.github.mrbean355.roons.repository.isValidAdminToken
-import com.github.mrbean355.roons.repository.saveWelcomeMessage
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.stereotype.Service
@@ -15,28 +12,43 @@ class MetadataService(
     private val metadataRepository: MetadataRepository
 ) {
 
+    private val adminToken: String?
+        get() = metadataRepository.findByKey(KEY_ADMIN_TOKEN)?.value
+
     @WelcomeMessageCache
     @Transactional(readOnly = true)
     fun getWelcomeMessage(): String? {
-        return metadataRepository.getWelcomeMessage()
+        return metadataRepository.findByKey(KEY_WELCOME_MESSAGE)?.value
     }
 
     @ClearWelcomeMessageCache
     @Transactional
     fun saveWelcomeMessage(message: String) {
-        metadataRepository.saveWelcomeMessage(message)
+        val metadata = metadataRepository.findByKey(KEY_WELCOME_MESSAGE)?.copy(value = message)
+            ?: Metadata(KEY_WELCOME_MESSAGE, message)
+        metadataRepository.save(metadata)
     }
 
     @Transactional(readOnly = true)
     fun isValidAdminToken(authHeader: String?): Boolean {
-        return metadataRepository.isValidAdminToken(authHeader)
+        val configuredToken = adminToken ?: return false
+        val headerToken = if (authHeader != null && authHeader.startsWith("Bearer ", ignoreCase = true)) {
+            authHeader.substring(7).trim()
+        } else {
+            authHeader?.trim()
+        }
+        return !headerToken.isNullOrEmpty() && headerToken == configuredToken
     }
 
     @Transactional(readOnly = true)
     fun hasAdminToken(): Boolean {
-        return metadataRepository.adminToken != null
+        return adminToken != null
     }
 }
+
+private const val KEY_ADMIN_TOKEN = "admin_token"
+private const val KEY_WELCOME_MESSAGE = "app_welcome_message"
+
 
 private const val WELCOME_MESSAGE_CACHE_NAME = "welcome_message_cache"
 

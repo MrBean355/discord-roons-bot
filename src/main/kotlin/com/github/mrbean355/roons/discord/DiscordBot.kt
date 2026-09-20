@@ -2,8 +2,7 @@ package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.discord.audio.GuildMusicManager
-import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
-import com.github.mrbean355.roons.repository.loadSettings
+import com.github.mrbean355.roons.service.DiscordBotService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
@@ -28,7 +27,7 @@ import java.io.File
 
 @Component
 class DiscordBot(
-    private val discordBotSettingsRepository: DiscordBotSettingsRepository,
+    private val discordBotService: DiscordBotService,
     private val soundStore: SoundStore,
     private val telegramNotifier: TelegramNotifier,
     private val logger: Logger,
@@ -54,7 +53,7 @@ class DiscordBot(
     fun playSound(discordBotUser: DiscordBotUser, soundFileName: String, volume: Int, rate: Int): Boolean {
         val guild = bot.getGuildById(discordBotUser.guildId) ?: return false
         val file = soundStore.getFile(soundFileName) ?: return false
-        val masterVolume = discordBotSettingsRepository.loadSettings(discordBotUser.guildId).volume
+        val masterVolume = discordBotService.loadSettings(discordBotUser.guildId).volume
         val finalVolume = (volume * masterVolume) / 100
         return playSound(guild, file.absolutePath, finalVolume, rate)
     }
@@ -67,9 +66,9 @@ class DiscordBot(
         supervisorScope {
             connectedGuilds.forEach { guild ->
                 launch {
-                    val settings = discordBotSettingsRepository.loadSettings(guild.id)
+                    val settings = discordBotService.loadSettings(guild.id)
                     val currentVoiceChannel = guild.selfMember.voiceState?.channel?.id
-                    discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
+                    discordBotService.saveSettings(settings.copy(lastChannel = currentVoiceChannel))
                     guild.audioManager.closeAudioConnection()
                 }
             }
