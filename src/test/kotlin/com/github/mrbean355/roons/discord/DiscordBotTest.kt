@@ -4,6 +4,7 @@ import com.github.mrbean355.roons.DiscordBotSettings
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.service.DiscordBotService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -36,12 +37,15 @@ internal class DiscordBotTest {
     @MockK(relaxed = true)
     private lateinit var bot: JDA
 
+    @MockK(relaxed = true)
+    private lateinit var playerManager: AudioPlayerManager
+
     private lateinit var discordBot: DiscordBot
 
     @BeforeEach
     internal fun setUp() {
         MockKAnnotations.init(this)
-        discordBot = DiscordBot(discordBotService, soundStore, telegramNotifier, logger, bot)
+        discordBot = DiscordBot(discordBotService, soundStore, telegramNotifier, logger, bot, playerManager)
     }
 
     @Test
@@ -96,6 +100,7 @@ internal class DiscordBotTest {
         verify { bot.presence.setStatus(OnlineStatus.OFFLINE) }
         verify { discordBotService.saveSettings(match { it.lastChannel == "channel_123" }) }
         verify { audioManager.closeAudioConnection() }
+        verify { playerManager.shutdown() }
     }
 
     @Test
