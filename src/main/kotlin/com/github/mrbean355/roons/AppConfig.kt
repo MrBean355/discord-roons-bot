@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Scope
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient
 import org.telegram.telegrambots.meta.generics.TelegramClient
@@ -27,6 +28,11 @@ class AppConfig(
         if (adminAuthInterceptor != null) {
             registry.addInterceptor(adminAuthInterceptor)
         }
+    }
+
+    override fun addViewControllers(registry: ViewControllerRegistry) {
+        registry.addViewController("/terms").setViewName("forward:/terms.html")
+        registry.addViewController("/privacy").setViewName("forward:/privacy.html")
     }
 
     @Bean
