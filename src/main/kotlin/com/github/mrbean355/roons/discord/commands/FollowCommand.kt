@@ -16,7 +16,6 @@ class FollowCommand(
         val member = event.member ?: return
         val settings = discordBotService.loadSettings(member.guild.id)
         val followedUser = settings.followedUser
-
         if (followedUser == member.id) {
             event.reply("I'm already following you.").setEphemeral(true).queue()
             return
@@ -28,7 +27,7 @@ class FollowCommand(
             member.guild.audioManager.openAudioConnection(it)
         }
 
-        val followedMember = followedUser?.let { member.guild.retrieveMemberById(it).complete() }
+        val followedMember = followedUser?.let { member.guild.findMember(it) }
         val reply = buildString {
             append("I'm now following ${member.asMention}")
             if (followedMember != null) {

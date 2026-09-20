@@ -117,10 +117,17 @@ class DiscordEventHandler(
                 event.reply("Please use that command in a server's text channel.").setEphemeral(true).queue()
                 return@launch
             }
-            commands.find { it.name == event.name }
-                ?.handleCommand(event)
+            try {
+                commands.find { it.name == event.name }
+                    ?.handleCommand(event)
 
-            analyticsService.logCommandUsage(event.user.id, event.name)
+                analyticsService.logCommandUsage(event.user.id, event.name)
+            } catch (e: Exception) {
+                telegramNotifier.sendPrivateMessage("⚠️ <b>Slash command failed</b> (/${event.name}): ${e.message}")
+                if (!event.isAcknowledged) {
+                    event.reply("Something went wrong while executing this command.").setEphemeral(true).queue()
+                }
+            }
         }
     }
 

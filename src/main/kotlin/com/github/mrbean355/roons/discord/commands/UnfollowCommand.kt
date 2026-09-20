@@ -19,7 +19,7 @@ class UnfollowCommand(
 
         if (followedUser != null) {
             discordBotService.saveSettings(settings.copy(followedUser = null))
-            val user = member.guild.retrieveMemberById(followedUser).complete()?.asMention ?: "someone"
+            val user = member.guild.findMember(followedUser)?.asMention ?: "someone"
             event.reply("I've stopped following $user.").queue()
         } else {
             event.reply("I'm not following anyone at the moment.").setEphemeral(true).queue()
