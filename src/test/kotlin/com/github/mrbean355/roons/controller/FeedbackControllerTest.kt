@@ -1,13 +1,12 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.FeedbackRequest
-import com.github.mrbean355.roons.repository.AppUserRepository
+import com.github.mrbean355.roons.service.UserService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.justRun
-import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
@@ -16,7 +15,7 @@ import org.springframework.http.HttpStatus
 
 internal class FeedbackControllerTest {
     @MockK
-    private lateinit var appUserRepository: AppUserRepository
+    private lateinit var userService: UserService
 
     @MockK
     private lateinit var telegramNotifier: TelegramNotifier
@@ -25,12 +24,12 @@ internal class FeedbackControllerTest {
     @BeforeEach
     internal fun setUp() {
         MockKAnnotations.init(this)
-        feedbackController = FeedbackController(appUserRepository, telegramNotifier)
+        feedbackController = FeedbackController(userService, telegramNotifier)
     }
 
     @Test
     internal fun testPostFeedback_UserNotFound_ReturnsNotFoundResponse() {
-        every { appUserRepository.findByGeneratedId("12345") } returns null
+        every { userService.exists("12345") } returns false
 
         val result = feedbackController.postFeedback(FeedbackRequest("12345", 0, ""))
 
@@ -39,7 +38,7 @@ internal class FeedbackControllerTest {
 
     @Test
     internal fun testPostFeedback_UserFound_SendsTelegramMessage() {
-        every { appUserRepository.findByGeneratedId("12345") } returns mockk()
+        every { userService.exists("12345") } returns true
         justRun { telegramNotifier.sendPrivateMessage(any()) }
 
         feedbackController.postFeedback(FeedbackRequest("12345", 5, "Best app ever POGGIES!"))
@@ -57,7 +56,7 @@ internal class FeedbackControllerTest {
 
     @Test
     internal fun testPostFeedback_UserFound_ReturnsOkResponse() {
-        every { appUserRepository.findByGeneratedId("12345") } returns mockk()
+        every { userService.exists("12345") } returns true
         justRun { telegramNotifier.sendPrivateMessage(any()) }
 
         val result = feedbackController.postFeedback(FeedbackRequest("12345", 0, ""))

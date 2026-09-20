@@ -1,7 +1,7 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.FeedbackRequest
-import com.github.mrbean355.roons.repository.AppUserRepository
+import com.github.mrbean355.roons.service.UserService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
@@ -12,14 +12,15 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/feedback")
 class FeedbackController(
-    private val appUserRepository: AppUserRepository,
+    private val userService: UserService,
     private val telegramNotifier: TelegramNotifier
 ) {
 
     @PostMapping
     fun postFeedback(@RequestBody request: FeedbackRequest): ResponseEntity<Void> {
-        appUserRepository.findByGeneratedId(request.userId)
-            ?: return ResponseEntity.notFound().build()
+        if (!userService.exists(request.userId)) {
+            return ResponseEntity.notFound().build()
+        }
 
         telegramNotifier.sendPrivateMessage(
             """

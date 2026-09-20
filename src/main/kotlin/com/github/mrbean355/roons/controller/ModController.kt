@@ -1,10 +1,8 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.DotaModDto
-import com.github.mrbean355.roons.asDto
-import com.github.mrbean355.roons.repository.DotaModRepository
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.isValidAdminToken
+import com.github.mrbean355.roons.service.MetadataService
+import com.github.mrbean355.roons.service.ModService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable
@@ -19,28 +17,27 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import kotlin.jvm.optionals.getOrNull
 
 @RestController
 @RequestMapping("/mods")
 class ModController(
-    private val dotaModRepository: DotaModRepository,
-    private val metadataRepository: MetadataRepository,
+    private val modService: ModService,
+    private val metadataService: MetadataService,
     private val telegramNotifier: TelegramNotifier,
     private val cacheManager: CacheManager
 ) {
 
     @GetMapping
     @DotaModCache
-    fun listMods(): List<DotaModDto> = dotaModRepository.findAll().map { it.asDto() }
+    fun listMods(): List<DotaModDto> = modService.listMods()
 
     @GetMapping("{key}")
     @DotaModCache
     fun getMod(@PathVariable("key") key: String): ResponseEntity<DotaModDto> {
-        val mod = dotaModRepository.findById(key).getOrNull()
+        val mod = modService.getMod(key)
             ?: return ResponseEntity(NOT_FOUND)
 
-        return ResponseEntity.ok(mod.asDto())
+        return ResponseEntity.ok(mod)
     }
 
     @PatchMapping("{key}")
@@ -51,13 +48,12 @@ class ModController(
         @RequestParam("message", required = false) message: String? = null,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<Void> {
-        if (!metadataRepository.isValidAdminToken(authHeader)) {
+        if (!metadataService.isValidAdminToken(authHeader)) {
             return ResponseEntity(UNAUTHORIZED)
         }
-        val mod = dotaModRepository.findById(key).getOrNull()
-            ?: return ResponseEntity(NOT_FOUND)
-
-        dotaModRepository.save(mod.copy(size = size, hash = hash))
+        if (!modService.updateMod(key, hash, size)) {
+            return ResponseEntity(NOT_FOUND)
+        }
         cacheManager.getCache(DOTA_MOD_CACHE_NAME)?.clear()
 
         if (message != null) {
@@ -71,7 +67,7 @@ class ModController(
     fun refreshMods(
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<Void> {
-        if (!metadataRepository.isValidAdminToken(authHeader)) {
+        if (!metadataService.isValidAdminToken(authHeader)) {
             return ResponseEntity(UNAUTHORIZED)
         }
         cacheManager.getCache(DOTA_MOD_CACHE_NAME)?.clear()

@@ -3,10 +3,9 @@ package com.github.mrbean355.roons.controller
 import com.github.mrbean355.roons.DiscordServerDto
 import com.github.mrbean355.roons.TestClock
 import com.github.mrbean355.roons.discord.DiscordBot
-import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
-import com.github.mrbean355.roons.repository.AppUserRepository
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
+import com.github.mrbean355.roons.service.AnalyticsService
+import com.github.mrbean355.roons.service.MetadataService
+import com.github.mrbean355.roons.service.UserService
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
@@ -25,13 +24,13 @@ import java.time.Instant
 @ExtendWith(MockKExtension::class)
 internal class StatisticsControllerTest {
     @MockK
-    private lateinit var appUserRepository: AppUserRepository
+    private lateinit var userService: UserService
 
     @MockK
-    private lateinit var analyticsPropertyRepository: AnalyticsPropertyRepository
+    private lateinit var analyticsService: AnalyticsService
 
     @MockK
-    private lateinit var metadataRepository: MetadataRepository
+    private lateinit var metadataService: MetadataService
 
     @MockK
     private lateinit var discordBot: DiscordBot
@@ -39,8 +38,10 @@ internal class StatisticsControllerTest {
 
     @BeforeEach
     internal fun setUp() {
-        every { metadataRepository.adminToken } returns "12345"
-        controller = StatisticsController(appUserRepository, analyticsPropertyRepository, metadataRepository, discordBot, TestClock(1_000_000))
+        every { metadataService.isValidAdminToken("Bearer 12345") } returns true
+        every { metadataService.isValidAdminToken(not("Bearer 12345")) } returns false
+        every { metadataService.isValidAdminToken(null) } returns false
+        controller = StatisticsController(userService, analyticsService, metadataService, discordBot, TestClock(1_000_000))
     }
 
     @Test
@@ -59,7 +60,7 @@ internal class StatisticsControllerTest {
 
     @Test
     internal fun testListProperties_CorrectToken_ReturnsProperties() {
-        every { analyticsPropertyRepository.findDistinctProperties() } returns listOf("a", "b", "c")
+        every { analyticsService.findDistinctProperties() } returns listOf("a", "b", "c")
 
         val result = controller.listProperties("Bearer 12345")
 
@@ -83,14 +84,14 @@ internal class StatisticsControllerTest {
 
     @Test
     internal fun testGetRecentUsers_CorrectToken_ReturnsProperties() {
-        every { appUserRepository.countByLastSeenAfter(any()) } returns 999
+        every { userService.countRecentUsers(any()) } returns 999
 
         val result = controller.getRecentUsers(5, "Bearer 12345")
 
         assertSame(HttpStatus.OK, result.statusCode)
         assertEquals(999, result.body ?: 0)
         val slot = slot<Instant>()
-        verify { appUserRepository.countByLastSeenAfter(capture(slot)) }
+        verify { userService.countRecentUsers(capture(slot)) }
         assertEquals(700_000, slot.captured.toEpochMilli())
     }
 
@@ -110,7 +111,7 @@ internal class StatisticsControllerTest {
 
     @Test
     internal fun testGetStatistic_CorrectToken_PropertyNotFound_ReturnsNotFound() {
-        every { analyticsPropertyRepository.findByProperty("abc") } returns emptyList()
+        every { analyticsService.getStatistic("abc") } returns null
 
         val result = controller.getStatistic("abc", "Bearer 12345")
 
@@ -119,21 +120,13 @@ internal class StatisticsControllerTest {
 
     @Test
     internal fun testGetStatistic_CorrectToken_PropertyFound_ReturnsValueCountMap() {
-        every { analyticsPropertyRepository.findByProperty("abc") } returns listOf(
-            mockk { every { value } returns "one" },
-            mockk { every { value } returns "two,three" },
-            mockk { every { value } returns "one,two,three" },
-            mockk { every { value } returns "two,four" }
-        )
+        val stats = mapOf("one" to 2, "two" to 3, "three" to 2, "four" to 1)
+        every { analyticsService.getStatistic("abc") } returns stats
 
         val result = controller.getStatistic("abc", "Bearer 12345")
 
         assertSame(HttpStatus.OK, result.statusCode)
-        assertEquals(4, result.body?.size ?: 0)
-        assertEquals(2, result.body?.getValue("one"))
-        assertEquals(3, result.body?.getValue("two"))
-        assertEquals(2, result.body?.getValue("three"))
-        assertEquals(1, result.body?.getValue("four"))
+        assertEquals(stats, result.body)
     }
 
     @Test
@@ -169,7 +162,6 @@ internal class StatisticsControllerTest {
         assertEquals(DiscordServerDto("Bruh", 10, null), body[2])
         assertEquals(DiscordServerDto("Dungeon", 25, null), body[3])
     }
-
 
     private fun mockGuild(
         guildName: String,

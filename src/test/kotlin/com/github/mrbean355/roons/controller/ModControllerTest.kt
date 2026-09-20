@@ -1,16 +1,13 @@
 package com.github.mrbean355.roons.controller
 
-import com.github.mrbean355.roons.DotaMod
 import com.github.mrbean355.roons.DotaModDto
-import com.github.mrbean355.roons.repository.DotaModRepository
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
+import com.github.mrbean355.roons.service.MetadataService
+import com.github.mrbean355.roons.service.ModService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit5.MockKExtension
-import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
@@ -20,15 +17,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
 import org.springframework.http.HttpStatus
-import java.util.Optional
 
 @ExtendWith(MockKExtension::class)
 internal class ModControllerTest {
     @MockK
-    private lateinit var dotaModRepository: DotaModRepository
+    private lateinit var modService: ModService
 
     @MockK
-    private lateinit var metadataRepository: MetadataRepository
+    private lateinit var metadataService: MetadataService
 
     @RelaxedMockK
     private lateinit var telegramNotifier: TelegramNotifier
@@ -42,17 +38,18 @@ internal class ModControllerTest {
 
     @BeforeEach
     internal fun setUp() {
-        every { dotaModRepository.save(any()) } returns mockk()
-        every { metadataRepository.adminToken } returns "12345"
+        every { metadataService.isValidAdminToken("Bearer 12345") } returns true
+        every { metadataService.isValidAdminToken(not("Bearer 12345")) } returns false
+        every { metadataService.isValidAdminToken(null) } returns false
         every { cacheManager.getCache("dota_mod_cache") } returns modCache
-        controller = ModController(dotaModRepository, metadataRepository, telegramNotifier, cacheManager)
+        controller = ModController(modService, metadataService, telegramNotifier, cacheManager)
     }
 
     @Test
-    internal fun testListMods_FetchesFromRepo() {
-        every { dotaModRepository.findAll() } returns listOf(
-            DotaMod("1", "Base mod", "Lots of stuff", 123, "abc-123", "mods://base", "github://base"),
-            DotaMod("2", "Custom spell sounds", "Different spell sounds", 456, "def-456", "mods://sounds", "github://sounds")
+    internal fun testListMods_FetchesFromService() {
+        every { modService.listMods() } returns listOf(
+            DotaModDto("1", "Base mod", "Lots of stuff", 123, "abc-123", "mods://base", "github://base"),
+            DotaModDto("2", "Custom spell sounds", "Different spell sounds", 456, "def-456", "mods://sounds", "github://sounds")
         )
 
         val result = controller.listMods()
@@ -64,7 +61,7 @@ internal class ModControllerTest {
 
     @Test
     internal fun testGetMod_ModNotFound_ReturnsNotFoundResult() {
-        every { dotaModRepository.findById("base-mod") } returns Optional.empty()
+        every { modService.getMod("base-mod") } returns null
 
         val result = controller.getMod("base-mod")
 
@@ -73,12 +70,13 @@ internal class ModControllerTest {
 
     @Test
     internal fun testGetMod_ModFound_ReturnsOkResultWithModInfo() {
-        every { dotaModRepository.findById("base-mod") } returns Optional.of(createMod())
+        val dto = DotaModDto("1", "Base mod", "Lots of stuff", 123, "abc-123", "mods://base", "github://base")
+        every { modService.getMod("base-mod") } returns dto
 
         val result = controller.getMod("base-mod")
 
         assertSame(HttpStatus.OK, result.statusCode)
-        assertEquals(DotaModDto("1", "Base mod", "Lots of stuff", 123, "abc-123", "mods://base", "github://base"), result.body)
+        assertEquals(dto, result.body)
     }
 
     @Test
@@ -97,7 +95,7 @@ internal class ModControllerTest {
 
     @Test
     internal fun testPatchMod_ModNotFound_ReturnsNotFoundResult() {
-        every { dotaModRepository.findById("1") } returns Optional.empty()
+        every { modService.updateMod("1", "", 0) } returns false
 
         val result = controller.patchMod("1", "", 0, "Mod updated", authHeader = "Bearer 12345")
 
@@ -106,16 +104,16 @@ internal class ModControllerTest {
 
     @Test
     internal fun testPatchMod_ModFound_SavesModWithUpdatedSizeAndHash() {
-        every { dotaModRepository.findById("1") } returns Optional.of(createMod())
+        every { modService.updateMod("1", "new-hash", 999) } returns true
 
         controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
 
-        verify { dotaModRepository.save(DotaMod("1", "Base mod", "Lots of stuff", 999, "new-hash", "mods://base", "github://base")) }
+        verify { modService.updateMod("1", "new-hash", 999) }
     }
 
     @Test
     internal fun testPatchMod_ModFound_ClearsCache() {
-        every { dotaModRepository.findById("1") } returns Optional.of(createMod())
+        every { modService.updateMod("1", "new-hash", 999) } returns true
 
         controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
 
@@ -127,7 +125,7 @@ internal class ModControllerTest {
 
     @Test
     internal fun testPatchMod_ModFound_CacheNotFound_NoExceptionThrown() {
-        every { dotaModRepository.findById("1") } returns Optional.of(createMod())
+        every { modService.updateMod("1", "new-hash", 999) } returns true
         every { cacheManager.getCache("dota_mod_cache") } returns null
 
         controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
@@ -137,7 +135,7 @@ internal class ModControllerTest {
 
     @Test
     internal fun testPatchMod_NullMessage_DoesNotSendTelegramChannelMessage() {
-        every { dotaModRepository.findById("1") } returns Optional.of(createMod("Custom spell sounds"))
+        every { modService.updateMod("1", "new-hash", 999) } returns true
 
         controller.patchMod("1", "new-hash", 999, null, authHeader = "Bearer 12345")
 
@@ -146,7 +144,7 @@ internal class ModControllerTest {
 
     @Test
     internal fun testPatchMod_NonNullMessage_SendsTelegramChannelMessage() {
-        every { dotaModRepository.findById("1") } returns Optional.of(createMod())
+        every { modService.updateMod("1", "new-hash", 999) } returns true
 
         controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
 
@@ -155,7 +153,7 @@ internal class ModControllerTest {
 
     @Test
     internal fun testPatchMod_ModFound_ReturnsOkResult() {
-        every { dotaModRepository.findById("1") } returns Optional.of(createMod())
+        every { modService.updateMod("1", "new-hash", 999) } returns true
 
         val result = controller.patchMod("1", "new-hash", 999, "Mod updated", authHeader = "Bearer 12345")
 
@@ -203,7 +201,4 @@ internal class ModControllerTest {
 
         assertSame(HttpStatus.OK, result.statusCode)
     }
-
-    private fun createMod(name: String = "Base mod"): DotaMod =
-        DotaMod("1", name, "Lots of stuff", 123, "abc-123", "mods://base", "github://base")
 }

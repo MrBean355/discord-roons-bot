@@ -1,9 +1,9 @@
 package com.github.mrbean355.roons.discord
 
-import com.github.mrbean355.roons.component.Analytics
 import com.github.mrbean355.roons.discord.commands.BotCommand
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
-import com.github.mrbean355.roons.repository.DiscordBotUserRepository
+import com.github.mrbean355.roons.service.AnalyticsService
+import com.github.mrbean355.roons.service.DiscordBotService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,10 +30,10 @@ import org.springframework.stereotype.Component
 @Component
 class DiscordEventHandler(
     private val commands: List<BotCommand>,
-    private val discordBotUserRepository: DiscordBotUserRepository,
+    private val discordBotService: DiscordBotService,
     private val discordBotSettingsRepository: DiscordBotSettingsRepository,
     private val telegramNotifier: TelegramNotifier,
-    private val analytics: Analytics,
+    private val analyticsService: AnalyticsService,
 ) : ListenerAdapter() {
 
     private val botScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -82,9 +82,7 @@ class DiscordEventHandler(
     override fun onGuildLeave(event: GuildLeaveEvent) {
         botScope.launch {
             telegramNotifier.sendPrivateMessage("😔 <b>Left a guild</b>:\n${event.guild.name}")
-            val guildId = event.guild.id
-            discordBotUserRepository.deleteByGuildId(guildId)
-            discordBotSettingsRepository.deleteByGuildId(guildId)
+            discordBotService.cleanUpGuild(event.guild.id)
         }
     }
 
@@ -122,7 +120,7 @@ class DiscordEventHandler(
             commands.find { it.name == event.name }
                 ?.handleCommand(event)
 
-            analytics.logCommandUsage(event.user.id, event.name)
+            analyticsService.logCommandUsage(event.user.id, event.name)
         }
     }
 

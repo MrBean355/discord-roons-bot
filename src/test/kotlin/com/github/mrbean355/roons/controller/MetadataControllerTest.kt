@@ -1,15 +1,11 @@
 package com.github.mrbean355.roons.controller
 
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
-import com.github.mrbean355.roons.repository.getWelcomeMessage
-import com.github.mrbean355.roons.repository.saveWelcomeMessage
+import com.github.mrbean355.roons.service.MetadataService
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.justRun
-import io.mockk.mockkStatic
 import io.mockk.verifyOrder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
@@ -23,7 +19,7 @@ import org.springframework.http.HttpStatus
 @ExtendWith(MockKExtension::class)
 internal class MetadataControllerTest {
     @MockK
-    private lateinit var metadataRepository: MetadataRepository
+    private lateinit var metadataService: MetadataService
 
     @MockK
     private lateinit var cacheManager: CacheManager
@@ -34,16 +30,17 @@ internal class MetadataControllerTest {
 
     @BeforeEach
     internal fun setUp() {
-        mockkStatic(MetadataRepository::getWelcomeMessage)
-        every { metadataRepository.adminToken } returns "12345"
+        every { metadataService.isValidAdminToken("Bearer 12345") } returns true
+        every { metadataService.isValidAdminToken(not("Bearer 12345")) } returns false
+        every { metadataService.isValidAdminToken(null) } returns false
         every { cacheManager.getCache("welcome_message_cache") } returns welcomeMessageCache
-        justRun { metadataRepository.saveWelcomeMessage(any()) }
-        controller = MetadataController(metadataRepository, cacheManager)
+        justRun { metadataService.saveWelcomeMessage(any()) }
+        controller = MetadataController(metadataService, cacheManager)
     }
 
     @Test
     internal fun testGetWelcomeMessage_NullMessage_ReturnsNotFoundResult() {
-        every { metadataRepository.getWelcomeMessage() } returns null
+        every { metadataService.getWelcomeMessage() } returns null
 
         val result = controller.getWelcomeMessage()
 
@@ -52,7 +49,7 @@ internal class MetadataControllerTest {
 
     @Test
     internal fun testGetWelcomeMessage_NonNullMessage_ReturnsOkResult() {
-        every { metadataRepository.getWelcomeMessage() } returns "hello world"
+        every { metadataService.getWelcomeMessage() } returns "hello world"
 
         val result = controller.getWelcomeMessage()
 
@@ -79,7 +76,7 @@ internal class MetadataControllerTest {
         val result = controller.putWelcomeMessage(message = "new message", authHeader = "Bearer 12345")
 
         verifyOrder {
-            metadataRepository.saveWelcomeMessage("new message")
+            metadataService.saveWelcomeMessage("new message")
             cacheManager.getCache("welcome_message_cache")
             welcomeMessageCache.clear()
         }

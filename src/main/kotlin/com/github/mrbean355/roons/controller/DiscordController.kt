@@ -3,9 +3,8 @@ package com.github.mrbean355.roons.controller
 import com.github.mrbean355.roons.PlaySoundRequest
 import com.github.mrbean355.roons.PlaySoundsRequest
 import com.github.mrbean355.roons.discord.DiscordBot
-import com.github.mrbean355.roons.repository.AppUserRepository
-import com.github.mrbean355.roons.repository.DiscordBotUserRepository
-import com.github.mrbean355.roons.repository.updateLastSeen
+import com.github.mrbean355.roons.service.DiscordBotService
+import com.github.mrbean355.roons.service.UserService
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -22,13 +21,13 @@ private const val DEFAULT_RATE = 100
 @RequestMapping("/")
 class DiscordController(
     private val discordBot: DiscordBot,
-    private val appUserRepository: AppUserRepository,
-    private val discordBotUserRepository: DiscordBotUserRepository
+    private val userService: UserService,
+    private val discordBotService: DiscordBotService
 ) {
 
     @GetMapping("lookupToken")
     fun lookupToken(@RequestParam("token") token: String): ResponseEntity<String> {
-        val user = discordBotUserRepository.findOneByToken(token)
+        val user = discordBotService.findUserByToken(token)
             ?: return ResponseEntity.notFound().build()
 
         val guild = discordBot.getGuildById(user.guildId)
@@ -39,12 +38,12 @@ class DiscordController(
 
     @PostMapping
     fun playSound(@RequestBody request: PlaySoundRequest): ResponseEntity<Void> {
-        appUserRepository.updateLastSeen(request.userId)
+        userService.updateLastSeen(request.userId)
 
         if (request.token.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         }
-        val user = discordBotUserRepository.findOneByToken(request.token)
+        val user = discordBotService.findUserByToken(request.token)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
 
         return if (discordBot.playSound(user, request.soundFileName, request.volume ?: DEFAULT_VOLUME, request.rate ?: DEFAULT_RATE)) {
@@ -56,7 +55,7 @@ class DiscordController(
 
     @PostMapping("playSounds")
     fun playSounds(@RequestBody request: PlaySoundsRequest): ResponseEntity<Void> {
-        appUserRepository.updateLastSeen(request.userId)
+        userService.updateLastSeen(request.userId)
 
         if (request.token.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
@@ -64,7 +63,7 @@ class DiscordController(
         if (request.sounds.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
         }
-        val user = discordBotUserRepository.findOneByToken(request.token)
+        val user = discordBotService.findUserByToken(request.token)
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
 
         val results = request.sounds.map { sound ->

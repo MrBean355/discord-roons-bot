@@ -1,10 +1,7 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.WelcomeMessageResponse
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.getWelcomeMessage
-import com.github.mrbean355.roons.repository.saveWelcomeMessage
-import com.github.mrbean355.roons.repository.isValidAdminToken
+import com.github.mrbean355.roons.service.MetadataService
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpHeaders
@@ -20,14 +17,14 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/metadata")
 class MetadataController(
-    private val metadataRepository: MetadataRepository,
+    private val metadataService: MetadataService,
     private val cacheManager: CacheManager
 ) {
 
     @GetMapping("welcomeMessage")
     @WelcomeMessageCache
     fun getWelcomeMessage(): ResponseEntity<WelcomeMessageResponse> {
-        val message = metadataRepository.getWelcomeMessage()
+        val message = metadataService.getWelcomeMessage()
             ?: return ResponseEntity.notFound().build()
 
         return ResponseEntity.ok(WelcomeMessageResponse(message))
@@ -38,11 +35,11 @@ class MetadataController(
         @RequestParam("message") message: String,
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
     ): ResponseEntity<Void> {
-        if (!metadataRepository.isValidAdminToken(authHeader)) {
+        if (!metadataService.isValidAdminToken(authHeader)) {
             return ResponseEntity(HttpStatus.UNAUTHORIZED)
         }
 
-        metadataRepository.saveWelcomeMessage(message)
+        metadataService.saveWelcomeMessage(message)
         cacheManager.getCache(WELCOME_MESSAGE_CACHE_NAME)?.clear()
 
         return ResponseEntity.ok().build()
