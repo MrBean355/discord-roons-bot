@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.entities.channel.ChannelType
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel
 import net.dv8tion.jda.api.events.guild.GuildJoinEvent
 import net.dv8tion.jda.api.events.guild.GuildLeaveEvent
@@ -25,18 +26,35 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent
 import net.dv8tion.jda.api.events.session.ReadyEvent
 import net.dv8tion.jda.api.hooks.ListenerAdapter
 import net.dv8tion.jda.api.interactions.commands.build.Commands
+import org.jetbrains.annotations.VisibleForTesting
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class DiscordEventHandler(
+class DiscordEventHandler @VisibleForTesting constructor(
     private val commands: List<BotCommand>,
     private val discordBotService: DiscordBotService,
     private val discordBotSettingsRepository: DiscordBotSettingsRepository,
     private val telegramNotifier: TelegramNotifier,
     private val analyticsService: AnalyticsService,
+    private val botScope: CoroutineScope
 ) : ListenerAdapter() {
 
-    private val botScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    @Autowired
+    constructor(
+        commands: List<BotCommand>,
+        discordBotService: DiscordBotService,
+        discordBotSettingsRepository: DiscordBotSettingsRepository,
+        telegramNotifier: TelegramNotifier,
+        analyticsService: AnalyticsService,
+    ) : this(
+        commands,
+        discordBotService,
+        discordBotSettingsRepository,
+        telegramNotifier,
+        analyticsService,
+        CoroutineScope(Dispatchers.IO + SupervisorJob())
+    )
 
     override fun onReady(event: ReadyEvent) = runBlocking(Dispatchers.IO) {
         // Update slash commands:
@@ -49,8 +67,8 @@ class DiscordEventHandler(
             discordBotSettingsRepository.findAll().forEach { settings ->
                 launch {
                     settings.lastChannel?.let { lastChannel ->
-                        val guild = event.jda.getGuildById(settings.guildId)
-                        val channel = guild?.getVoiceChannelById(lastChannel)
+                        val guild = event.jda.getGuildById(settings.guildId) ?: return@launch
+                        val channel = guild.getVoiceChannelById(lastChannel) ?: guild.getStageChannelById(lastChannel)
                         if (channel != null) {
                             guild.audioManager.openAudioConnection(channel)
                         }
@@ -93,7 +111,7 @@ class DiscordEventHandler(
             }
             val settings = discordBotSettingsRepository.findOneByGuildId(event.guild.id) ?: return@launch
             if (settings.followedUser == event.member.id) {
-                val channelJoined = event.channelJoined?.asVoiceChannel()
+                val channelJoined = event.channelJoined
                 if (channelJoined != null) {
                     event.guild.audioManager.openAudioConnection(channelJoined)
                 } else {
