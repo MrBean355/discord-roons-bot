@@ -49,9 +49,12 @@ class SoundStore(
 
     /** @return [File] for the specified [soundFileName] if it exists, `null` otherwise. */
     fun getFile(soundFileName: String): File? {
-        return File(SOUNDS_DIR, soundFileName.trim()).let {
-            if (it.exists()) it else null
+        val name = File(soundFileName.trim()).name
+        if (!soundsCache.containsKey(name)) {
+            return null
         }
+        val file = File(SOUNDS_DIR, name)
+        return if (file.exists()) file else null
     }
 
     private fun readSoundResource(name: String): ByteArray {
@@ -67,10 +70,6 @@ class SoundStore(
         val messageDigest = MessageDigest.getInstance("SHA-512")
         val result = messageDigest.digest(readBytes())
         val convertedResult = BigInteger(1, result)
-        var hashText = convertedResult.toString(16)
-        while (hashText.length < 32) {
-            hashText = "0$hashText"
-        }
-        return hashText
+        return "%0128x".format(convertedResult)
     }
 }

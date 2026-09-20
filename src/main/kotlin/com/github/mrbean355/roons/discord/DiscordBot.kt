@@ -2,8 +2,7 @@ package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.discord.audio.GuildMusicManager
-import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
-import com.github.mrbean355.roons.repository.loadSettings
+import com.github.mrbean355.roons.service.DiscordBotService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
@@ -12,6 +11,7 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -20,21 +20,31 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Activity
 import net.dv8tion.jda.api.entities.Guild
+import org.jetbrains.annotations.VisibleForTesting
 import org.slf4j.Logger
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.io.File
 
 @Component
-class DiscordBot(
-    private val discordBotSettingsRepository: DiscordBotSettingsRepository,
+class DiscordBot @VisibleForTesting constructor(
+    private val discordBotService: DiscordBotService,
     private val soundStore: SoundStore,
     private val telegramNotifier: TelegramNotifier,
     private val logger: Logger,
-    private val bot: JDA
+    private val bot: JDA,
+    private val playerManager: AudioPlayerManager
 ) {
+    @Autowired
+    constructor(
+        discordBotService: DiscordBotService,
+        soundStore: SoundStore,
+        telegramNotifier: TelegramNotifier,
+        logger: Logger,
+        bot: JDA
+    ) : this(discordBotService, soundStore, telegramNotifier, logger, bot, DefaultAudioPlayerManager())
 
-    private val playerManager: AudioPlayerManager = DefaultAudioPlayerManager()
     private val musicManagers: MutableMap<Long, GuildMusicManager> = mutableMapOf()
     private val activities = listOf(
         Activity.customStatus("✅ Fixed now, surely")
@@ -53,25 +63,27 @@ class DiscordBot(
     fun playSound(discordBotUser: DiscordBotUser, soundFileName: String, volume: Int, rate: Int): Boolean {
         val guild = bot.getGuildById(discordBotUser.guildId) ?: return false
         val file = soundStore.getFile(soundFileName) ?: return false
-        val masterVolume = discordBotSettingsRepository.loadSettings(discordBotUser.guildId).volume
+        val masterVolume = discordBotService.loadSettings(discordBotUser.guildId).volume
         val finalVolume = (volume * masterVolume) / 100
         return playSound(guild, file.absolutePath, finalVolume, rate)
     }
 
     /** Disconnect from voice channels when shutting down. */
+    @PreDestroy
     fun shutdown() = runBlocking(IO) {
         bot.presence.setStatus(OnlineStatus.OFFLINE)
         val connectedGuilds = bot.guilds.filter { it.audioManager.isConnected }
         supervisorScope {
             connectedGuilds.forEach { guild ->
                 launch {
-                    val settings = discordBotSettingsRepository.loadSettings(guild.id)
+                    val settings = discordBotService.loadSettings(guild.id)
                     val currentVoiceChannel = guild.selfMember.voiceState?.channel?.id
-                    discordBotSettingsRepository.save(settings.copy(lastChannel = currentVoiceChannel))
+                    discordBotService.saveSettings(settings.copy(lastChannel = currentVoiceChannel))
                     guild.audioManager.closeAudioConnection()
                 }
             }
         }
+        playerManager.shutdown()
     }
 
     fun getGuilds(): List<Guild> = bot.guilds
@@ -87,9 +99,11 @@ class DiscordBot(
     /** @return a guild-specific [GuildMusicManager]. */
     private fun getGuildAudioPlayer(guild: Guild): GuildMusicManager {
         return synchronized(this) {
-            val manager = musicManagers.getOrPut(guild.idLong) { GuildMusicManager(playerManager) }
-            guild.audioManager.sendingHandler = manager.getSendHandler()
-            manager
+            musicManagers.getOrPut(guild.idLong) {
+                GuildMusicManager(playerManager).also { manager ->
+                    guild.audioManager.sendingHandler = manager.sendHandler
+                }
+            }
         }
     }
 

@@ -11,4 +11,11 @@ internal class DefaultClockTest {
 
         assertTimeIsRoughlyNow(ms)
     }
+
+    @Test
+    internal fun testNow_ReturnsRoughlyCurrentInstant() {
+        val now = DefaultClock().now
+
+        assertTimeIsRoughlyNow(now.toEpochMilli())
+    }
 }

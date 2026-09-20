@@ -1,16 +1,8 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.WelcomeMessageResponse
-import com.github.mrbean355.roons.discord.DiscordBot
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
-import com.github.mrbean355.roons.repository.getWelcomeMessage
-import com.github.mrbean355.roons.repository.saveWelcomeMessage
-import org.springframework.cache.CacheManager
-import org.springframework.cache.annotation.Cacheable
-import org.springframework.context.ApplicationContext
-import org.springframework.context.ConfigurableApplicationContext
-import org.springframework.http.HttpStatus
+import com.github.mrbean355.roons.security.AdminOnly
+import com.github.mrbean355.roons.service.MetadataService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -21,48 +13,23 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/metadata")
 class MetadataController(
-    private val metadataRepository: MetadataRepository,
-    private val context: ApplicationContext,
-    private val discordBot: DiscordBot,
-    private val cacheManager: CacheManager
+    private val metadataService: MetadataService
 ) {
 
     @GetMapping("welcomeMessage")
-    @WelcomeMessageCache
     fun getWelcomeMessage(): ResponseEntity<WelcomeMessageResponse> {
-        val message = metadataRepository.getWelcomeMessage()
+        val message = metadataService.getWelcomeMessage()
             ?: return ResponseEntity.notFound().build()
 
         return ResponseEntity.ok(WelcomeMessageResponse(message))
     }
 
+    @AdminOnly
     @PutMapping("welcomeMessage")
-    fun putWelcomeMessage(@RequestParam("token") token: String, @RequestParam("message") message: String): ResponseEntity<Void> {
-        if (token != metadataRepository.adminToken) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
-
-        metadataRepository.saveWelcomeMessage(message)
-        cacheManager.getCache(WELCOME_MESSAGE_CACHE_NAME)?.clear()
-
+    fun putWelcomeMessage(
+        @RequestParam("message") message: String
+    ): ResponseEntity<Void> {
+        metadataService.saveWelcomeMessage(message)
         return ResponseEntity.ok().build()
     }
-
-    @GetMapping("shutdown")
-    fun shutdown(@RequestParam("token") token: String): ResponseEntity<String> {
-        val adminToken = metadataRepository.adminToken
-            ?: return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
-
-        if (adminToken != token) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
-        discordBot.shutdown()
-        (context as? ConfigurableApplicationContext)?.close()
-        return ResponseEntity.ok("Goodbye")
-    }
 }
-
-private const val WELCOME_MESSAGE_CACHE_NAME = "welcome_message_cache"
-
-@Cacheable(WELCOME_MESSAGE_CACHE_NAME)
-private annotation class WelcomeMessageCache

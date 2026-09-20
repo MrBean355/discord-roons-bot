@@ -1,20 +1,22 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.DiscordServerDto
+import com.github.mrbean355.roons.SystemHealthResponse
 import com.github.mrbean355.roons.TestClock
 import com.github.mrbean355.roons.discord.DiscordBot
-import com.github.mrbean355.roons.repository.AnalyticsPropertyRepository
-import com.github.mrbean355.roons.repository.AppUserRepository
-import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
+import com.github.mrbean355.roons.service.AnalyticsService
+import com.github.mrbean355.roons.service.SystemHealthService
+import com.github.mrbean355.roons.service.UserService
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.entities.Guild
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -25,13 +27,13 @@ import java.time.Instant
 @ExtendWith(MockKExtension::class)
 internal class StatisticsControllerTest {
     @MockK
-    private lateinit var appUserRepository: AppUserRepository
+    private lateinit var userService: UserService
 
     @MockK
-    private lateinit var analyticsPropertyRepository: AnalyticsPropertyRepository
+    private lateinit var analyticsService: AnalyticsService
 
     @MockK
-    private lateinit var metadataRepository: MetadataRepository
+    private lateinit var systemHealthService: SystemHealthService
 
     @MockK
     private lateinit var discordBot: DiscordBot
@@ -39,91 +41,65 @@ internal class StatisticsControllerTest {
 
     @BeforeEach
     internal fun setUp() {
-        every { metadataRepository.adminToken } returns "12345"
-        controller = StatisticsController(appUserRepository, analyticsPropertyRepository, metadataRepository, discordBot, TestClock(1_000_000))
+        controller = StatisticsController(userService, analyticsService, systemHealthService, discordBot, TestClock(1_000_000))
     }
 
     @Test
-    internal fun testListProperties_WrongToken_ReturnsUnauthorized() {
-        val result = controller.listProperties("1111")
+    internal fun testGetHealth_ReturnsSystemHealth() {
+        val health = SystemHealthResponse("1d 2h 3m", "100 MB / 500 MB", "CONNECTED", 42L)
+        every { systemHealthService.getSystemHealth() } returns health
 
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
+        val result = controller.getHealth()
+
+        assertSame(HttpStatus.OK, result.statusCode)
+        assertSame(health, result.body)
     }
 
     @Test
-    internal fun testListProperties_CorrectToken_ReturnsProperties() {
-        every { analyticsPropertyRepository.findDistinctProperties() } returns listOf("a", "b", "c")
+    internal fun testListProperties_ReturnsProperties() {
+        every { analyticsService.findDistinctProperties() } returns listOf("a", "b", "c")
 
-        val result = controller.listProperties("12345")
+        val result = controller.listProperties()
 
         assertSame(HttpStatus.OK, result.statusCode)
         assertEquals(listOf("a", "b", "c"), result.body)
     }
 
     @Test
-    internal fun testGetRecentUsers_WrongToken_ReturnsUnauthorized() {
-        val result = controller.getRecentUsers("1111", 5)
+    internal fun testGetRecentUsers_ReturnsUserCount() {
+        every { userService.countRecentUsers(any()) } returns 999
 
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testGetRecentUsers_CorrectToken_ReturnsProperties() {
-        every { appUserRepository.countByLastSeenAfter(any()) } returns 999
-
-        val result = controller.getRecentUsers("12345", 5)
+        val result = controller.getRecentUsers(5)
 
         assertSame(HttpStatus.OK, result.statusCode)
         assertEquals(999, result.body ?: 0)
         val slot = slot<Instant>()
-        verify { appUserRepository.countByLastSeenAfter(capture(slot)) }
+        verify { userService.countRecentUsers(capture(slot)) }
         assertEquals(700_000, slot.captured.toEpochMilli())
     }
 
     @Test
-    internal fun testGetStatistic_WrongToken_ReturnsUnauthorized() {
-        val result = controller.getStatistic("1111", "")
+    internal fun testGetStatistic_PropertyNotFound_ReturnsNotFound() {
+        every { analyticsService.getStatistic("abc") } returns null
 
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testGetStatistic_CorrectToken_PropertyNotFound_ReturnsNotFound() {
-        every { analyticsPropertyRepository.findByProperty("abc") } returns emptyList()
-
-        val result = controller.getStatistic("12345", "abc")
+        val result = controller.getStatistic("abc")
 
         assertSame(HttpStatus.NOT_FOUND, result.statusCode)
     }
 
     @Test
-    internal fun testGetStatistic_CorrectToken_PropertyFound_ReturnsValueCountMap() {
-        every { analyticsPropertyRepository.findByProperty("abc") } returns listOf(
-            mockk { every { value } returns "one" },
-            mockk { every { value } returns "two,three" },
-            mockk { every { value } returns "one,two,three" },
-            mockk { every { value } returns "two,four" }
-        )
+    internal fun testGetStatistic_PropertyFound_ReturnsValueCountMap() {
+        val stats = mapOf("one" to 2, "two" to 3, "three" to 2, "four" to 1)
+        every { analyticsService.getStatistic("abc") } returns stats
 
-        val result = controller.getStatistic("12345", "abc")
+        val result = controller.getStatistic("abc")
 
         assertSame(HttpStatus.OK, result.statusCode)
-        assertEquals(4, result.body?.size ?: 0)
-        assertEquals(2, result.body?.getValue("one"))
-        assertEquals(3, result.body?.getValue("two"))
-        assertEquals(2, result.body?.getValue("three"))
-        assertEquals(1, result.body?.getValue("four"))
+        assertEquals(stats, result.body)
     }
 
     @Test
-    internal fun testGetDiscordServers_IncorrectToken_ReturnsUnauthorizedResponse() {
-        val result = controller.getDiscordServers("67890")
-
-        assertSame(HttpStatus.UNAUTHORIZED, result.statusCode)
-    }
-
-    @Test
-    internal fun testGetDiscordServers_CorrectToken_ReturnsGuildList() {
+    internal fun testGetDiscordServers_ReturnsGuildList() {
         every { discordBot.getGuilds() } returns listOf(
             mockGuild("Mr Bean Dota", 284, "Squad"),
             mockGuild("The Krappa Kleb", 74, "General"),
@@ -131,7 +107,7 @@ internal class StatisticsControllerTest {
             mockGuild("Dungeon", 25)
         )
 
-        val result = controller.getDiscordServers("12345")
+        val result = controller.getDiscordServers()
         val body = result.body.orEmpty()
 
         assertSame(HttpStatus.OK, result.statusCode)

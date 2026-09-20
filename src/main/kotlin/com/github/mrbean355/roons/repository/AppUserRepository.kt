@@ -10,9 +10,3 @@ interface AppUserRepository : CrudRepository<AppUser, Int> {
     fun countByLastSeenAfter(date: Instant): Long
 }
 
-/** Update the user's last seen time to now. */
-fun AppUserRepository.updateLastSeen(userId: String) {
-    require(userId.isNotBlank())
-    val user = findByGeneratedId(userId) ?: AppUser(0, userId, null)
-    save(user.copy(lastSeen = Instant.now()))
-}

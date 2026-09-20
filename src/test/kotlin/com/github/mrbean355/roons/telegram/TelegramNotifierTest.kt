@@ -7,7 +7,6 @@ import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.slf4j.Logger
 import org.telegram.telegrambots.meta.api.methods.ParseMode
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage
 import org.telegram.telegrambots.meta.generics.TelegramClient
@@ -16,31 +15,18 @@ internal class TelegramNotifierTest {
     @MockK(relaxed = true)
     private lateinit var bot: TelegramClient
 
-    @MockK(relaxed = true)
-    private lateinit var logger: Logger
+    private lateinit var notifier: TelegramNotifier
 
     @BeforeEach
     internal fun setUp() {
         MockKAnnotations.init(this)
+        notifier = TelegramNotifier(bot, "12345")
     }
 
     @Test
-    internal fun testSendPrivateMessage_NoChatId_LogsMessage() {
-        val notifier = TelegramNotifier(bot, logger, null)
-
+    internal fun testSendPrivateMessage_SendsTelegramMessage() {
         notifier.sendPrivateMessage("allo")
 
-        verify(inverse = true) { bot.execute(any<SendMessage>()) }
-        verify { logger.info("allo") }
-    }
-
-    @Test
-    internal fun testSendPrivateMessage_HasChatId_SendsTelegramMessage() {
-        val notifier = TelegramNotifier(bot, logger, "12345")
-
-        notifier.sendPrivateMessage("allo")
-
-        verify(inverse = true) { logger.info("allo") }
         val slot = slot<SendMessage>()
         verify { bot.execute(capture(slot)) }
         with(slot.captured) {
@@ -51,22 +37,9 @@ internal class TelegramNotifierTest {
     }
 
     @Test
-    internal fun testSendChannelMessage_NoChatId_LogsMessage() {
-        val notifier = TelegramNotifier(bot, logger, null)
-
+    internal fun testSendChannelMessage_SendsTelegramMessage() {
         notifier.sendChannelMessage("allo")
 
-        verify(inverse = true) { bot.execute(any<SendMessage>()) }
-        verify { logger.info("@bulldog_sounds: allo") }
-    }
-
-    @Test
-    internal fun testSendChannelMessage_HasChatId_SendsTelegramMessage() {
-        val notifier = TelegramNotifier(bot, logger, "12345")
-
-        notifier.sendChannelMessage("allo")
-
-        verify(inverse = true) { logger.info("allo") }
         val slot = slot<SendMessage>()
         verify { bot.execute(capture(slot)) }
         with(slot.captured) {

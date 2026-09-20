@@ -1,8 +1,7 @@
 package com.github.mrbean355.roons.discord.commands
 
 import com.github.mrbean355.roons.discord.audio.coerceVolume
-import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
-import com.github.mrbean355.roons.repository.loadSettings
+import com.github.mrbean355.roons.service.DiscordBotService
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.OptionType
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
@@ -12,7 +11,7 @@ private const val NewVolumeOption = "new-volume"
 
 @Component
 class SetVolumeCommand(
-    private val discordBotSettingsRepository: DiscordBotSettingsRepository
+    private val discordBotService: DiscordBotService
 ) : BotCommand {
 
     override val name get() = "set-volume"
@@ -23,10 +22,10 @@ class SetVolumeCommand(
 
     override fun handleCommand(event: SlashCommandInteractionEvent) {
         val member = event.member ?: return
-        val settings = discordBotSettingsRepository.loadSettings(member.guild.id)
+        val settings = discordBotService.loadSettings(member.guild.id)
         val newVolume = event.getOption(NewVolumeOption)?.asInt?.coerceVolume() ?: return
 
-        discordBotSettingsRepository.save(settings.copy(volume = newVolume))
+        discordBotService.saveSettings(settings.copy(volume = newVolume))
         event.reply("My volume has been set to `${newVolume}%`.").queue()
     }
 }

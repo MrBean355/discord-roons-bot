@@ -5,16 +5,14 @@ import com.github.mrbean355.roons.PlaySoundRequest
 import com.github.mrbean355.roons.PlaySoundsRequest
 import com.github.mrbean355.roons.SingleSound
 import com.github.mrbean355.roons.discord.DiscordBot
-import com.github.mrbean355.roons.repository.AppUserRepository
-import com.github.mrbean355.roons.repository.DiscordBotUserRepository
-import com.github.mrbean355.roons.repository.updateLastSeen
+import com.github.mrbean355.roons.service.DiscordBotService
+import com.github.mrbean355.roons.service.UserService
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.justRun
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,23 +28,22 @@ internal class DiscordControllerTest {
     private lateinit var discordBot: DiscordBot
 
     @MockK
-    private lateinit var appUserRepository: AppUserRepository
+    private lateinit var userService: UserService
 
     @MockK
-    private lateinit var discordBotUserRepository: DiscordBotUserRepository
+    private lateinit var discordBotService: DiscordBotService
     private lateinit var controller: DiscordController
 
     @BeforeEach
     internal fun setUp() {
         MockKAnnotations.init(this)
-        mockkStatic(AppUserRepository::updateLastSeen)
-        justRun { appUserRepository.updateLastSeen(any()) }
-        controller = DiscordController(discordBot, appUserRepository, discordBotUserRepository)
+        justRun { userService.updateLastSeen(any()) }
+        controller = DiscordController(discordBot, userService, discordBotService)
     }
 
     @Test
     internal fun testLookupToken_UserNotFound_ReturnsNotFoundResult() {
-        every { discordBotUserRepository.findOneByToken("abc123") } returns null
+        every { discordBotService.findUserByToken("abc123") } returns null
 
         val result = controller.lookupToken("abc123")
 
@@ -55,7 +52,7 @@ internal class DiscordControllerTest {
 
     @Test
     internal fun testLookupToken_GuildNotFound_ReturnsNotFoundResult() {
-        every { discordBotUserRepository.findOneByToken("abc123") } returns mockk {
+        every { discordBotService.findUserByToken("abc123") } returns mockk {
             every { guildId } returns "guild-id"
         }
         every { discordBot.getGuildById("guild-id") } returns null
@@ -67,7 +64,7 @@ internal class DiscordControllerTest {
 
     @Test
     internal fun testLookupToken_UserAndGuildFound_ReturnsOkResultWithGuildName() {
-        every { discordBotUserRepository.findOneByToken("abc123") } returns mockk {
+        every { discordBotService.findUserByToken("abc123") } returns mockk {
             every { guildId } returns "guild-id"
         }
         every { discordBot.getGuildById("guild-id") } returns mockk {
@@ -84,7 +81,7 @@ internal class DiscordControllerTest {
     internal fun testPlaySound_UpdatesUserLastSeen() {
         controller.playSound(mockRequest(token = ""))
 
-        verify { appUserRepository.updateLastSeen("user-id") }
+        verify { userService.updateLastSeen("user-id") }
     }
 
     @Test
@@ -96,7 +93,7 @@ internal class DiscordControllerTest {
 
     @Test
     internal fun testPlaySound_UserNotFound_ReturnsUnauthorizedResult() {
-        every { discordBotUserRepository.findOneByToken("token") } returns null
+        every { discordBotService.findUserByToken("token") } returns null
 
         val result = controller.playSound(mockRequest())
 
@@ -107,7 +104,7 @@ internal class DiscordControllerTest {
     internal fun testPlaySound_SoundFound_PlaysSound(
         @MockK discordBotUser: DiscordBotUser
     ) {
-        every { discordBotUserRepository.findOneByToken("token") } returns discordBotUser
+        every { discordBotService.findUserByToken("token") } returns discordBotUser
         every { discordBot.playSound(any(), any(), any(), any()) } returns false
 
         controller.playSound(mockRequest())
@@ -119,7 +116,7 @@ internal class DiscordControllerTest {
     internal fun testPlaySound_SoundFound_MissingVolumeAndRate_PlaysSoundWithDefaults(
         @MockK discordBotUser: DiscordBotUser
     ) {
-        every { discordBotUserRepository.findOneByToken("token") } returns discordBotUser
+        every { discordBotService.findUserByToken("token") } returns discordBotUser
         every { discordBot.playSound(any(), any(), any(), any()) } returns false
 
         controller.playSound(mockEmptyRequest())
@@ -129,7 +126,7 @@ internal class DiscordControllerTest {
 
     @Test
     internal fun testPlaySound_SoundFailedToPlay_ReturnsBadRequestResult() {
-        every { discordBotUserRepository.findOneByToken("token") } returns mockk()
+        every { discordBotService.findUserByToken("token") } returns mockk()
         every { discordBot.playSound(any(), any(), any(), any()) } returns false
 
         val result = controller.playSound(mockRequest())
@@ -139,7 +136,7 @@ internal class DiscordControllerTest {
 
     @Test
     internal fun testPlaySound_SoundPlaysSuccessfully_ReturnsOkResult() {
-        every { discordBotUserRepository.findOneByToken("token") } returns mockk()
+        every { discordBotService.findUserByToken("token") } returns mockk()
         every { discordBot.playSound(any(), any(), any(), any()) } returns true
 
         val result = controller.playSound(mockRequest())
@@ -151,7 +148,7 @@ internal class DiscordControllerTest {
     internal fun testPlaySounds_UpdatesUserLastSeen() {
         controller.playSounds(mockMultiRequest(token = ""))
 
-        verify { appUserRepository.updateLastSeen("user-id") }
+        verify { userService.updateLastSeen("user-id") }
     }
 
     @Test
@@ -170,7 +167,7 @@ internal class DiscordControllerTest {
 
     @Test
     internal fun testPlaySounds_UserNotFound_ReturnsUnauthorizedResult() {
-        every { discordBotUserRepository.findOneByToken("token") } returns null
+        every { discordBotService.findUserByToken("token") } returns null
 
         val result = controller.playSounds(mockMultiRequest())
 
@@ -181,7 +178,7 @@ internal class DiscordControllerTest {
     internal fun testPlaySounds_PlaysEachSound(
         @MockK discordBotUser: DiscordBotUser
     ) {
-        every { discordBotUserRepository.findOneByToken("token") } returns discordBotUser
+        every { discordBotService.findUserByToken("token") } returns discordBotUser
         every { discordBot.playSound(any(), any(), any(), any()) } returns false
 
         controller.playSounds(mockMultiRequest())
@@ -196,7 +193,7 @@ internal class DiscordControllerTest {
     internal fun testPlaySounds_AllSoundsPlaySuccessfully_ReturnsOkResult(
         @MockK discordBotUser: DiscordBotUser
     ) {
-        every { discordBotUserRepository.findOneByToken("token") } returns discordBotUser
+        every { discordBotService.findUserByToken("token") } returns discordBotUser
         every { discordBot.playSound(any(), any(), any(), any()) } returns true
 
         val result = controller.playSounds(mockMultiRequest())
@@ -208,7 +205,7 @@ internal class DiscordControllerTest {
     internal fun testPlaySounds_OneSoundPlaysSuccessfully_ReturnsOkResult(
         @MockK discordBotUser: DiscordBotUser
     ) {
-        every { discordBotUserRepository.findOneByToken("token") } returns discordBotUser
+        every { discordBotService.findUserByToken("token") } returns discordBotUser
         every { discordBot.playSound(any(), any(), any(), any()) }.returnsMany(true, false)
 
         val result = controller.playSounds(mockMultiRequest())
@@ -220,7 +217,7 @@ internal class DiscordControllerTest {
     internal fun testPlaySounds_AllSoundsFailToPlay_ReturnsBadRequestResult(
         @MockK discordBotUser: DiscordBotUser
     ) {
-        every { discordBotUserRepository.findOneByToken("token") } returns discordBotUser
+        every { discordBotService.findUserByToken("token") } returns discordBotUser
         every { discordBot.playSound(any(), any(), any(), any()) } returns false
 
         val result = controller.playSounds(mockMultiRequest())

@@ -17,6 +17,7 @@ following core components:
 - **Sound Bite Management** – Stores and organises sound bites for use across the application.
 - **REST API** – Provides an interface for the desktop application.
 - **Discord Bot** – Integrates with Discord to play sound bites in voice channels.
+- **Telegram Bot** – Provides administrative monitoring and delivers real-time notifications.
 
 ### Sound Bite Management
 
@@ -49,6 +50,10 @@ The REST API exposes endpoints used by the desktop application, including:
 
 - Downloading sound bites
 - Interacting with the Discord bot
+- Submitting feedback and checking service metadata
+
+Administrative endpoints (such as updating metadata) require Bearer token authorization via an
+`Authorization: Bearer <token>` header, verified against the database.
 
 For a complete overview, see the classes in the [controller](src/main/kotlin/com/github/mrbean355/roons/controller)
 package.
@@ -60,6 +65,17 @@ This component manages the Discord bot using the official Discord API. It handle
 
 Refer to the [DiscordBot](src/main/kotlin/com/github/mrbean355/roons/discord/DiscordBot.kt) class for implementation
 details.
+
+### Telegram Bot
+
+This component provides an administrative interface and notification channel via Telegram:
+
+- Responds to admin commands (`/status`, `/help`) to report system uptime, memory usage, Discord gateway status, and
+  active voice connections.
+- Sends instant notifications for Discord guild join/leave events, user feedback submissions, sound catalog updates, and
+  uncaught exceptions.
+
+Refer to the [telegram](src/main/kotlin/com/github/mrbean355/roons/telegram) package for implementation details.
 
 ## Local Development
 
@@ -82,23 +98,28 @@ Configure the following environment variables (e.g., in an `.env` file or your I
 | Variable                 | Description                                       |
 |:-------------------------|:--------------------------------------------------|
 | `JDBC_DATABASE_URL`      | e.g. `jdbc:postgresql://localhost:5432/roons_bot` |
-| `JDBC_DATABASE_USERNAME` | Database username                                 |
-| `JDBC_DATABASE_PASSWORD` | Database password                                 |
-| `DISCORD_BOT_TOKEN`      | Token for your Discord bot application            |
+| `JDBC_DATABASE_USERNAME` | Database username (optional)                      |
+| `JDBC_DATABASE_PASSWORD` | Database password (optional)                      |
+| `DISCORD_API_TOKEN`      | Token for your Discord bot application            |
+| `TELEGRAM_TOKEN`         | Token for your Telegram bot application           |
+| `TELEGRAM_CHAT`          | Telegram chat ID for admin notifications          |
+| `PORT`                   | Server HTTP port (optional, defaults to `8090`)   |
 
 ### Running the Application
 
-Run the following command to start the server with a stubbed Telegram client (logs messages to the console instead of
-sending them):
+Run the following command to start the server locally:
 
 ```bash
 ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
-### Analytics Dashboard
+### Web Pages
 
-Once running, you can access the analytics dashboard at:
-`http://localhost:8090/dashboard.html`
+Once running, the server hosts several web pages:
+
+- **Analytics Dashboard**: `http://localhost:8090/dashboard.html`
+- **Terms of Service**: `http://localhost:8090/terms`
+- **Privacy Policy**: `http://localhost:8090/privacy`
 
 ### Continuous Integration
 

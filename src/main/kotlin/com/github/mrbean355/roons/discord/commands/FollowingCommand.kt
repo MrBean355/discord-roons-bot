@@ -1,13 +1,12 @@
 package com.github.mrbean355.roons.discord.commands
 
-import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
-import com.github.mrbean355.roons.repository.loadSettings
+import com.github.mrbean355.roons.service.DiscordBotService
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import org.springframework.stereotype.Component
 
 @Component
 class FollowingCommand(
-    private val discordBotSettingsRepository: DiscordBotSettingsRepository
+    private val discordBotService: DiscordBotService
 ) : BotCommand {
 
     override val name get() = "following"
@@ -15,7 +14,7 @@ class FollowingCommand(
 
     override fun handleCommand(event: SlashCommandInteractionEvent) {
         val guild = event.guild ?: return
-        val followedUser = discordBotSettingsRepository.loadSettings(guild.id).followedUser
+        val followedUser = discordBotService.loadSettings(guild.id).followedUser
 
         if (followedUser == null) {
             event.reply("I'm not following anyone at the moment.").setEphemeral(true).queue()

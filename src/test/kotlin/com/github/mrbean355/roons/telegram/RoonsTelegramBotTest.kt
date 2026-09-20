@@ -1,6 +1,8 @@
 package com.github.mrbean355.roons.telegram
 
+import com.github.mrbean355.roons.SystemHealthResponse
 import com.github.mrbean355.roons.discord.DiscordBot
+import com.github.mrbean355.roons.service.SystemHealthService
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -8,6 +10,8 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.entities.Guild
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,6 +28,9 @@ internal class RoonsTelegramBotTest {
     private lateinit var telegramNotifier: TelegramNotifier
 
     @MockK(relaxed = true)
+    private lateinit var systemHealthService: SystemHealthService
+
+    @MockK(relaxed = true)
     private lateinit var logger: Logger
 
     private val adminChatId = "123456"
@@ -33,13 +40,17 @@ internal class RoonsTelegramBotTest {
     @BeforeEach
     internal fun setUp() {
         MockKAnnotations.init(this)
-        bot = RoonsTelegramBot(discordBot, telegramNotifier, logger, adminChatId)
+        bot = RoonsTelegramBot(discordBot, telegramNotifier, systemHealthService, logger, adminChatId, "token")
     }
 
     @Test
     internal fun testConsume_StatusFromAdmin_SendsStatusReport() {
-        every { discordBot.getGatewayStatus() } returns JDA.Status.CONNECTED
-        every { discordBot.getGatewayPing() } returns 35L
+        every { systemHealthService.getSystemHealth() } returns SystemHealthResponse(
+            uptime = "1d 2h 3m",
+            memoryUsage = "100 MB / 500 MB",
+            discordStatus = "CONNECTED",
+            discordPing = 35L
+        )
         every { discordBot.getGuilds() } returns emptyList()
 
         val update = mockk<Update>()
@@ -55,6 +66,8 @@ internal class RoonsTelegramBotTest {
         val slot = slot<String>()
         verify { telegramNotifier.sendPrivateMessage(capture(slot)) }
         assertTrue(slot.captured.contains("System Status"))
+        assertTrue(slot.captured.contains("1d 2h 3m"))
+        assertTrue(slot.captured.contains("100 MB / 500 MB"))
         assertTrue(slot.captured.contains("CONNECTED"))
         assertTrue(slot.captured.contains("35 ms"))
     }
@@ -101,5 +114,13 @@ internal class RoonsTelegramBotTest {
         bot.consume(update)
 
         verify(inverse = true) { telegramNotifier.sendPrivateMessage(any()) }
+    }
+
+    @Test
+    internal fun testGetBotToken() {
+        val customBot = RoonsTelegramBot(discordBot, telegramNotifier, systemHealthService, logger, adminChatId, "token123")
+
+        assertEquals("token123", customBot.getBotToken())
+        assertEquals("token", bot.getBotToken())
     }
 }

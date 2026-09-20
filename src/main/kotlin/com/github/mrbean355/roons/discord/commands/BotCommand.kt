@@ -1,5 +1,7 @@
 package com.github.mrbean355.roons.discord.commands
 
+import net.dv8tion.jda.api.entities.Guild
+import net.dv8tion.jda.api.entities.Member
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent
 import net.dv8tion.jda.api.interactions.commands.build.SlashCommandData
 
@@ -18,4 +20,9 @@ sealed interface BotCommand {
     /** Handle the received slash command (e.g. /command). */
     fun handleCommand(event: SlashCommandInteractionEvent)
 
+}
+
+/** @return the cached [Member] if present, otherwise attempts to retrieve it safely without throwing. */
+fun Guild.findMember(userId: String): Member? {
+    return getMemberById(userId) ?: runCatching { retrieveMemberById(userId).complete() }.getOrNull()
 }

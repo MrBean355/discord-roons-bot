@@ -2,13 +2,16 @@ package com.github.mrbean355.roons.discord
 
 import com.github.mrbean355.roons.DiscordBotSettings
 import com.github.mrbean355.roons.DiscordBotUser
-import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
+import com.github.mrbean355.roons.service.DiscordBotService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
+import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
+import io.mockk.verify
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.managers.AudioManager
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -20,7 +23,7 @@ import java.io.File
 internal class DiscordBotTest {
 
     @MockK(relaxed = true)
-    private lateinit var discordBotSettingsRepository: DiscordBotSettingsRepository
+    private lateinit var discordBotService: DiscordBotService
 
     @MockK(relaxed = true)
     private lateinit var soundStore: SoundStore
@@ -34,12 +37,15 @@ internal class DiscordBotTest {
     @MockK(relaxed = true)
     private lateinit var bot: JDA
 
+    @MockK(relaxed = true)
+    private lateinit var playerManager: AudioPlayerManager
+
     private lateinit var discordBot: DiscordBot
 
     @BeforeEach
     internal fun setUp() {
         MockKAnnotations.init(this)
-        discordBot = DiscordBot(discordBotSettingsRepository, soundStore, telegramNotifier, logger, bot)
+        discordBot = DiscordBot(discordBotService, soundStore, telegramNotifier, logger, bot, playerManager)
     }
 
     @Test
@@ -70,10 +76,48 @@ internal class DiscordBotTest {
         every { guild.audioManager } returns audioManager
         every { bot.getGuildById("guild_1") } returns guild
         every { soundStore.getFile("13.mp3") } returns File("13.mp3")
-        every { discordBotSettingsRepository.findOneByGuildId("guild_1") } returns DiscordBotSettings(1, "guild_1", 100, null, null)
+        every { discordBotService.loadSettings("guild_1") } returns DiscordBotSettings(1, "guild_1", 100, null, null)
 
         val result = discordBot.playSound(DiscordBotUser(1, "user_1", "guild_1", "token_1"), "13.mp3", 100, 100)
 
         assertFalse(result)
+    }
+
+    @Test
+    internal fun testShutdown_DisconnectsConnectedGuildsAndSavesLastChannel() {
+        val guild = mockk<Guild>(relaxed = true)
+        val audioManager = mockk<AudioManager>(relaxed = true)
+        every { guild.id } returns "guild_1"
+        every { guild.audioManager } returns audioManager
+        every { audioManager.isConnected } returns true
+        every { guild.selfMember.voiceState?.channel?.id } returns "channel_123"
+        every { bot.guilds } returns listOf(guild)
+        every { discordBotService.loadSettings("guild_1") } returns DiscordBotSettings(1, "guild_1", 100, null, null)
+        every { discordBotService.saveSettings(any()) } answers { firstArg() }
+
+        discordBot.shutdown()
+
+        verify { bot.presence.setStatus(OnlineStatus.OFFLINE) }
+        verify { discordBotService.saveSettings(match { it.lastChannel == "channel_123" }) }
+        verify { audioManager.closeAudioConnection() }
+        verify { playerManager.shutdown() }
+    }
+
+    @Test
+    internal fun testPlaySound_SetsSendingHandlerOnlyOnceAcrossMultipleCalls() {
+        val guild = mockk<Guild>(relaxed = true)
+        val audioManager = mockk<AudioManager>(relaxed = true)
+        every { audioManager.isConnected } returns true
+        every { guild.idLong } returns 12345L
+        every { guild.id } returns "12345"
+        every { guild.audioManager } returns audioManager
+        every { bot.getGuildById("12345") } returns guild
+        every { soundStore.getFile("13.mp3") } returns File("13.mp3")
+        every { discordBotService.loadSettings("12345") } returns DiscordBotSettings(1, "12345", 100, null, null)
+
+        discordBot.playSound(DiscordBotUser(1, "user_1", "12345", "token_1"), "13.mp3", 100, 100)
+        discordBot.playSound(DiscordBotUser(1, "user_1", "12345", "token_1"), "13.mp3", 100, 100)
+
+        verify(exactly = 1) { audioManager.sendingHandler = any() }
     }
 }
