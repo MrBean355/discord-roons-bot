@@ -1,9 +1,11 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.DiscordServerDto
+import com.github.mrbean355.roons.SystemHealthResponse
 import com.github.mrbean355.roons.TestClock
 import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.service.AnalyticsService
+import com.github.mrbean355.roons.service.SystemHealthService
 import com.github.mrbean355.roons.service.UserService
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -31,26 +33,26 @@ internal class StatisticsControllerTest {
     private lateinit var analyticsService: AnalyticsService
 
     @MockK
+    private lateinit var systemHealthService: SystemHealthService
+
+    @MockK
     private lateinit var discordBot: DiscordBot
     private lateinit var controller: StatisticsController
 
     @BeforeEach
     internal fun setUp() {
-        controller = StatisticsController(userService, analyticsService, discordBot, TestClock(1_000_000))
+        controller = StatisticsController(userService, analyticsService, systemHealthService, discordBot, TestClock(1_000_000))
     }
 
     @Test
     internal fun testGetHealth_ReturnsSystemHealth() {
-        every { discordBot.getGatewayStatus() } returns JDA.Status.CONNECTED
-        every { discordBot.getGatewayPing() } returns 42L
+        val health = SystemHealthResponse("1d 2h 3m", "100 MB / 500 MB", "CONNECTED", 42L)
+        every { systemHealthService.getSystemHealth() } returns health
 
         val result = controller.getHealth()
 
         assertSame(HttpStatus.OK, result.statusCode)
-        val body = result.body
-        assertNotNull(body)
-        assertEquals("CONNECTED", body?.discordStatus)
-        assertEquals(42L, body?.discordPing)
+        assertSame(health, result.body)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.github.mrbean355.roons.telegram
 
 import com.github.mrbean355.roons.discord.DiscordBot
+import com.github.mrbean355.roons.service.SystemHealthService
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -8,13 +9,12 @@ import org.telegram.telegrambots.longpolling.interfaces.LongPollingUpdateConsume
 import org.telegram.telegrambots.longpolling.starter.SpringLongPollingBot
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer
 import org.telegram.telegrambots.meta.api.objects.Update
-import java.lang.management.ManagementFactory
-import java.time.Duration
 
 @Component
 class RoonsTelegramBot(
     private val discordBot: DiscordBot,
     private val telegramNotifier: TelegramNotifier,
+    private val systemHealthService: SystemHealthService,
     private val logger: Logger,
     @Value($$"${TELEGRAM_CHAT}") private val adminChatId: String,
     @Value($$"${TELEGRAM_TOKEN}") private val botToken: String,
@@ -48,13 +48,7 @@ class RoonsTelegramBot(
     }
 
     private fun handleStatus() {
-        val runtime = ManagementFactory.getRuntimeMXBean()
-        val mem = Runtime.getRuntime()
-        val uptime = Duration.ofMillis(runtime.uptime)
-        val uptimeStr = "${uptime.toDays()}d ${uptime.toHoursPart()}h ${uptime.toMinutesPart()}m"
-        val memoryStr = "${(mem.totalMemory() - mem.freeMemory()) / 1024 / 1024} MB / ${mem.maxMemory() / 1024 / 1024} MB"
-        val discordStatus = discordBot.getGatewayStatus().name
-        val discordPing = "${discordBot.getGatewayPing()} ms"
+        val health = systemHealthService.getSystemHealth()
         val guilds = discordBot.getGuilds()
         val totalGuilds = guilds.size
         val activeVoice = guilds.count { it.audioManager.isConnected }
@@ -62,9 +56,9 @@ class RoonsTelegramBot(
         telegramNotifier.sendPrivateMessage(
             """
             📊 <b>System Status</b>
-            • <b>Uptime</b>: <code>$uptimeStr</code>
-            • <b>Memory</b>: <code>$memoryStr</code>
-            • <b>Discord Gateway</b>: <code>$discordStatus</code> ($discordPing)
+            • <b>Uptime</b>: <code>${health.uptime}</code>
+            • <b>Memory</b>: <code>${health.memoryUsage}</code>
+            • <b>Discord Gateway</b>: <code>${health.discordStatus}</code> (${health.discordPing} ms)
             • <b>Guilds</b>: <code>$totalGuilds</code> ($activeVoice voice active)
             """.trimIndent()
         )
