@@ -3,8 +3,6 @@ package com.github.mrbean355.roons.controller
 import com.github.mrbean355.roons.WelcomeMessageResponse
 import com.github.mrbean355.roons.security.AdminOnly
 import com.github.mrbean355.roons.service.MetadataService
-import org.springframework.cache.annotation.CacheEvict
-import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -19,7 +17,6 @@ class MetadataController(
 ) {
 
     @GetMapping("welcomeMessage")
-    @WelcomeMessageCache
     fun getWelcomeMessage(): ResponseEntity<WelcomeMessageResponse> {
         val message = metadataService.getWelcomeMessage()
             ?: return ResponseEntity.notFound().build()
@@ -28,7 +25,6 @@ class MetadataController(
     }
 
     @AdminOnly
-    @ClearWelcomeMessageCache
     @PutMapping("welcomeMessage")
     fun putWelcomeMessage(
         @RequestParam("message") message: String
@@ -37,11 +33,3 @@ class MetadataController(
         return ResponseEntity.ok().build()
     }
 }
-
-private const val WELCOME_MESSAGE_CACHE_NAME = "welcome_message_cache"
-
-@Cacheable(WELCOME_MESSAGE_CACHE_NAME)
-private annotation class WelcomeMessageCache
-
-@CacheEvict(WELCOME_MESSAGE_CACHE_NAME, allEntries = true)
-private annotation class ClearWelcomeMessageCache

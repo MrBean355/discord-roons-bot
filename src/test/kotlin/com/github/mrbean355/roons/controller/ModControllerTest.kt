@@ -7,6 +7,7 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit5.MockKExtension
+import io.mockk.justRun
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
@@ -111,8 +112,11 @@ internal class ModControllerTest {
 
     @Test
     internal fun testRefreshMods_ReturnsOkResult() {
+        justRun { modService.clearCache() }
+
         val result = controller.refreshMods()
 
+        verify { modService.clearCache() }
         assertSame(HttpStatus.OK, result.statusCode)
     }
 }

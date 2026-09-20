@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.verify
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -81,5 +82,10 @@ internal class ModServiceTest {
 
         assertTrue(result)
         verify { dotaModRepository.save(existing.copy(hash = "new-hash", size = 500)) }
+    }
+
+    @Test
+    internal fun testClearCache_DoesNotThrow() {
+        assertDoesNotThrow { service.clearCache() }
     }
 }

@@ -4,8 +4,6 @@ import com.github.mrbean355.roons.DotaModDto
 import com.github.mrbean355.roons.security.AdminOnly
 import com.github.mrbean355.roons.service.ModService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
-import org.springframework.cache.annotation.CacheEvict
-import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,11 +21,9 @@ class ModController(
 ) {
 
     @GetMapping
-    @DotaModCache
     fun listMods(): List<DotaModDto> = modService.listMods()
 
     @GetMapping("{key}")
-    @DotaModCache
     fun getMod(@PathVariable("key") key: String): ResponseEntity<DotaModDto> {
         val mod = modService.getMod(key)
             ?: return ResponseEntity(NOT_FOUND)
@@ -36,7 +32,6 @@ class ModController(
     }
 
     @AdminOnly
-    @ClearDotaModCache
     @PatchMapping("{key}")
     fun patchMod(
         @PathVariable("key") key: String,
@@ -56,15 +51,9 @@ class ModController(
     }
 
     @AdminOnly
-    @ClearDotaModCache
     @GetMapping("refresh")
-    fun refreshMods(): ResponseEntity<Void> = ResponseEntity.ok().build()
+    fun refreshMods(): ResponseEntity<Void> {
+        modService.clearCache()
+        return ResponseEntity.ok().build()
+    }
 }
-
-private const val DOTA_MOD_CACHE_NAME = "dota_mod_cache"
-
-@Cacheable(DOTA_MOD_CACHE_NAME)
-private annotation class DotaModCache
-
-@CacheEvict(DOTA_MOD_CACHE_NAME, allEntries = true)
-private annotation class ClearDotaModCache
