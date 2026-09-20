@@ -1,6 +1,7 @@
 package com.github.mrbean355.roons.service
 
 import com.github.mrbean355.roons.AppUser
+import com.github.mrbean355.roons.component.Clock
 import com.github.mrbean355.roons.repository.AppUserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -9,7 +10,8 @@ import java.util.UUID
 
 @Service
 class UserService(
-    private val appUserRepository: AppUserRepository
+    private val appUserRepository: AppUserRepository,
+    private val clock: Clock
 ) {
 
     @Transactional
@@ -22,7 +24,7 @@ class UserService(
         if (tries >= 10) {
             return null
         }
-        appUserRepository.save(AppUser(0, generated, Instant.now()))
+        appUserRepository.save(AppUser(0, generated, clock.now))
         return generated
     }
 
@@ -30,7 +32,7 @@ class UserService(
     fun updateLastSeen(userId: String) {
         require(userId.isNotBlank())
         val user = appUserRepository.findByGeneratedId(userId) ?: AppUser(0, userId, null)
-        appUserRepository.save(user.copy(lastSeen = Instant.now()))
+        appUserRepository.save(user.copy(lastSeen = clock.now))
     }
 
     @Transactional(readOnly = true)

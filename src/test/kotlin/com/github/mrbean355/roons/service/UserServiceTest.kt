@@ -1,6 +1,7 @@
 package com.github.mrbean355.roons.service
 
 import com.github.mrbean355.roons.AppUser
+import com.github.mrbean355.roons.TestClock
 import com.github.mrbean355.roons.repository.AppUserRepository
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -24,11 +25,13 @@ internal class UserServiceTest {
     @MockK
     private lateinit var appUserRepository: AppUserRepository
 
+    private val clock = TestClock(123_456_789L)
+
     private lateinit var service: UserService
 
     @BeforeEach
     internal fun setUp() {
-        service = UserService(appUserRepository)
+        service = UserService(appUserRepository, clock)
     }
 
     @Test
@@ -41,6 +44,7 @@ internal class UserServiceTest {
 
         assertNotNull(result)
         assertEquals(result, slot.captured.generatedId)
+        assertEquals(clock.now, slot.captured.lastSeen)
     }
 
     @Test
@@ -70,7 +74,7 @@ internal class UserServiceTest {
 
         assertEquals(0, slot.captured.id)
         assertEquals("user1", slot.captured.generatedId)
-        assertNotNull(slot.captured.lastSeen)
+        assertEquals(clock.now, slot.captured.lastSeen)
     }
 
     @Test
@@ -84,8 +88,7 @@ internal class UserServiceTest {
 
         assertEquals(5, slot.captured.id)
         assertEquals("user1", slot.captured.generatedId)
-        assertNotNull(slot.captured.lastSeen)
-        assertTrue(slot.captured.lastSeen!! > Instant.EPOCH)
+        assertEquals(clock.now, slot.captured.lastSeen)
     }
 
     @Test

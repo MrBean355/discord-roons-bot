@@ -3,6 +3,7 @@ package com.github.mrbean355.roons
 import com.github.mrbean355.roons.component.Clock
 import org.junit.jupiter.api.Assertions.assertTrue
 import java.io.File
+import java.time.Instant
 
 fun loadTestResource(name: String): String {
     val pathname = Thread.currentThread().contextClassLoader.getResource(name)?.file
@@ -17,4 +18,6 @@ fun assertTimeIsRoughlyNow(time: Long?) {
 
 class TestClock(time: Long) : Clock {
     override val currentTimeMs = time
+    override val now: Instant
+        get() = Instant.ofEpochMilli(currentTimeMs)
 }
