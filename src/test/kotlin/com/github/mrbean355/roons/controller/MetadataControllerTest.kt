@@ -3,17 +3,14 @@ package com.github.mrbean355.roons.controller
 import com.github.mrbean355.roons.service.MetadataService
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.impl.annotations.RelaxedMockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.justRun
-import io.mockk.verifyOrder
+import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.cache.Cache
-import org.springframework.cache.CacheManager
 import org.springframework.http.HttpStatus
 
 @ExtendWith(MockKExtension::class)
@@ -21,18 +18,12 @@ internal class MetadataControllerTest {
     @MockK
     private lateinit var metadataService: MetadataService
 
-    @MockK
-    private lateinit var cacheManager: CacheManager
-
-    @RelaxedMockK
-    private lateinit var welcomeMessageCache: Cache
     private lateinit var controller: MetadataController
 
     @BeforeEach
     internal fun setUp() {
-        every { cacheManager.getCache("welcome_message_cache") } returns welcomeMessageCache
         justRun { metadataService.saveWelcomeMessage(any()) }
-        controller = MetadataController(metadataService, cacheManager)
+        controller = MetadataController(metadataService)
     }
 
     @Test
@@ -58,11 +49,7 @@ internal class MetadataControllerTest {
     internal fun testPutWelcomeMessage_SavesWelcomeMessage() {
         val result = controller.putWelcomeMessage(message = "new message")
 
-        verifyOrder {
-            metadataService.saveWelcomeMessage("new message")
-            cacheManager.getCache("welcome_message_cache")
-            welcomeMessageCache.clear()
-        }
+        verify { metadataService.saveWelcomeMessage("new message") }
         assertSame(HttpStatus.OK, result.statusCode)
     }
 }

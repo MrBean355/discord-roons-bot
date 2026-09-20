@@ -4,7 +4,7 @@ import com.github.mrbean355.roons.DotaModDto
 import com.github.mrbean355.roons.security.AdminOnly
 import com.github.mrbean355.roons.service.ModService
 import com.github.mrbean355.roons.telegram.TelegramNotifier
-import org.springframework.cache.CacheManager
+import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.ResponseEntity
@@ -19,8 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/mods")
 class ModController(
     private val modService: ModService,
-    private val telegramNotifier: TelegramNotifier,
-    private val cacheManager: CacheManager
+    private val telegramNotifier: TelegramNotifier
 ) {
 
     @GetMapping
@@ -37,6 +36,7 @@ class ModController(
     }
 
     @AdminOnly
+    @ClearDotaModCache
     @PatchMapping("{key}")
     fun patchMod(
         @PathVariable("key") key: String,
@@ -47,7 +47,6 @@ class ModController(
         if (!modService.updateMod(key, hash, size)) {
             return ResponseEntity(NOT_FOUND)
         }
-        cacheManager.getCache(DOTA_MOD_CACHE_NAME)?.clear()
 
         if (message != null) {
             telegramNotifier.sendChannelMessage(message)
@@ -57,14 +56,15 @@ class ModController(
     }
 
     @AdminOnly
+    @ClearDotaModCache
     @GetMapping("refresh")
-    fun refreshMods(): ResponseEntity<Void> {
-        cacheManager.getCache(DOTA_MOD_CACHE_NAME)?.clear()
-        return ResponseEntity.ok().build()
-    }
+    fun refreshMods(): ResponseEntity<Void> = ResponseEntity.ok().build()
 }
 
 private const val DOTA_MOD_CACHE_NAME = "dota_mod_cache"
 
 @Cacheable(DOTA_MOD_CACHE_NAME)
 private annotation class DotaModCache
+
+@CacheEvict(DOTA_MOD_CACHE_NAME, allEntries = true)
+private annotation class ClearDotaModCache

@@ -13,8 +13,6 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.cache.Cache
-import org.springframework.cache.CacheManager
 import org.springframework.http.HttpStatus
 
 @ExtendWith(MockKExtension::class)
@@ -25,17 +23,11 @@ internal class ModControllerTest {
     @RelaxedMockK
     private lateinit var telegramNotifier: TelegramNotifier
 
-    @MockK
-    private lateinit var cacheManager: CacheManager
-
-    @RelaxedMockK
-    private lateinit var modCache: Cache
     private lateinit var controller: ModController
 
     @BeforeEach
     internal fun setUp() {
-        every { cacheManager.getCache("dota_mod_cache") } returns modCache
-        controller = ModController(modService, telegramNotifier, cacheManager)
+        controller = ModController(modService, telegramNotifier)
     }
 
     @Test
@@ -91,28 +83,6 @@ internal class ModControllerTest {
     }
 
     @Test
-    internal fun testPatchMod_ModFound_ClearsCache() {
-        every { modService.updateMod("1", "new-hash", 999) } returns true
-
-        controller.patchMod("1", "new-hash", 999, "Mod updated")
-
-        verify {
-            cacheManager.getCache("dota_mod_cache")
-            modCache.clear()
-        }
-    }
-
-    @Test
-    internal fun testPatchMod_ModFound_CacheNotFound_NoExceptionThrown() {
-        every { modService.updateMod("1", "new-hash", 999) } returns true
-        every { cacheManager.getCache("dota_mod_cache") } returns null
-
-        controller.patchMod("1", "new-hash", 999, "Mod updated")
-
-        verify { cacheManager.getCache("dota_mod_cache") }
-    }
-
-    @Test
     internal fun testPatchMod_NullMessage_DoesNotSendTelegramChannelMessage() {
         every { modService.updateMod("1", "new-hash", 999) } returns true
 
@@ -137,27 +107,6 @@ internal class ModControllerTest {
         val result = controller.patchMod("1", "new-hash", 999, "Mod updated")
 
         assertSame(HttpStatus.OK, result.statusCode)
-    }
-
-    @Test
-    internal fun testRefreshMods_ClearsCache() {
-        controller.refreshMods()
-
-        verify {
-            cacheManager.getCache("dota_mod_cache")
-            modCache.clear()
-        }
-    }
-
-    @Test
-    internal fun testRefreshMods_CacheNotFound_NoExceptionThrown() {
-        every { cacheManager.getCache("dota_mod_cache") } returns null
-
-        controller.refreshMods()
-
-        verify {
-            cacheManager.getCache("dota_mod_cache")
-        }
     }
 
     @Test
