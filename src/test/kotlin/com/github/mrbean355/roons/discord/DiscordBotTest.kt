@@ -3,12 +3,15 @@ package com.github.mrbean355.roons.discord
 import com.github.mrbean355.roons.DiscordBotSettings
 import com.github.mrbean355.roons.DiscordBotUser
 import com.github.mrbean355.roons.repository.DiscordBotSettingsRepository
+import com.github.mrbean355.roons.repository.loadSettings
 import com.github.mrbean355.roons.telegram.TelegramNotifier
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
+import io.mockk.verify
 import net.dv8tion.jda.api.JDA
+import net.dv8tion.jda.api.OnlineStatus
 import net.dv8tion.jda.api.entities.Guild
 import net.dv8tion.jda.api.managers.AudioManager
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -75,5 +78,24 @@ internal class DiscordBotTest {
         val result = discordBot.playSound(DiscordBotUser(1, "user_1", "guild_1", "token_1"), "13.mp3", 100, 100)
 
         assertFalse(result)
+    }
+
+    @Test
+    internal fun testShutdown_DisconnectsConnectedGuildsAndSavesLastChannel() {
+        val guild = mockk<Guild>(relaxed = true)
+        val audioManager = mockk<AudioManager>(relaxed = true)
+        every { guild.id } returns "guild_1"
+        every { guild.audioManager } returns audioManager
+        every { audioManager.isConnected } returns true
+        every { guild.selfMember.voiceState?.channel?.id } returns "channel_123"
+        every { bot.guilds } returns listOf(guild)
+        every { discordBotSettingsRepository.loadSettings("guild_1") } returns DiscordBotSettings(1, "guild_1", 100, null, null)
+        every { discordBotSettingsRepository.save(any()) } answers { firstArg() }
+
+        discordBot.shutdown()
+
+        verify { bot.presence.setStatus(OnlineStatus.OFFLINE) }
+        verify { discordBotSettingsRepository.save(match { it.lastChannel == "channel_123" }) }
+        verify { audioManager.closeAudioConnection() }
     }
 }

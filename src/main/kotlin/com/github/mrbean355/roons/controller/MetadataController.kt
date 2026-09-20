@@ -1,16 +1,12 @@
 package com.github.mrbean355.roons.controller
 
 import com.github.mrbean355.roons.WelcomeMessageResponse
-import com.github.mrbean355.roons.discord.DiscordBot
 import com.github.mrbean355.roons.repository.MetadataRepository
-import com.github.mrbean355.roons.repository.adminToken
 import com.github.mrbean355.roons.repository.getWelcomeMessage
 import com.github.mrbean355.roons.repository.saveWelcomeMessage
 import com.github.mrbean355.roons.repository.isValidAdminToken
 import org.springframework.cache.CacheManager
 import org.springframework.cache.annotation.Cacheable
-import org.springframework.context.ApplicationContext
-import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -25,8 +21,6 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/metadata")
 class MetadataController(
     private val metadataRepository: MetadataRepository,
-    private val context: ApplicationContext,
-    private val discordBot: DiscordBot,
     private val cacheManager: CacheManager
 ) {
 
@@ -52,22 +46,6 @@ class MetadataController(
         cacheManager.getCache(WELCOME_MESSAGE_CACHE_NAME)?.clear()
 
         return ResponseEntity.ok().build()
-    }
-
-    @GetMapping("shutdown")
-    fun shutdown(
-        @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) authHeader: String? = null
-    ): ResponseEntity<String> {
-        if (metadataRepository.adminToken == null) {
-            return ResponseEntity(HttpStatus.INTERNAL_SERVER_ERROR)
-        }
-
-        if (!metadataRepository.isValidAdminToken(authHeader)) {
-            return ResponseEntity(HttpStatus.UNAUTHORIZED)
-        }
-        discordBot.shutdown()
-        (context as? ConfigurableApplicationContext)?.close()
-        return ResponseEntity.ok("Goodbye")
     }
 }
 

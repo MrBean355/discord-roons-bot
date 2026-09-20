@@ -12,6 +12,7 @@ import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack
+import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -59,6 +60,7 @@ class DiscordBot(
     }
 
     /** Disconnect from voice channels when shutting down. */
+    @PreDestroy
     fun shutdown() = runBlocking(IO) {
         bot.presence.setStatus(OnlineStatus.OFFLINE)
         val connectedGuilds = bot.guilds.filter { it.audioManager.isConnected }
