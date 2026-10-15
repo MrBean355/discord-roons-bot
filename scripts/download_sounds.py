@@ -142,6 +142,8 @@ def save_cache(cache_path: str, cache_data: dict[str, Any]) -> None:
         cache_data: Dictionary containing the ETag and sound metadata.
     """
     try:
+        if "sounds" in cache_data and isinstance(cache_data["sounds"], dict):
+            cache_data["sounds"] = dict(sorted(cache_data["sounds"].items(), key=lambda item: item[0].lower()))
         with open(cache_path, "w", encoding="utf-8") as f:
             json.dump(cache_data, f, indent=2, ensure_ascii=False)
             f.write("\n")
