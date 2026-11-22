@@ -260,14 +260,14 @@ def convert_file(ffmpeg_path: str, src_path: str, dest_path: str) -> bool:
                 f":measured_offset={stats_json['target_offset']}"
                 f":linear=true"
             )
-            cmd2 = [ffmpeg_path, "-loglevel", "error", "-y", "-i", src_path, "-af", filter_str, dest_path]
+            cmd2 = [ffmpeg_path, "-loglevel", "error", "-y", "-i", src_path, "-af", filter_str, "-fflags", "+bitexact", dest_path]
             subprocess.run(cmd2, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
             return True
     except Exception:
         pass
 
     # Fallback to single-pass if two-pass fails
-    cmd_fallback = [ffmpeg_path, "-loglevel", "error", "-y", "-i", src_path, "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", dest_path]
+    cmd_fallback = [ffmpeg_path, "-loglevel", "error", "-y", "-i", src_path, "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-fflags", "+bitexact", dest_path]
     try:
         subprocess.run(cmd_fallback, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
         return True
